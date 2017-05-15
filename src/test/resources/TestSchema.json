@@ -1,0 +1,121 @@
+{
+  "tables": [
+    {
+      "table": "Example",
+      "package": "com.n3twork.dynamap.test",
+      "type": "ExampleDocument",
+      "version": 1,
+      "hashkey": "id",
+      "rangekey": "range",
+      "globalSecondaryIndexes": [
+        {
+          "index": "exampleIndex",
+          "hashKey": "alias",
+          "rangeKey": "range"
+        }
+      ],
+      "types": [
+        {
+          "name": "ExampleDocument",
+          "fields": [
+            {
+              "name": "id",
+              "dynamoName": "id",
+              "type": "String"
+            },
+            {
+              "name": "range",
+              "dynamoName": "range",
+              "type": "Integer"
+            },
+            {
+              "name": "nestedObject",
+              "dynamoName": "nested",
+              "type": "NestedType"
+            },
+            {
+              "name": "mapOfLong",
+              "dynamoName": "mapOfLong",
+              "type": "Long",
+              "multivalue": "Map"
+            },
+            {
+              "name": "mapOfCustomType",
+              "dynamoName": "mapOfCustomType",
+              "type": "com.n3twork.dynamap.CustomType",
+              "multivalue": "Map"
+            },
+            {
+              "name": "alias",
+              "dynamoName": "alias",
+              "type": "String"
+            }
+          ]
+        },
+        {
+          "name": "NestedType",
+          "fields": [
+            {
+              "name": "id",
+              "dynamoName": "id",
+              "type": "String"
+            },
+            {
+              "name": "bio",
+              "dynamoName": "bio",
+              "type": "String",
+              "default": "empty"
+            },
+            {
+              "name": "integerField",
+              "dynamoName": "integerField",
+              "type": "Integer"
+            },
+            {
+              "name": "mapOfLong",
+              "dynamoName": "mapOfLong",
+              "type": "Long",
+              "multivalue": "Map",
+              "useDefaultForMap": "true"
+            },
+            {
+              "name": "setOfLong",
+              "dynamoName": "setOfLong",
+              "type": "Long",
+              "multivalue": "Set"
+            },
+            {
+              "name": "listOfLong",
+              "dynamoName": "listOfLong",
+              "type": "Long",
+              "multivalue": "List"
+            },
+            {
+              "name": "customType",
+              "dynamoName": "customType",
+              "type": "com.n3twork.dynamap.CustomType"
+            },
+            {
+              "name": "mapOfCustomType",
+              "dynamoName": "mapOfBean",
+              "type": "com.n3twork.dynamap.CustomType",
+              "multivalue": "Map"
+            },
+            {
+              "name": "setOfCustomType",
+              "dynamoName": "setOfCustomType",
+              "type": "com.n3twork.dynamap.CustomType",
+              "multivalue": "Set"
+            },
+            {
+              "name": "listOfCustomType",
+              "dynamoName": "listOfCustomType",
+              "type": "com.n3twork.dynamap.CustomType",
+              "multivalue": "List"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+# Mac Finder artifacts
+**/.DS_Store
+
+# Java build artifacts
+*.class
+**/target
+*.jar
+*.war
+*.ear
+
+# IntelliJ Files
+.idea
+**/*.iml
+
+# Native sqllite libraries required by Local DyanmoDB
+native-libs
