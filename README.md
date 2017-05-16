@@ -1,5 +1,7 @@
 # Dynamap
 
+[![](https://jitpack.io/v/com.n3twork/dynamap.svg)](https://jitpack.io/#com.n3twork/dynamap)
+
 A Java object mapping library for Amazon's DynamoDB database.
 
 Generates strongly typed Java classes that represent your schema, and provides methods for saving, querying and updating the state.
