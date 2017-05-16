@@ -1,41 +1,32 @@
-/*
-    Copyright 2017 N3TWORK INC
-
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-*/
-
 package com.n3twork.dynamap;
+
+import com.amazonaws.services.dynamodbv2.document.QueryFilter;
+import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class QueryRequest<T extends DynaMapPersisted> {
 
-    private DynamoRateLimiter readRateLimiter;
-    private DynamoRateLimiter writeRateLimiter;
-    private String hashKeyValue;
-    private Object rangeKeyValue;
-    private boolean consistentRead;
     private final Class<T> resultClass;
+    private String index;
+    private String hashKeyValue;
+    private RangeKeyCondition rangeKeyCondition;
+    private List<QueryFilter> queryFilters = new ArrayList();
+    private DynamoRateLimiter readRateLimiter;
+    private boolean consistentRead;
 
     public QueryRequest(Class<T> resultClass) {
         this.resultClass = resultClass;
     }
 
-    public QueryRequest withReadRateLimiter(DynamoRateLimiter readRateLimiter) {
-        this.readRateLimiter = readRateLimiter;
+    public QueryRequest<T> withIndex(String index) {
+        this.index = index;
         return this;
     }
 
-    public QueryRequest withWriteRateLimiter(DynamoRateLimiter writeRateLimiter) {
-        this.writeRateLimiter = writeRateLimiter;
+    public QueryRequest<T> withReadRateLimiter(DynamoRateLimiter readRateLimiter) {
+        this.readRateLimiter = readRateLimiter;
         return this;
     }
 
@@ -44,37 +35,47 @@ public class QueryRequest<T extends DynaMapPersisted> {
         return this;
     }
 
-    public QueryRequest<T> withRangeKeyValue(Object rangeKeyValue) {
-        this.rangeKeyValue = rangeKeyValue;
+    public QueryRequest<T> withRangeKeyCondition(RangeKeyCondition rangeKeyCondition) {
+        this.rangeKeyCondition = rangeKeyCondition;
         return this;
     }
 
-    public QueryRequest withConsistentRead(boolean consistentRead) {
+    public QueryRequest<T> withConsistentRead(boolean consistentRead) {
         this.consistentRead = consistentRead;
         return this;
     }
+
+    public QueryRequest<T> addQueryFilter(QueryFilter queryFilter) {
+        this.queryFilters.add(queryFilter);
+        return this;
+    }
+
 
     public DynamoRateLimiter getReadRateLimiter() {
         return readRateLimiter;
     }
 
-    public DynamoRateLimiter getWriteRateLimiter() {
-        return writeRateLimiter;
+    public Class<T> getResultClass() {
+        return resultClass;
+    }
+
+    public String getIndex() {
+        return index;
     }
 
     public String getHashKeyValue() {
         return hashKeyValue;
     }
 
-    public Object getRangeKeyValue() {
-        return rangeKeyValue;
+    public RangeKeyCondition getRangeKeyCondition() {
+        return rangeKeyCondition;
+    }
+
+    public QueryFilter[] getQueryFilters() {
+        return queryFilters.toArray(new QueryFilter[queryFilters.size()]);
     }
 
     public boolean isConsistentRead() {
         return consistentRead;
-    }
-
-    public Class<T> getResultClass() {
-        return resultClass;
     }
 }

@@ -18,6 +18,7 @@ package com.n3twork.dynamap;
 
 import com.amazonaws.services.dynamodbv2.document.Table;
 import com.amazonaws.services.dynamodbv2.model.ConsumedCapacity;
+import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughputDescription;
 import com.google.common.util.concurrent.RateLimiter;
 
 import java.util.List;
@@ -40,14 +41,25 @@ public class DynamoRateLimiter {
     }
 
     public void init(Table table) {
+        init(table, null);
+    }
+
+    public void init(Table table, String indexName) {
         if (rateLimiter == null) {
             table.describe();
             if (table.getDescription() != null) {
+                ProvisionedThroughputDescription provisionedThroughputDescription;
+                if (indexName != null) {
+                    provisionedThroughputDescription = table.getDescription().getGlobalSecondaryIndexes()
+                            .stream().filter(i -> i.getIndexName().equals(indexName)).findFirst().get().getProvisionedThroughput();
+                } else {
+                    provisionedThroughputDescription = table.getDescription().getProvisionedThroughput();
+                }
                 if (RateLimitType.READ.equals(rateLimitType)) {
-                    double permitsPerSec = table.getDescription().getProvisionedThroughput().getReadCapacityUnits() / (100 / targetPercent);
+                    double permitsPerSec = provisionedThroughputDescription.getReadCapacityUnits() / (100 / targetPercent);
                     rateLimiter = RateLimiter.create(Math.max(1, permitsPerSec)); // units per second
                 } else {
-                    double permitsPerSec = table.getDescription().getProvisionedThroughput().getWriteCapacityUnits() / (100 / targetPercent);
+                    double permitsPerSec = provisionedThroughputDescription.getWriteCapacityUnits() / (100 / targetPercent);
                     rateLimiter = RateLimiter.create(Math.max(1, permitsPerSec)); // units per second
                 }
             }

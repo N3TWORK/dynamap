@@ -45,4 +45,13 @@ public class Index {
     public String getIndexName() {
         return indexName;
     }
+
+    public String getIndexName(String prefix) {
+        if (prefix != null) {
+            return prefix + "." + indexName;
+        } else {
+            return indexName;
+        }
+
+    }
 }

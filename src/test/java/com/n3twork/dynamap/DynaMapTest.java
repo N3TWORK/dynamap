@@ -17,6 +17,7 @@
 package com.n3twork.dynamap;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.n3twork.dynamap.test.ExampleDocument;
@@ -27,6 +28,7 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
+import java.util.List;
 import java.util.UUID;
 
 public class DynaMapTest {
@@ -44,7 +46,7 @@ public class DynaMapTest {
     @Test
     public void testDynaMap() {
         SchemaRegistry schemaRegistry = new SchemaRegistry(getClass().getResourceAsStream("/TestSchema.json"));
-        DynaMap dynaMap = new DynaMap(ddb, "test", schemaRegistry, objectMapper);
+        DynaMap dynaMap = new DynaMap(ddb, schemaRegistry).withPrefix("test").withObjectMapper(objectMapper);
         dynaMap.createTables(true);
         String exampleId = UUID.randomUUID().toString();
         String nestedId = UUID.randomUUID().toString();
@@ -56,10 +58,10 @@ public class DynaMapTest {
 
         dynaMap.save(doc, null);
 
-        QueryRequest<ExampleDocument> queryRequest = new QueryRequest(ExampleDocumentBean.class).withHashKeyValue(exampleId).withRangeKeyValue(1);
-        ExampleDocument exampleDocument = dynaMap.query(queryRequest, null);
+        GetObjectRequest<ExampleDocument> getObjectRequest = new GetObjectRequest(ExampleDocumentBean.class).withHashKeyValue(exampleId).withRangeKeyValue(1);
+        ExampleDocument exampleDocument = dynaMap.getObject(getObjectRequest, null);
 
-        Assert.assertEquals(exampleDocument.getId(), exampleId);
+        Assert.assertEquals(exampleDocument.getExampleId(), exampleId);
         nestedObject = new NestedTypeBean(exampleDocument.getNestedObject());
         Assert.assertEquals(nestedObject.getId(), nestedId);
 
@@ -67,8 +69,14 @@ public class DynaMapTest {
         nestedTypeUpdates.setBio("test");
         dynaMap.update(nestedTypeUpdates);
 
-        exampleDocument = dynaMap.query(queryRequest, null);
+        exampleDocument = dynaMap.getObject(getObjectRequest, null);
         Assert.assertEquals(exampleDocument.getNestedObject().getBio(), "test");
+
+        QueryRequest<ExampleDocument> queryRequest = new QueryRequest(ExampleDocumentBean.class).withHashKeyValue("alias")
+                .withRangeKeyCondition(new RangeKeyCondition("seq").eq(1)).withIndex("exampleIndex");
+        List<ExampleDocument> exampleDocuments = dynaMap.query(queryRequest, null);
+        Assert.assertEquals(exampleDocuments.size(), 1);
+        Assert.assertEquals(exampleDocuments.get(0).getNestedObject().getBio(), "test");
 
 
     }

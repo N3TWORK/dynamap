@@ -8,7 +8,7 @@ Benefits:
 
 * Define your schema using JSON.
 * Strongly typed classes are automatically generated.
-* Update objects hide the complexity of DynamoDB update expressions, provide the ability to execute fine grained, concurrently safe updates.
+* Update objects hide the complexity of DynamoDB update expressions and provide the ability to execute fine grained, concurrently safe updates.
 * Provides a mechanism for schema migrations
 * Provides a mechanism for rate limiting reads and writes
 * Additional custom generated types and can be defined and nested in the top level document
@@ -92,11 +92,11 @@ Create some new data using the generated bean class and save it
  
 ```
 
-Query for the user
+Get the user object
 
 ```java
- QueryRequest<User> queryRequest = new QueryRequest(UserBean.class).withHashKeyValue("userId1");
- User user = dynaMap.query(queryRequest);
+ GetObjectRequest<User> getObjectRequest = new GetObjectRequest(UserBean.class).withHashKeyValue("userId1");
+ User user = dynaMap.getObject(getObjectRequest);
 ```
  
 Update the user, by incrementing a balance
@@ -151,7 +151,7 @@ Execute the code generator on your your schema file and bind this execution to t
                 <mainClass>com.n3twork.dynamap.CodeGenerator</mainClass>
                 <arguments>
                     <argument>--schema</argument>
-                    <argument>${project.basedir}/src/test/resources/DynamoDBSchema.json</argument>
+                    <argument>${project.basedir}/src/main/resources/DynamoDBSchema.json</argument>
                     <argument>--output</argument>
                     <argument>${project.build.directory}/generated-sources</argument>
                 </arguments>

@@ -5,13 +5,13 @@
       "package": "com.n3twork.dynamap.test",
       "type": "ExampleDocument",
       "version": 1,
-      "hashkey": "id",
-      "rangekey": "range",
+      "hashkey": "exampleId",
+      "rangekey": "sequence",
       "globalSecondaryIndexes": [
         {
           "index": "exampleIndex",
           "hashKey": "alias",
-          "rangeKey": "range"
+          "rangeKey": "sequence"
         }
       ],
       "types": [
@@ -19,13 +19,13 @@
           "name": "ExampleDocument",
           "fields": [
             {
-              "name": "id",
+              "name": "exampleId",
               "dynamoName": "id",
               "type": "String"
             },
             {
-              "name": "range",
-              "dynamoName": "range",
+              "name": "sequence",
+              "dynamoName": "seq",
               "type": "Integer"
             },
             {
@@ -35,13 +35,13 @@
             },
             {
               "name": "mapOfLong",
-              "dynamoName": "mapOfLong",
+              "dynamoName": "mol",
               "type": "Long",
               "multivalue": "Map"
             },
             {
               "name": "mapOfCustomType",
-              "dynamoName": "mapOfCustomType",
+              "dynamoName": "mct",
               "type": "com.n3twork.dynamap.CustomType",
               "multivalue": "Map"
             },
