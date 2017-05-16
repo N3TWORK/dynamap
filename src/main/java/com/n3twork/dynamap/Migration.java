@@ -22,6 +22,8 @@ public interface Migration {
 
     int getVersion();
 
+    int getSequence();
+
     void migrate(Item item, int version, Object context);
 
     void postMigration(Item item, int version, Object context);

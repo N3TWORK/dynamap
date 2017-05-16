@@ -17,8 +17,10 @@
 package com.n3twork.dynamap;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
+import com.amazonaws.util.IOUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.n3twork.dynamap.test.ExampleDocument;
 import com.n3twork.dynamap.test.ExampleDocumentBean;
@@ -28,6 +30,7 @@ import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
+import java.io.ByteArrayInputStream;
 import java.util.List;
 import java.util.UUID;
 
@@ -44,20 +47,23 @@ public class DynaMapTest {
     }
 
     @Test
-    public void testDynaMap() {
+    public void testDynaMap() throws Exception {
         SchemaRegistry schemaRegistry = new SchemaRegistry(getClass().getResourceAsStream("/TestSchema.json"));
+
+        // Create tables
         DynaMap dynaMap = new DynaMap(ddb, schemaRegistry).withPrefix("test").withObjectMapper(objectMapper);
         dynaMap.createTables(true);
+
+        // Save
         String exampleId = UUID.randomUUID().toString();
         String nestedId = UUID.randomUUID().toString();
-
         NestedTypeBean nestedObject = new NestedTypeBean(nestedId, null, null, null, null, null,
                 null, null, null, null);
         ExampleDocumentBean doc = new ExampleDocumentBean(exampleId,
                 1, nestedObject, null, null, "alias");
-
         dynaMap.save(doc, null);
 
+        // Get Object
         GetObjectRequest<ExampleDocument> getObjectRequest = new GetObjectRequest(ExampleDocumentBean.class).withHashKeyValue(exampleId).withRangeKeyValue(1);
         ExampleDocument exampleDocument = dynaMap.getObject(getObjectRequest, null);
 
@@ -65,6 +71,7 @@ public class DynaMapTest {
         nestedObject = new NestedTypeBean(exampleDocument.getNestedObject());
         Assert.assertEquals(nestedObject.getId(), nestedId);
 
+        // Update nested object
         NestedTypeUpdates nestedTypeUpdates = new NestedTypeUpdates(nestedObject, objectMapper, exampleId, 1);
         nestedTypeUpdates.setBio("test");
         dynaMap.update(nestedTypeUpdates);
@@ -72,12 +79,44 @@ public class DynaMapTest {
         exampleDocument = dynaMap.getObject(getObjectRequest, null);
         Assert.assertEquals(exampleDocument.getNestedObject().getBio(), "test");
 
+        // Query
         QueryRequest<ExampleDocument> queryRequest = new QueryRequest(ExampleDocumentBean.class).withHashKeyValue("alias")
                 .withRangeKeyCondition(new RangeKeyCondition("seq").eq(1)).withIndex("exampleIndex");
         List<ExampleDocument> exampleDocuments = dynaMap.query(queryRequest, null);
         Assert.assertEquals(exampleDocuments.size(), 1);
         Assert.assertEquals(exampleDocuments.get(0).getNestedObject().getBio(), "test");
 
+        // Migration
+        String jsonSchema = IOUtils.toString(getClass().getResourceAsStream("/TestSchema.json"));
+        jsonSchema = jsonSchema.replace("\"version\": 1,", "\"version\": 2,");
+        schemaRegistry = new SchemaRegistry(new ByteArrayInputStream(jsonSchema.getBytes()));
+        schemaRegistry.registerMigration("Example", new Migration() {
+            @Override
+            public int getVersion() {
+                return 2;
+            }
+
+            @Override
+            public int getSequence() {
+                return 0;
+            }
+
+            @Override
+            public void migrate(Item item, int version, Object context) {
+                item.withString("alias", "newAlias");
+            }
+
+            @Override
+            public void postMigration(Item item, int version, Object context) {
+
+            }
+        });
+
+
+        dynaMap = new DynaMap(ddb, schemaRegistry).withPrefix("test").withObjectMapper(objectMapper);
+        getObjectRequest = new GetObjectRequest(ExampleDocumentBean.class).withHashKeyValue(exampleId).withRangeKeyValue(1);
+        exampleDocument = dynaMap.getObject(getObjectRequest, null);
+        Assert.assertEquals(exampleDocument.getAlias(), "newAlias");
 
     }
 
