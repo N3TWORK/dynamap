@@ -127,14 +127,14 @@
                 <version>1.8</version>
                 <executions>
                     <execution>
-                        <id>add-source</id>
+                        <id>add-test-sources</id>
                         <phase>generate-test-sources</phase>
                         <goals>
-                            <goal>add-source</goal>
+                            <goal>add-test-source</goal>
                         </goals>
                         <configuration>
                             <sources>
-                                <source>generated-test-sources</source>
+                                <source>${project.build.directory}/generated-test-sources</source>
                             </sources>
                         </configuration>
                     </execution>
