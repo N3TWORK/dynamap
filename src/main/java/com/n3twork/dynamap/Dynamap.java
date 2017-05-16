@@ -38,9 +38,9 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class DynaMap {
+public class Dynamap {
 
-    private static final Logger logger = LoggerFactory.getLogger(DynaMap.class);
+    private static final Logger logger = LoggerFactory.getLogger(Dynamap.class);
 
     private final AmazonDynamoDB amazonDynamoDB;
     private final DynamoDB dynamoDB;
@@ -48,19 +48,19 @@ public class DynaMap {
     private String prefix;
     private ObjectMapper objectMapper;
 
-    public DynaMap(AmazonDynamoDB amazonDynamoDB, SchemaRegistry schemaRegistry) {
+    public Dynamap(AmazonDynamoDB amazonDynamoDB, SchemaRegistry schemaRegistry) {
         this.amazonDynamoDB = amazonDynamoDB;
         this.dynamoDB = new DynamoDB(amazonDynamoDB);
         this.schemaRegistry = schemaRegistry;
         this.objectMapper = new ObjectMapper();
     }
 
-    public DynaMap withObjectMapper(ObjectMapper objectMapper) {
+    public Dynamap withObjectMapper(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
         return this;
     }
 
-    public DynaMap withPrefix(String prefix) {
+    public Dynamap withPrefix(String prefix) {
         this.prefix = prefix;
         return this;
     }
@@ -132,7 +132,7 @@ public class DynaMap {
 
     }
 
-    public <T extends DynaMapPersisted> T getObject(GetObjectRequest<T> getObjectRequest, Object migrationContext) {
+    public <T extends DynamapPersisted> T getObject(GetObjectRequest<T> getObjectRequest, Object migrationContext) {
         Map<String, List<Object>> results = batchGetObject(Arrays.asList(getObjectRequest), migrationContext);
         List<Object> resultList = results.values().iterator().next();
         return (T) resultList.get(0);
@@ -181,7 +181,7 @@ public class DynaMap {
         return results;
     }
 
-    public <T extends DynaMapPersisted> List<T> query(QueryRequest<T> queryRequest, Object migrationContext) {
+    public <T extends DynamapPersisted> List<T> query(QueryRequest<T> queryRequest, Object migrationContext) {
         List<T> results = new ArrayList<>();
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(queryRequest.getResultClass());
         Table table = dynamoDB.getTable(tableDefinition.getTableName(prefix));
@@ -223,12 +223,12 @@ public class DynaMap {
         return results;
     }
 
-    public void save(DynaMapPersisted object, DynamoRateLimiter writeLimiter) {
+    public void save(DynamapPersisted object, DynamoRateLimiter writeLimiter) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(object.getClass());
         putObject(object, tableDefinition, writeLimiter);
     }
 
-    public <T extends DynaMapPersisted> T update(Updates<T> updates) {
+    public <T extends DynamapPersisted> T update(Updates<T> updates) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(updates.getTableName());
         UpdateItemSpec updateItemSpec = getUpdateItemSpec(updates, tableDefinition);
         Table table = dynamoDB.getTable(tableDefinition.getTableName(prefix));
@@ -329,7 +329,7 @@ public class DynaMap {
         }
     }
 
-    private <T extends DynaMapPersisted> T buildObjectFromDynamoItem(Item item, TableDefinition tableDefinition, Class<T> resultClass, DynamoRateLimiter writeRateLimiter, Object migrationContext, boolean writeBack) {
+    private <T extends DynamapPersisted> T buildObjectFromDynamoItem(Item item, TableDefinition tableDefinition, Class<T> resultClass, DynamoRateLimiter writeRateLimiter, Object migrationContext, boolean writeBack) {
         if (item == null) {
             return null;
         }

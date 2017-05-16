@@ -16,6 +16,6 @@
 
 package com.n3twork.dynamap;
 
-public interface DynaMapPersisted {
+public interface DynamapPersisted {
 
 }

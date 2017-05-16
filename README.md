@@ -1,4 +1,4 @@
-# DynaMap
+# Dynamap
 
 A Java object mapping library for Amazon's DynamoDB database.
 
@@ -61,7 +61,7 @@ Using this simple schema:
 
 ```
 
-DynaMap will generate the following 3 java classes:
+Dynamap will generate the following 3 java classes:
 
 * `com.n3twork.dynamp.example.User` : an interface defining the attributes of the table record
 * `com.n3twork.dynamp.example.UserBean` : a bean class that implements the interface and is used for holding the data
@@ -70,13 +70,13 @@ DynaMap will generate the following 3 java classes:
 
 ### Write code to create tables, store, query and update
 
-First create an instance of DynaMap, providing the handle to DynamoDB and a pointer to the schema file:
+First create an instance of Dynamap, providing the handle to DynamoDB and a pointer to the schema file:
 
 ```
  AmazonDynamoDB ddb = DynamoDBEmbedded.create().amazonDynamoDB(); // use Local DynamoDB library
  SchemaRegistry schemaRegistry = new SchemaRegistry(getClass().getResourceAsStream("/TestSchema.json")); // load schema from schema file
- DynaMap dynaMap = new DynaMap(ddb, "test", schemaRegistry, new ObjectMapper()); // create DynaMap and use "test" as a prefix for the tables
- dynaMap.createTables(false); // create tables, do not delete if they already exist
+ Dynamap dynamap = new Dynamap(ddb, "test", schemaRegistry, new ObjectMapper()); // create Dynamap and use "test" as a prefix for the tables
+ dynamap.createTables(false); // create tables, do not delete if they already exist
      
 ```
     
@@ -88,7 +88,7 @@ Create some new data using the generated bean class and save it
  balances.put("gold", 2);
  balances.put("silver", 2);
  UserBean user = new UserBean("userId1", "mark", balances);
- dynaMap.save(user);
+ dynamap.save(user);
  
 ```
 
@@ -96,7 +96,7 @@ Get the user object
 
 ```java
  GetObjectRequest<User> getObjectRequest = new GetObjectRequest(UserBean.class).withHashKeyValue("userId1");
- User user = dynaMap.getObject(getObjectRequest);
+ User user = dynamap.getObject(getObjectRequest);
 ```
  
 Update the user, by incrementing a balance
@@ -104,7 +104,7 @@ Update the user, by incrementing a balance
 ```java
 UserUpdates updates = new UserUpdates(user, new ObjectMapper(), "userId1");
 updates.incrementBalanceAmount("gold",3);
-dynaMap.update(updates);
+dynamap.update(updates);
 
 ```
 

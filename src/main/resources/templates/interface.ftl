@@ -24,7 +24,7 @@ import com.n3twork.dynamap.*;
 import ${import};
 </#list>
 
-public interface ${type.name} extends DynaMapPersisted {
+public interface ${type.name} extends DynamapPersisted {
 
 <#if isRoot>
     public static final Integer SCHEMA_VERSION = ${schemaVersion};

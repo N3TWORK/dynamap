@@ -16,7 +16,7 @@
 
 package com.n3twork.dynamap;
 
-public class GetObjectRequest<T extends DynaMapPersisted> {
+public class GetObjectRequest<T extends DynamapPersisted> {
 
     private DynamoRateLimiter readRateLimiter;
     private DynamoRateLimiter writeRateLimiter;

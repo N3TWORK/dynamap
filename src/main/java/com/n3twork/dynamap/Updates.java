@@ -16,7 +16,7 @@
 
 package com.n3twork.dynamap;
 
-public interface Updates<T extends DynaMapPersisted> {
+public interface Updates<T extends DynamapPersisted> {
 
     String getUpdateExpression();
 

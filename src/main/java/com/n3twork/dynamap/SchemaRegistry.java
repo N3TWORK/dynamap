@@ -67,7 +67,7 @@ public class SchemaRegistry {
         return schema.getTableDefinitions().stream().filter(t -> t.getTableName().equals(tableName)).findFirst().get();
     }
 
-    public <T extends DynaMapPersisted> TableDefinition getTableDefinition(Class<T> clazz) {
+    public <T extends DynamapPersisted> TableDefinition getTableDefinition(Class<T> clazz) {
         //todo : cache method
         String tableName;
         try {
