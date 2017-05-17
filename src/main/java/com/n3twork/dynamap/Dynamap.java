@@ -103,7 +103,7 @@ public class Dynamap {
                             .withKeyType(KeyType.RANGE));
 
                     if (!hasAttributeDefinition(attributeDefinitions, rangeField.getDynamoName())) {
-                        attributeDefinitions.add(new AttributeDefinition().withAttributeName(field.getDynamoName()).withAttributeType(field.getType().equals("String") ? "S" : "N"));
+                        attributeDefinitions.add(new AttributeDefinition().withAttributeName(rangeField.getDynamoName()).withAttributeType(rangeField.getType().equals("String") ? "S" : "N"));
                     }
                 }
                 gsi.setKeySchema(indexKeySchema);
