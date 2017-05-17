@@ -135,7 +135,10 @@ public class Dynamap {
     public <T extends DynamapPersisted> T getObject(GetObjectRequest<T> getObjectRequest, Object migrationContext) {
         Map<String, List<Object>> results = batchGetObject(Arrays.asList(getObjectRequest), migrationContext);
         List<Object> resultList = results.values().iterator().next();
-        return (T) resultList.get(0);
+        if (resultList.size() > 0) {
+            return (T) resultList.get(0);
+        }
+        return null;
     }
 
     public Map<String, List<Object>> batchGetObject(Collection<GetObjectRequest> getObjectRequests, Object migrationContext) {

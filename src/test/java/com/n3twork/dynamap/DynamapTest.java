@@ -71,6 +71,9 @@ public class DynamapTest {
         nestedObject = new NestedTypeBean(exampleDocument.getNestedObject());
         Assert.assertEquals(nestedObject.getId(), nestedId);
 
+        // Get Not Exists
+        Assert.assertNull(dynamap.getObject(new GetObjectRequest(ExampleDocumentBean.class).withHashKeyValue("blah").withRangeKeyValue(1), null));
+
         // Update nested object
         NestedTypeUpdates nestedTypeUpdates = new NestedTypeUpdates(nestedObject, objectMapper, exampleId, 1);
         nestedTypeUpdates.setBio("test");
@@ -85,6 +88,7 @@ public class DynamapTest {
         List<ExampleDocument> exampleDocuments = dynamap.query(queryRequest, null);
         Assert.assertEquals(exampleDocuments.size(), 1);
         Assert.assertEquals(exampleDocuments.get(0).getNestedObject().getBio(), "test");
+
 
         // Migration
         String jsonSchema = IOUtils.toString(getClass().getResourceAsStream("/TestSchema.json"));
