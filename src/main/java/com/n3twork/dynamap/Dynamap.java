@@ -31,7 +31,6 @@ import com.n3twork.dynamap.model.Field;
 import com.n3twork.dynamap.model.Schema;
 import com.n3twork.dynamap.model.TableDefinition;
 import com.n3twork.dynamap.model.Type;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,7 +102,7 @@ public class Dynamap {
                             .withAttributeName(rangeField.getDynamoName())
                             .withKeyType(KeyType.RANGE));
 
-                    if (!hasAttributeDefinition(attributeDefinitions, field.getDynamoName())) {
+                    if (!hasAttributeDefinition(attributeDefinitions, rangeField.getDynamoName())) {
                         attributeDefinitions.add(new AttributeDefinition().withAttributeName(field.getDynamoName()).withAttributeType(field.getType().equals("String") ? "S" : "N"));
                     }
                 }
@@ -132,7 +131,7 @@ public class Dynamap {
 
     }
 
-    public <T extends DynamapPersisted> T getObject(GetObjectRequest<T> getObjectRequest, Object migrationContext) {
+    public <T extends DynamapRecordBean> T getObject(GetObjectRequest<T> getObjectRequest, Object migrationContext) {
         Map<String, List<Object>> results = batchGetObject(Arrays.asList(getObjectRequest), migrationContext);
         List<Object> resultList = results.values().iterator().next();
         if (resultList.size() > 0) {
@@ -184,7 +183,7 @@ public class Dynamap {
         return results;
     }
 
-    public <T extends DynamapPersisted> List<T> query(QueryRequest<T> queryRequest, Object migrationContext) {
+    public <T extends DynamapRecordBean> List<T> query(QueryRequest<T> queryRequest, Object migrationContext) {
         List<T> results = new ArrayList<>();
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(queryRequest.getResultClass());
         Table table = dynamoDB.getTable(tableDefinition.getTableName(prefix));
@@ -226,7 +225,7 @@ public class Dynamap {
         return results;
     }
 
-    public void save(DynamapPersisted object, DynamoRateLimiter writeLimiter) {
+    public void save(DynamapRecordBean object, DynamoRateLimiter writeLimiter) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(object.getClass());
         putObject(object, tableDefinition, writeLimiter);
     }
@@ -332,7 +331,7 @@ public class Dynamap {
         }
     }
 
-    private <T extends DynamapPersisted> T buildObjectFromDynamoItem(Item item, TableDefinition tableDefinition, Class<T> resultClass, DynamoRateLimiter writeRateLimiter, Object migrationContext, boolean writeBack) {
+    private <T extends DynamapRecordBean> T buildObjectFromDynamoItem(Item item, TableDefinition tableDefinition, Class<T> resultClass, DynamoRateLimiter writeRateLimiter, Object migrationContext, boolean writeBack) {
         if (item == null) {
             return null;
         }
@@ -365,7 +364,7 @@ public class Dynamap {
         return result;
     }
 
-    private void putObject(Object object, TableDefinition tableDefinition, DynamoRateLimiter writeLimiter) {
+    private <T extends DynamapRecordBean> void putObject(T object, TableDefinition tableDefinition, DynamoRateLimiter writeLimiter) {
         try {
             Map<String, Object> map = objectMapper.convertValue(object, new TypeReference<Map<String, Object>>() {
             });
@@ -395,11 +394,10 @@ public class Dynamap {
                 }
             }
 
-            Pair<String, Object> primaryKeyValue = tableDefinition.getPrimaryKeyValue(object);
-            if (primaryKeyValue.getRight() != null) {
-                item.withPrimaryKey(tableDefinition.getHashKey(), primaryKeyValue.getLeft(), tableDefinition.getRangeKey(), primaryKeyValue.getRight());
+            if (object.getRangeKeyValue() != null) {
+                item.withPrimaryKey(tableDefinition.getHashKey(), object.getHashKeyValue(), tableDefinition.getRangeKey(), object.getRangeKeyValue());
             } else {
-                item.withPrimaryKey(tableDefinition.getHashKey(), primaryKeyValue.getLeft());
+                item.withPrimaryKey(tableDefinition.getHashKey(), object.getHashKeyValue());
             }
             PutItemSpec putItemSpec = new PutItemSpec()
                     .withItem(item)

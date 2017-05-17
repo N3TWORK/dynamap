@@ -6,7 +6,7 @@ import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import java.util.ArrayList;
 import java.util.List;
 
-public class QueryRequest<T extends DynamapPersisted> {
+public class QueryRequest<T> {
 
     private final Class<T> resultClass;
     private String index;

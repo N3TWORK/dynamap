@@ -19,10 +19,7 @@ package com.n3twork.dynamap.model;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 
-import java.lang.reflect.Method;
 import java.util.List;
 
 public class TableDefinition {
@@ -88,24 +85,6 @@ public class TableDefinition {
 
     public List<Index> getGlobalSecondaryIndexes() {
         return globalSecondaryIndexes;
-    }
-
-    @JsonIgnore
-    public Pair<String, Object> getPrimaryKeyValue(Object object) {
-        try {
-            Class clazz = object.getClass();
-            //TODO: these methods should be cached
-            Method getHashKey = clazz.getMethod("get" + StringUtils.capitalize(this.getHashKey()));
-            String hashValue = (String) getHashKey.invoke(object);
-            Method getRangeKey = this.getRangeKey() == null ? null : clazz.getMethod("get" + StringUtils.capitalize(this.getRangeKey()));
-            Object rangeValue = null;
-            if (getRangeKey != null) {
-                rangeValue = getRangeKey.invoke(object);
-            }
-            return Pair.of(hashValue, rangeValue);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public Field getField(String fieldName) {

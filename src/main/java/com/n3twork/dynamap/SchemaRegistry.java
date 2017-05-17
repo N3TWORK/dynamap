@@ -22,6 +22,7 @@ import com.n3twork.dynamap.model.TableDefinition;
 import org.apache.commons.io.IOUtils;
 
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +33,7 @@ public class SchemaRegistry {
     private final Schema schema;
 
     private final Map<String, List<Migration>> tableMigrations = new HashMap<>();
+    private final Map<String, Method> getTableNameMethods = new HashMap<>();
 
 
     public SchemaRegistry(InputStream schemaInput) {
@@ -67,11 +69,19 @@ public class SchemaRegistry {
         return schema.getTableDefinitions().stream().filter(t -> t.getTableName().equals(tableName)).findFirst().get();
     }
 
-    public <T extends DynamapPersisted> TableDefinition getTableDefinition(Class<T> clazz) {
-        //todo : cache method
+    public <T extends DynamapRecordBean> TableDefinition getTableDefinition(Class<T> clazz) {
         String tableName;
         try {
-            tableName = (String) clazz.getMethod("getTableName").invoke(clazz);
+            Method getMethod = getTableNameMethods.get(clazz.getCanonicalName());
+            if (getMethod == null) {
+                Class bean = clazz;
+                while (!bean.getSuperclass().getName().equals("java.lang.Object")) {
+                    bean = bean.getSuperclass();
+                }
+                getMethod = bean.getMethod("getTableName");
+                getTableNameMethods.put(clazz.getCanonicalName(), getMethod);
+            }
+            tableName = (String) getMethod.invoke(clazz);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

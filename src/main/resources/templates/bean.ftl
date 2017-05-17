@@ -31,7 +31,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ${beanName} implements ${type.name} {
+public class ${beanName} implements ${type.name} <#if isRoot>,DynamapRecordBean<${type.name}></#if> {
 
     <#list type.fields as field>
     @JsonProperty(${field.name?upper_case}_FIELD)
@@ -79,6 +79,17 @@ public class ${beanName} implements ${type.name} {
     public static String getTableName() {
         return "${tableName}";
     }
+
+    <#if isRoot>
+    @Override
+    public String getHashKeyValue() {
+        return ${tableDefinition.hashKey};
+    }
+
+    public Object getRangeKeyValue() {
+        return ${tableDefinition.rangeKey};
+    }
+    </#if>
 
     <#list type.fields as field>
     public <@field_type field=field /> get${field.name?cap_first}() {
