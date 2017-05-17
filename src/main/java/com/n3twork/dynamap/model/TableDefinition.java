@@ -99,7 +99,7 @@ public class TableDefinition {
             String hashValue = (String) getHashKey.invoke(object);
             Method getRangeKey = this.getRangeKey() == null ? null : clazz.getMethod("get" + StringUtils.capitalize(this.getRangeKey()));
             Object rangeValue = null;
-            if (getHashKey != null) {
+            if (getRangeKey != null) {
                 rangeValue = getRangeKey.invoke(object);
             }
             return Pair.of(hashValue, rangeValue);
