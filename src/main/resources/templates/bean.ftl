@@ -87,7 +87,11 @@ public class ${beanName} implements ${type.name} <#if isRoot>,DynamapRecordBean<
     }
 
     public Object getRangeKeyValue() {
+        <#if tableDefinition.rangeKey??>
         return ${tableDefinition.rangeKey};
+        <#else>
+        return null;
+        </#if>
     }
     </#if>
 
