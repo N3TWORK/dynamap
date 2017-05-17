@@ -20,6 +20,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.document.*;
 import com.amazonaws.services.dynamodbv2.document.spec.PutItemSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
+import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.UpdateItemSpec;
 import com.amazonaws.services.dynamodbv2.model.*;
 import com.amazonaws.services.dynamodbv2.util.TableUtils;
@@ -217,6 +218,26 @@ public class Dynamap {
             }
         });
         Iterator<Item> iterator = items.iterator();
+
+        while (iterator.hasNext()) {
+            results.add(buildObjectFromDynamoItem(iterator.next(), tableDefinition, queryRequest.getResultClass(), null, migrationContext, false));
+        }
+
+        return results;
+    }
+
+    // TODO:
+    // Ultra basic scan implementation
+    // - Make a proper scan object (ScanRequest) and apply corresponding options
+    // - Do tests
+    public <T extends DynamapRecordBean> List<T> scan(QueryRequest<T> queryRequest, Object migrationContext) {
+        List<T> results = new ArrayList<>();
+        TableDefinition tableDefinition = schemaRegistry.getTableDefinition(queryRequest.getResultClass());
+        Table table = dynamoDB.getTable(tableDefinition.getTableName(prefix));
+
+        ScanSpec spec = new ScanSpec();
+
+        Iterator<Item> iterator = table.scan(spec).iterator();
 
         while (iterator.hasNext()) {
             results.add(buildObjectFromDynamoItem(iterator.next(), tableDefinition, queryRequest.getResultClass(), null, migrationContext, false));
