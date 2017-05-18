@@ -155,7 +155,7 @@ Execute the code generator on your your schema file and bind this execution to t
                     <argument>--schema</argument>
                     <argument>${project.basedir}/src/main/resources/DynamoDBSchema.json</argument>
                     <argument>--output</argument>
-                    <argument>${project.build.directory}/generated-sources</argument>
+                    <argument>${project.build.directory}/generated-sources/dynamap/</argument>
                 </arguments>
             </configuration>
         </execution>
@@ -183,7 +183,7 @@ The maven-build-helper can add these generated sources to your classpath:
                         </goals>
                         <configuration>
                             <sources>
-                                <source>generated-sources</source>
+                                <source>${project.build.directory}/generated-sources/dynamap/</source>
                             </sources>
                         </configuration>
                     </execution>
