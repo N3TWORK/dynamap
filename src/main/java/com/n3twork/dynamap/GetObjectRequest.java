@@ -29,12 +29,12 @@ public class GetObjectRequest<T extends DynamapRecordBean> {
         this.resultClass = resultClass;
     }
 
-    public GetObjectRequest withReadRateLimiter(DynamoRateLimiter readRateLimiter) {
+    public GetObjectRequest<T> withReadRateLimiter(DynamoRateLimiter readRateLimiter) {
         this.readRateLimiter = readRateLimiter;
         return this;
     }
 
-    public GetObjectRequest withWriteRateLimiter(DynamoRateLimiter writeRateLimiter) {
+    public GetObjectRequest<T> withWriteRateLimiter(DynamoRateLimiter writeRateLimiter) {
         this.writeRateLimiter = writeRateLimiter;
         return this;
     }
@@ -49,7 +49,7 @@ public class GetObjectRequest<T extends DynamapRecordBean> {
         return this;
     }
 
-    public GetObjectRequest withConsistentRead(boolean consistentRead) {
+    public GetObjectRequest<T> withConsistentRead(boolean consistentRead) {
         this.consistentRead = consistentRead;
         return this;
     }
