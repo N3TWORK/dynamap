@@ -81,36 +81,37 @@ public class Dynamap {
                 keySchema.add(new KeySchemaElement().withAttributeName(field.getDynamoName()).withKeyType(KeyType.RANGE));
             }
 
-            for (com.n3twork.dynamap.model.Index index : tableDefinition.getGlobalSecondaryIndexes()) {
-                GlobalSecondaryIndex gsi = new GlobalSecondaryIndex()
-                        .withIndexName(index.getIndexName(prefix))
-                        .withProvisionedThroughput(new ProvisionedThroughput()
-                                .withReadCapacityUnits(1L)
-                                .withWriteCapacityUnits(1L))
-                        .withProjection(new Projection().withProjectionType(ProjectionType.ALL));
-                ArrayList<KeySchemaElement> indexKeySchema = new ArrayList<KeySchemaElement>();
-                Field field = tableDefinition.getField(index.getHashKey());
-                indexKeySchema.add(new KeySchemaElement()
-                        .withAttributeName(field.getDynamoName())
-                        .withKeyType(KeyType.HASH));
-                if (!hasAttributeDefinition(attributeDefinitions, field.getDynamoName())) {
-                    attributeDefinitions.add(new AttributeDefinition().withAttributeName(field.getDynamoName()).withAttributeType(field.getType().equals("String") ? "S" : "N"));
-                }
-
-                if (index.getRangeKey() != null) {
-                    Field rangeField = tableDefinition.getField(index.getRangeKey());
+            if (tableDefinition.getGlobalSecondaryIndexes() != null) {
+                for (com.n3twork.dynamap.model.Index index : tableDefinition.getGlobalSecondaryIndexes()) {
+                    GlobalSecondaryIndex gsi = new GlobalSecondaryIndex()
+                            .withIndexName(index.getIndexName(prefix))
+                            .withProvisionedThroughput(new ProvisionedThroughput()
+                                    .withReadCapacityUnits(1L)
+                                    .withWriteCapacityUnits(1L))
+                            .withProjection(new Projection().withProjectionType(ProjectionType.ALL));
+                    ArrayList<KeySchemaElement> indexKeySchema = new ArrayList<KeySchemaElement>();
+                    Field field = tableDefinition.getField(index.getHashKey());
                     indexKeySchema.add(new KeySchemaElement()
-                            .withAttributeName(rangeField.getDynamoName())
-                            .withKeyType(KeyType.RANGE));
-
-                    if (!hasAttributeDefinition(attributeDefinitions, rangeField.getDynamoName())) {
-                        attributeDefinitions.add(new AttributeDefinition().withAttributeName(rangeField.getDynamoName()).withAttributeType(rangeField.getType().equals("String") ? "S" : "N"));
+                            .withAttributeName(field.getDynamoName())
+                            .withKeyType(KeyType.HASH));
+                    if (!hasAttributeDefinition(attributeDefinitions, field.getDynamoName())) {
+                        attributeDefinitions.add(new AttributeDefinition().withAttributeName(field.getDynamoName()).withAttributeType(field.getType().equals("String") ? "S" : "N"));
                     }
-                }
-                gsi.setKeySchema(indexKeySchema);
-                globalSecondaryIndexes.add(gsi);
-            }
 
+                    if (index.getRangeKey() != null) {
+                        Field rangeField = tableDefinition.getField(index.getRangeKey());
+                        indexKeySchema.add(new KeySchemaElement()
+                                .withAttributeName(rangeField.getDynamoName())
+                                .withKeyType(KeyType.RANGE));
+
+                        if (!hasAttributeDefinition(attributeDefinitions, rangeField.getDynamoName())) {
+                            attributeDefinitions.add(new AttributeDefinition().withAttributeName(rangeField.getDynamoName()).withAttributeType(rangeField.getType().equals("String") ? "S" : "N"));
+                        }
+                    }
+                    gsi.setKeySchema(indexKeySchema);
+                    globalSecondaryIndexes.add(gsi);
+                }
+            }
 
             CreateTableRequest request = new CreateTableRequest()
                     .withTableName(tableDefinition.getTableName(prefix))
@@ -194,7 +195,7 @@ public class Dynamap {
                 .withQueryFilters(queryRequest.getQueryFilters());
 
         ItemCollection<QueryOutcome> items;
-        if (queryRequest.getIndex() != null) {
+        if (queryRequest.getIndex() != null && tableDefinition.getGlobalSecondaryIndexes() != null) {
             com.n3twork.dynamap.model.Index indexDef = tableDefinition.getGlobalSecondaryIndexes().stream().filter(i -> i.getIndexName().equals(queryRequest.getIndex())).findFirst().get();
             String indexName = indexDef.getIndexName(prefix);
             Index index = table.getIndex(indexDef.getIndexName(prefix));
