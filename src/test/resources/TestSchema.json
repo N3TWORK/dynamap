@@ -5,8 +5,8 @@
       "package": "com.n3twork.dynamap.test",
       "type": "ExampleDocument",
       "version": 1,
-      "hashkey": "exampleId",
-      "rangekey": "sequence",
+      "hashKey": "exampleId",
+      "rangeKey": "sequence",
       "globalSecondaryIndexes": [
         {
           "index": "exampleIndex",

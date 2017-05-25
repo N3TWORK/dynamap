@@ -34,7 +34,7 @@ public class TableDefinition {
     private final List<Index> globalSecondaryIndexes;
 
     @JsonCreator
-    public TableDefinition(@JsonProperty("table") String tableName, @JsonProperty("package") String packageName, @JsonProperty("type") String type, @JsonProperty("hashkey") String hashKey, @JsonProperty("rangekey") String rangeKey,
+    public TableDefinition(@JsonProperty("table") String tableName, @JsonProperty("package") String packageName, @JsonProperty("type") String type, @JsonProperty("hashKey") String hashKey, @JsonProperty("rangeKey") String rangeKey,
                            @JsonProperty("version") int version, @JsonProperty("fields") List<Field> fields, @JsonProperty("types") List<Type> types, @JsonProperty("globalSecondaryIndexes") List<Index> globalSecondaryIndexes) {
         this.tableName = tableName;
         this.packageName = packageName;
