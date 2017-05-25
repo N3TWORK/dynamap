@@ -64,7 +64,7 @@ public class DynamapTest {
         dynamap.save(doc, null);
 
         // Get Object
-        GetObjectRequest<ExampleDocumentBean> getObjectRequest = new GetObjectRequest(ExampleDocumentBean.class).withHashKeyValue(exampleId).withRangeKeyValue(1);
+        GetObjectRequest<ExampleDocumentBean> getObjectRequest = new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId).withRangeKeyValue(1);
         ExampleDocument exampleDocument = dynamap.getObject(getObjectRequest, null);
 
         Assert.assertEquals(exampleDocument.getExampleId(), exampleId);
@@ -72,7 +72,7 @@ public class DynamapTest {
         Assert.assertEquals(nestedObject.getId(), nestedId);
 
         // Get Not Exists
-        Assert.assertNull(dynamap.getObject(new GetObjectRequest(ExampleDocumentBean.class).withHashKeyValue("blah").withRangeKeyValue(1), null));
+        Assert.assertNull(dynamap.getObject(new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue("blah").withRangeKeyValue(1), null));
 
         // Update nested object
         NestedTypeUpdates nestedTypeUpdates = new NestedTypeUpdates(nestedObject, objectMapper, exampleId, 1);
@@ -83,7 +83,7 @@ public class DynamapTest {
         Assert.assertEquals(exampleDocument.getNestedObject().getBio(), "test");
 
         // Query
-        QueryRequest<ExampleDocumentBean> queryRequest = new QueryRequest(ExampleDocumentBean.class).withHashKeyValue("alias")
+        QueryRequest<ExampleDocumentBean> queryRequest = new QueryRequest<>(ExampleDocumentBean.class).withHashKeyValue("alias")
                 .withRangeKeyCondition(new RangeKeyCondition("seq").eq(1)).withIndex("exampleIndex");
         List<ExampleDocumentBean> exampleDocuments = dynamap.query(queryRequest, null);
         Assert.assertEquals(exampleDocuments.size(), 1);
