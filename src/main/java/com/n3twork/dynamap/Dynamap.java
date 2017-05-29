@@ -142,6 +142,11 @@ public class Dynamap {
         return null;
     }
 
+    // TODO:
+    // for each request GetObjectRequest there is info about read consistency, read rate limiter and write rate limiter
+    // but for each iteration the above values are being overwritten so only the the values from the last GetObjectRequest will be used.
+    // anyway the above mentiond values make sense only for the full table, so they should passed in another object
+    // or just be aware of the actual behavior
     public Map<String, List<Object>> batchGetObject(Collection<GetObjectRequest> getObjectRequests, Object migrationContext) {
 
         Map<String, GetItemInfo> queryInfos = new HashMap<>();
@@ -149,8 +154,16 @@ public class Dynamap {
 
         for (GetObjectRequest getObjectRequest : getObjectRequests) {
             TableDefinition tableDefinition = schemaRegistry.getTableDefinition(getObjectRequest.getResultClass());
-            TableKeysAndAttributes keysAndAttributes = new TableKeysAndAttributes(tableDefinition.getTableName(prefix))
-                    .withConsistentRead(getObjectRequest.isConsistentRead());
+            String tableName = tableDefinition.getTableName(prefix);
+            TableKeysAndAttributes keysAndAttributes;
+            if (queryInfos.get(tableName) != null) {
+                keysAndAttributes = queryInfos.get(tableName).keysAndAttributes;
+            }
+            else {
+                keysAndAttributes = new TableKeysAndAttributes(tableName)
+                        .withConsistentRead(getObjectRequest.isConsistentRead());
+            }
+
             String hashKeyFieldName = tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName();
             if (getObjectRequest.getRangeKeyValue() != null) {
                 String rangeKeyFieldName = tableDefinition.getField(tableDefinition.getRangeKey()).getDynamoName();
@@ -162,8 +175,8 @@ public class Dynamap {
             getItemInfo.keysAndAttributes = keysAndAttributes;
             getItemInfo.tableDefinition = tableDefinition;
             getItemInfo.getObjectRequest = getObjectRequest;
-            queryInfos.put(tableDefinition.getTableName(prefix), getItemInfo);
-            getItemInfo.table = dynamoDB.getTable(tableDefinition.getTableName(prefix));
+            queryInfos.put(tableName, getItemInfo);
+            getItemInfo.table = dynamoDB.getTable(tableName);
         }
 
 
@@ -289,7 +302,7 @@ public class Dynamap {
             TableKeysAndAttributes[] tableKeysAndAttributes = new TableKeysAndAttributes[queryInfos.size()];
             int index = 0;
             for (GetItemInfo getItemInfo : queryInfos.values()) {
-                tableKeysAndAttributes[index] = getItemInfo.keysAndAttributes;
+                tableKeysAndAttributes[index++] = getItemInfo.keysAndAttributes;
             }
 
             BatchGetItemOutcome outcome = dynamoDB.batchGetItem(ReturnConsumedCapacity.TOTAL, tableKeysAndAttributes);
