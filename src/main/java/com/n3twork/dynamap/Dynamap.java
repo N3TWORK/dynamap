@@ -429,10 +429,12 @@ public class Dynamap {
                 }
             }
 
+            String hashKeyFieldName = tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName();
             if (object.getRangeKeyValue() != null) {
-                item.withPrimaryKey(tableDefinition.getHashKey(), object.getHashKeyValue(), tableDefinition.getRangeKey(), object.getRangeKeyValue());
+                String rangeKeyFieldName = tableDefinition.getField(tableDefinition.getRangeKey()).getDynamoName();
+                item.withPrimaryKey(hashKeyFieldName, object.getHashKeyValue(), rangeKeyFieldName, object.getRangeKeyValue());
             } else {
-                item.withPrimaryKey(tableDefinition.getHashKey(), object.getHashKeyValue());
+                item.withPrimaryKey(hashKeyFieldName, object.getHashKeyValue());
             }
             PutItemSpec putItemSpec = new PutItemSpec()
                     .withItem(item)
