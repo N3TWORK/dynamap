@@ -38,6 +38,10 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     private <@field_type field=field /> ${field.name};
     </#list>
 
+    //Empty constructor for Kryo
+    private ${beanName}() {
+    }
+
     @JsonCreator
     public ${beanName}(
         <#list type.fields as field>
