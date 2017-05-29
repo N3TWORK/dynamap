@@ -26,6 +26,7 @@ import com.amazonaws.services.dynamodbv2.model.*;
 import com.amazonaws.services.dynamodbv2.util.TableUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.n3twork.dynamap.model.Field;
@@ -264,7 +265,12 @@ public class Dynamap {
 
     public void save(DynamapRecordBean object, DynamoRateLimiter writeLimiter) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(object.getClass());
-        putObject(object, tableDefinition, writeLimiter);
+        putObject(object, tableDefinition, null, writeLimiter);
+    }
+
+    public void save(DynamapRecordBean object, String conditionExpresion, DynamoRateLimiter writeLimiter) {
+        TableDefinition tableDefinition = schemaRegistry.getTableDefinition(object.getClass());
+        putObject(object, tableDefinition, conditionExpresion, writeLimiter);
     }
 
     public <T extends DynamapPersisted> T update(Updates<T> updates) {
@@ -390,7 +396,7 @@ public class Dynamap {
                 item = item.withInt(Schema.SCHEMA_VERSION_FIELD, tableDefinition.getVersion());
                 result = objectMapper.convertValue(item.asMap(), resultClass);
                 if (writeBack) {
-                    putObject(result, tableDefinition, writeRateLimiter);
+                    putObject(result, tableDefinition, null, writeRateLimiter);
                 }
             } else {
                 result = objectMapper.convertValue(item.asMap(), resultClass);
@@ -401,7 +407,7 @@ public class Dynamap {
         return result;
     }
 
-    private <T extends DynamapRecordBean> void putObject(T object, TableDefinition tableDefinition, DynamoRateLimiter writeLimiter) {
+    private <T extends DynamapRecordBean> void putObject(T object, TableDefinition tableDefinition, java.lang.String conditionExpression, DynamoRateLimiter writeLimiter) {
         try {
             Map<String, Object> map = objectMapper.convertValue(object, new TypeReference<Map<String, Object>>() {
             });
@@ -441,6 +447,11 @@ public class Dynamap {
             PutItemSpec putItemSpec = new PutItemSpec()
                     .withItem(item)
                     .withReturnValues(ReturnValue.NONE);
+
+            if (!Strings.isNullOrEmpty(conditionExpression)) {
+                putItemSpec.withConditionExpression(conditionExpression);
+            }
+
             Table table = dynamoDB.getTable(tableDefinition.getTableName(prefix)); //TODO: this should be cached
             try {
                 if (writeLimiter != null) {
