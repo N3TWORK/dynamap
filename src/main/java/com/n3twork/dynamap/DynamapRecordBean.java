@@ -6,4 +6,10 @@ public interface DynamapRecordBean<T extends DynamapPersisted> {
 
     Object getRangeKeyValue();
 
+    interface GlobalSecondaryIndexEnum {
+
+        String getName();
+
+    }
+
 }

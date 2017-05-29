@@ -84,7 +84,7 @@ public class DynamapTest {
 
         // Query
         QueryRequest<ExampleDocumentBean> queryRequest = new QueryRequest<>(ExampleDocumentBean.class).withHashKeyValue("alias")
-                .withRangeKeyCondition(new RangeKeyCondition("seq").eq(1)).withIndex("exampleIndex");
+                .withRangeKeyCondition(new RangeKeyCondition("seq").eq(1)).withIndex(ExampleDocumentBean.GlobalSecondaryIndex.exampleIndex);
         List<ExampleDocumentBean> exampleDocuments = dynamap.query(queryRequest, null);
         Assert.assertEquals(exampleDocuments.size(), 1);
         Assert.assertEquals(exampleDocuments.get(0).getNestedObject().getBio(), "test");

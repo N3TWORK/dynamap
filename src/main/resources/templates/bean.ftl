@@ -63,7 +63,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
         </#list>
     }
 
-    public ${beanName} (${type.name} bean) {
+    public ${beanName}(${type.name} bean) {
 
     <#list type.fields as field>
         <#if field.multiValue?? && field.multiValue == 'MAP'>
@@ -83,6 +83,22 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     public static String getTableName() {
         return "${tableName}";
     }
+
+    <#if tableDefinition.globalSecondaryIndexes??>
+    public enum GlobalSecondaryIndex implements DynamapRecordBean.GlobalSecondaryIndexEnum {
+        <#list tableDefinition.globalSecondaryIndexes as index>${index.indexName}("${index.indexName}")<#sep>, </#sep></#list>;
+
+        private final String name;
+
+        GlobalSecondaryIndex(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+    }
+    </#if>
 
     <#if isRoot>
     @Override

@@ -22,8 +22,8 @@ public class QueryRequest<T> {
         this.resultClass = resultClass;
     }
 
-    public QueryRequest<T> withIndex(String index) {
-        this.index = index;
+    public QueryRequest<T> withIndex(DynamapRecordBean.GlobalSecondaryIndexEnum index) {
+        this.index = index.getName();
         return this;
     }
 

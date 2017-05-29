@@ -12,6 +12,11 @@
           "index": "exampleIndex",
           "hashKey": "alias",
           "rangeKey": "sequence"
+        },
+        {
+          "index": "exampleIndex2",
+          "hashKey": "alias",
+          "rangeKey": "sequence"
         }
       ],
       "types": [
