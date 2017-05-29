@@ -15,6 +15,8 @@ public class QueryRequest<T> {
     private List<QueryFilter> queryFilters = new ArrayList();
     private DynamoRateLimiter readRateLimiter;
     private boolean consistentRead;
+    private boolean scanIndexForward;
+    private Integer limit;
 
     public QueryRequest(Class<T> resultClass) {
         this.resultClass = resultClass;
@@ -50,6 +52,16 @@ public class QueryRequest<T> {
         return this;
     }
 
+    public QueryRequest<T> withScanIndexForward(boolean scanIndexForward) {
+        this.scanIndexForward = scanIndexForward;
+        return this;
+    }
+
+    public QueryRequest<T> withLimit(Integer limit) {
+        this.limit = limit;
+        return this;
+    }
+
 
     public DynamoRateLimiter getReadRateLimiter() {
         return readRateLimiter;
@@ -77,5 +89,13 @@ public class QueryRequest<T> {
 
     public boolean isConsistentRead() {
         return consistentRead;
+    }
+
+    public boolean isScanIndexForward() {
+        return scanIndexForward;
+    }
+
+    public Integer getLimit() {
+        return limit;
     }
 }

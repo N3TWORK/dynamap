@@ -205,7 +205,9 @@ public class Dynamap {
         QuerySpec querySpec = new QuerySpec().withHashKey(tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName(), queryRequest.getHashKeyValue())
                 .withRangeKeyCondition(queryRequest.getRangeKeyCondition())
                 .withConsistentRead(queryRequest.isConsistentRead())
-                .withQueryFilters(queryRequest.getQueryFilters());
+                .withQueryFilters(queryRequest.getQueryFilters())
+                .withScanIndexForward(queryRequest.isScanIndexForward())
+                .withMaxResultSize(queryRequest.getLimit());
 
         ItemCollection<QueryOutcome> items;
         if (queryRequest.getIndex() != null && tableDefinition.getGlobalSecondaryIndexes() != null) {
