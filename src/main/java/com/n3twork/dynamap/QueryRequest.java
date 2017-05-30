@@ -9,7 +9,7 @@ import java.util.List;
 public class QueryRequest<T> {
 
     private final Class<T> resultClass;
-    private String index;
+    private DynamapRecordBean.GlobalSecondaryIndexEnum index;
     private String hashKeyValue;
     private RangeKeyCondition rangeKeyCondition;
     private List<QueryFilter> queryFilters = new ArrayList();
@@ -23,7 +23,7 @@ public class QueryRequest<T> {
     }
 
     public QueryRequest<T> withIndex(DynamapRecordBean.GlobalSecondaryIndexEnum index) {
-        this.index = index.getName();
+        this.index = index;
         return this;
     }
 
@@ -71,7 +71,7 @@ public class QueryRequest<T> {
         return resultClass;
     }
 
-    public String getIndex() {
+    public DynamapRecordBean.GlobalSecondaryIndexEnum getIndex() {
         return index;
     }
 
