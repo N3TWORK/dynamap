@@ -20,6 +20,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
+import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.util.IOUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.n3twork.dynamap.test.ExampleDocument;
@@ -62,6 +63,21 @@ public class DynamapTest {
         ExampleDocumentBean doc = new ExampleDocumentBean(exampleId,
                 1, nestedObject, null, null, "alias");
         dynamap.save(doc, null);
+
+        ExampleDocumentBean doc2 = new ExampleDocumentBean(exampleId,
+                1, nestedObject, null, null, "alias");
+
+        // overwrite allowed
+        dynamap.save(doc2, true, null);
+
+        // overwrite will fail
+        try {
+            dynamap.save(doc2, false, null);
+            Assert.fail();
+        }
+        catch (RuntimeException ex){
+            Assert.assertNotNull(ex);
+        }
 
         // Get Object
         GetObjectRequest<ExampleDocumentBean> getObjectRequest = new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId).withRangeKeyValue(1);

@@ -265,12 +265,12 @@ public class Dynamap {
 
     public void save(DynamapRecordBean object, DynamoRateLimiter writeLimiter) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(object.getClass());
-        putObject(object, tableDefinition, null, writeLimiter);
+        putObject(object, tableDefinition, true, writeLimiter);
     }
 
-    public void save(DynamapRecordBean object, String conditionExpresion, DynamoRateLimiter writeLimiter) {
+    public void save(DynamapRecordBean object, boolean overwrite, DynamoRateLimiter writeLimiter) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(object.getClass());
-        putObject(object, tableDefinition, conditionExpresion, writeLimiter);
+        putObject(object, tableDefinition, overwrite, writeLimiter);
     }
 
     public <T extends DynamapPersisted> T update(Updates<T> updates) {
@@ -396,7 +396,7 @@ public class Dynamap {
                 item = item.withInt(Schema.SCHEMA_VERSION_FIELD, tableDefinition.getVersion());
                 result = objectMapper.convertValue(item.asMap(), resultClass);
                 if (writeBack) {
-                    putObject(result, tableDefinition, null, writeRateLimiter);
+                    putObject(result, tableDefinition, true, writeRateLimiter);
                 }
             } else {
                 result = objectMapper.convertValue(item.asMap(), resultClass);
@@ -407,7 +407,7 @@ public class Dynamap {
         return result;
     }
 
-    private <T extends DynamapRecordBean> void putObject(T object, TableDefinition tableDefinition, java.lang.String conditionExpression, DynamoRateLimiter writeLimiter) {
+    private <T extends DynamapRecordBean> void putObject(T object, TableDefinition tableDefinition, boolean overwrite, DynamoRateLimiter writeLimiter) {
         try {
             Map<String, Object> map = objectMapper.convertValue(object, new TypeReference<Map<String, Object>>() {
             });
@@ -448,8 +448,8 @@ public class Dynamap {
                     .withItem(item)
                     .withReturnValues(ReturnValue.NONE);
 
-            if (!Strings.isNullOrEmpty(conditionExpression)) {
-                putItemSpec.withConditionExpression(conditionExpression);
+            if (!overwrite) {
+                putItemSpec.withConditionExpression( "attribute_not_exists("+hashKeyFieldName+")");
             }
 
             Table table = dynamoDB.getTable(tableDefinition.getTableName(prefix)); //TODO: this should be cached
