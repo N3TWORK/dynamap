@@ -15,7 +15,7 @@ public class QueryRequest<T> {
     private List<QueryFilter> queryFilters = new ArrayList();
     private DynamoRateLimiter readRateLimiter;
     private boolean consistentRead;
-    private boolean scanIndexForward;
+    private boolean scanIndexForward = true;
     private Integer limit;
 
     public QueryRequest(Class<T> resultClass) {
