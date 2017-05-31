@@ -65,7 +65,7 @@ public class DynamapTest {
         dynamap.save(doc, null);
 
         ExampleDocumentBean doc2 = new ExampleDocumentBean(exampleId,
-                1, nestedObject, null, null, "alias");
+                2, nestedObject, null, null, "alias");
 
         // overwrite allowed
         dynamap.save(doc2, true, null);
@@ -137,6 +137,28 @@ public class DynamapTest {
         getObjectRequest = new GetObjectRequest(ExampleDocumentBean.class).withHashKeyValue(exampleId).withRangeKeyValue(1);
         exampleDocument = dynamap.getObject(getObjectRequest, null);
         Assert.assertEquals(exampleDocument.getAlias(), "newAlias");
+
+
+        // Delete
+        final int sequence = 3;
+        ExampleDocumentBean doc3 = new ExampleDocumentBean(exampleId,
+                sequence, nestedObject, null, null, "alias");
+        dynamap.save(doc3, false, null);
+
+        GetObjectRequest<ExampleDocumentBean> getObjectRequest3 = new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId).withRangeKeyValue(sequence);
+        ExampleDocument exampleDocument3 = dynamap.getObject(getObjectRequest3, null);
+        Assert.assertNotNull(exampleDocument3);
+
+        DeleteRequest<ExampleDocumentBean> deleteRequest = new DeleteRequest<>(ExampleDocumentBean.class)
+                .withHashKeyValue(exampleId)
+                .withRangeKeyValue(sequence);
+
+        dynamap.delete(deleteRequest);
+
+        getObjectRequest3 = new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId).withRangeKeyValue(sequence);
+        exampleDocument3 = dynamap.getObject(getObjectRequest3, null);
+        Assert.assertNull(exampleDocument3);
+
 
     }
 

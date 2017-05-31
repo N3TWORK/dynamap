@@ -18,6 +18,7 @@ package com.n3twork.dynamap;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.document.*;
+import com.amazonaws.services.dynamodbv2.document.spec.DeleteItemSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.PutItemSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
 import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
@@ -222,6 +223,21 @@ public class Dynamap {
             querySpec.withHashKey(tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName(), queryRequest.getHashKeyValue());
             initAndAcquire(queryRequest.getReadRateLimiter(), table, null);
             items = table.query(querySpec);
+
+
+            Condition hashKeyCondition = new Condition()
+                    .withComparisonOperator(ComparisonOperator.EQ)
+                    .withAttributeValueList(new AttributeValue().withS(queryRequest.getHashKeyValue()));
+
+            Map<String, Condition> keyConditions = new HashMap<>();
+            keyConditions.put(tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName(), hashKeyCondition);
+
+            com.amazonaws.services.dynamodbv2.model.QueryRequest queryRequest2 = new com.amazonaws.services.dynamodbv2.model.QueryRequest()
+                    .withTableName(table.getTableName())
+                    .withKeyConditions(keyConditions)
+                    .withLimit(queryRequest.getLimit());
+
+            QueryResult queryResult = amazonDynamoDB.query(queryRequest2);
         }
 
         items.registerLowLevelResultListener(new LowLevelResultListener<QueryOutcome>() {
@@ -234,6 +250,17 @@ public class Dynamap {
                 }
             }
         });
+
+        int startPage = 0;
+        for (Page<Item, QueryOutcome> page : items.pages()) {
+            System.out.println("Page: " + ++startPage);
+
+            Iterator<Item> iterator = page.iterator();
+            while (iterator.hasNext()) {
+                System.out.println(iterator.next());
+            }
+        }
+
         Iterator<Item> iterator = items.iterator();
 
         while (iterator.hasNext()) {
@@ -499,6 +526,23 @@ public class Dynamap {
             result = result.withValueMap(updates.withExpression().getValueMap());
         }
         return result;
+    }
+
+
+    public void delete(DeleteRequest deleteRequest) {
+        TableDefinition tableDefinition = schemaRegistry.getTableDefinition(deleteRequest.getResultClass());
+        Table table = dynamoDB.getTable(tableDefinition.getTableName(prefix));
+
+        DeleteItemSpec deleteItemSpec = new DeleteItemSpec();
+        Field hashField = tableDefinition.getField(tableDefinition.getHashKey());
+        if (deleteRequest.getRangeKeyValue() != null) {
+            Field rangeField = tableDefinition.getField(tableDefinition.getRangeKey());
+            deleteItemSpec.withPrimaryKey(hashField.getDynamoName(), deleteRequest.getHashKeyValue(), rangeField.getDynamoName(), deleteRequest.getRangeKeyValue());
+        } else {
+            deleteItemSpec.withPrimaryKey(hashField.getDynamoName(), deleteRequest.getHashKeyValue());
+        }
+
+       table.deleteItem(deleteItemSpec);
     }
 
 }
