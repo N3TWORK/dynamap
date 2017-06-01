@@ -37,7 +37,7 @@ public class Schema {
         this.tableDefinitions = tableDefinitions;
 
         for (TableDefinition tableDefinition : tableDefinitions) {
-            Set<String> generatedTypeNames = tableDefinition.getTypes().stream().map(t -> t.getName()).collect(Collectors.toSet());
+            Set<String> generatedTypeNames = tableDefinition.getTypes().stream().map(Type::getName).collect(Collectors.toSet());
             for (Type type : tableDefinition.getTypes()) {
                 for (Field field : type.getFields()) {
                     if (generatedTypeNames.contains(field.getType())) {

@@ -86,7 +86,7 @@ public class CodeGenerator {
         Template updatesTemplate = cfg.getTemplate("updates.ftl");
         Type tableType = tableDefinition.getTypes().stream().filter(t -> t.getName().equals(tableDefinition.getType())).findFirst().get();
         for (Type type : tableDefinition.getTypes()) {
-            Map<String, Object> model = new HashMap();
+            Map<String, Object> model = new HashMap<>();
             String beanName = type.getName() + "Bean";
             String updatesName = type.getName() + "Updates";
             model.put("tableDefinition", tableDefinition);
@@ -97,7 +97,7 @@ public class CodeGenerator {
             model.put("updatesName", updatesName);
             model.put("tableName", tableDefinition.getTableName());
             model.put("rootType", tableDefinition.getType());
-            model.put("currentState", CaseFormat.UPPER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, "current_" + type.getName()));
+            model.put("currentState", "current" + type.getName());
             Set<String> imports = new HashSet<>();
             for (Field field : type.getFields()) {
                 if (nonGeneratedCustomTypes.contains(field.getType())) {
