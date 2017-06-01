@@ -80,7 +80,7 @@ public class DynamapTest {
 
         // Get Object
         GetObjectRequest<ExampleDocumentBean> getObjectRequest = new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId).withRangeKeyValue(1);
-        ExampleDocument exampleDocument = dynamap.getObject(getObjectRequest, null);
+        ExampleDocumentBean exampleDocument = dynamap.getObject(getObjectRequest, null);
 
         Assert.assertEquals(exampleDocument.getExampleId(), exampleId);
         nestedObject = new NestedTypeBean(exampleDocument.getNestedObject());
@@ -89,12 +89,32 @@ public class DynamapTest {
         // Get Not Exists
         Assert.assertNull(dynamap.getObject(new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue("blah").withRangeKeyValue(1), null));
 
+        // Update root object
+        ExampleDocumentUpdates exampleDocumentUpdates = new ExampleDocumentUpdates(exampleDocument, exampleDocument.getHashKeyValue(), exampleDocument.getRangeKeyValue());
+        exampleDocumentUpdates.setAlias("new alias");
+        dynamap.update(exampleDocumentUpdates);
+
+        exampleDocument = dynamap.getObject(getObjectRequest, null);
+        Assert.assertEquals(exampleDocument.getAlias(), "new alias");
+
+
         // Update nested object
         NestedTypeUpdates nestedTypeUpdates = new NestedTypeUpdates(nestedObject, exampleId, 1);
-        nestedTypeUpdates.setBio("test");
+        nestedTypeUpdates.setBio("test nested");
         dynamap.update(nestedTypeUpdates);
 
         exampleDocument = dynamap.getObject(getObjectRequest, null);
+        Assert.assertEquals(exampleDocument.getNestedObject().getBio(), "test nested");
+
+
+        // Update parent and nested object
+        exampleDocumentUpdates.setAlias("alias");
+        nestedTypeUpdates.setBio("test");
+        exampleDocumentUpdates.setNestedObjectUpdates(nestedTypeUpdates);
+        dynamap.update(exampleDocumentUpdates);
+
+        exampleDocument = dynamap.getObject(getObjectRequest, null);
+        Assert.assertEquals(exampleDocument.getAlias(), "alias");
         Assert.assertEquals(exampleDocument.getNestedObject().getBio(), "test");
 
         // Query

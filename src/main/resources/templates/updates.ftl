@@ -40,6 +40,10 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
 
 <#list type.fields as field>
     private <@field_type field=field /> ${field.name};
+    <#if field.isGeneratedType()>
+    private ${field.type}Updates ${field.name}Updates;
+    </#if>
+
     <#if field.multiValue??>
     <#if field.multiValue == 'LIST'>
     private <@field_type field=field /> ${field.name}Adds = new ArrayList();
@@ -183,14 +187,36 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     </#if>
 </#list>
 
+    //////////////// Nested Updates ////////////////
+    <#list type.fields as field>
+    <#if field.isGeneratedType()>
+    public ${field.type}Updates get${field.name?cap_first}Updates() {
+        return this.${field.name}Updates;
+    }
+
+    public ${updatesName} set${field.name?cap_first}Updates(${field.type}Updates value) {
+        if (this.${field.name} != null) {
+            throw new IllegalStateException("Nested property: ${field.name}, should not be set when passing its Updates object");
+        }
+        this.${field.name}Updates = value;
+        return this;
+    }
+    </#if>
+    </#list>
+
     //////////////// Updates Interface Methods //////////
 
     @Override
     public DynamoExpressionBuilder getUpdateExpression(ObjectMapper objectMapper) {
+        DynamoExpressionBuilder expression = new DynamoExpressionBuilder(objectMapper);
+        addUpdateExpression(expression);
+        return expression;
+    }
+
+    @Override
+    public void addUpdateExpression(DynamoExpressionBuilder expression) {
 
         String parentDynamoFieldName = <#if isRoot>null;<#else>"${parentFieldName}";</#if>
-
-        DynamoExpressionBuilder expression = new DynamoExpressionBuilder(objectMapper);
 
     <#list type.fields as field>
         <#if field.multiValue! == 'MAP'>
@@ -240,11 +266,14 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
             if (${field.name} != null) {
                 expression.setValue(parentDynamoFieldName, "${field.dynamoName}", ${field.name});
             }
+            <#if field.isGeneratedType()>
+            else if (${field.name}Updates != null) {
+                this.${field.name}Updates.addUpdateExpression(expression);
+            }
+            </#if>
             </#if>
         </#if>
     </#list>
-
-        return expression;
     }
 
     @Override

@@ -22,6 +22,8 @@ public interface Updates<T extends DynamapPersisted> {
 
     DynamoExpressionBuilder getUpdateExpression(ObjectMapper objectMapper);
 
+    void addUpdateExpression(DynamoExpressionBuilder expressionBuilder);
+
     void addConditionalExpression(DynamoExpressionBuilder expression);
 
     String getTableName();
