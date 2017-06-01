@@ -250,17 +250,6 @@ public class Dynamap {
                 }
             }
         });
-
-        int startPage = 0;
-        for (Page<Item, QueryOutcome> page : items.pages()) {
-            System.out.println("Page: " + ++startPage);
-
-            Iterator<Item> iterator = page.iterator();
-            while (iterator.hasNext()) {
-                System.out.println(iterator.next());
-            }
-        }
-
         Iterator<Item> iterator = items.iterator();
 
         while (iterator.hasNext()) {
