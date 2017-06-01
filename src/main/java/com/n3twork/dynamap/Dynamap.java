@@ -27,7 +27,6 @@ import com.amazonaws.services.dynamodbv2.model.*;
 import com.amazonaws.services.dynamodbv2.util.TableUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Strings;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.n3twork.dynamap.model.Field;
@@ -223,21 +222,6 @@ public class Dynamap {
             querySpec.withHashKey(tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName(), queryRequest.getHashKeyValue());
             initAndAcquire(queryRequest.getReadRateLimiter(), table, null);
             items = table.query(querySpec);
-
-
-            Condition hashKeyCondition = new Condition()
-                    .withComparisonOperator(ComparisonOperator.EQ)
-                    .withAttributeValueList(new AttributeValue().withS(queryRequest.getHashKeyValue()));
-
-            Map<String, Condition> keyConditions = new HashMap<>();
-            keyConditions.put(tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName(), hashKeyCondition);
-
-            com.amazonaws.services.dynamodbv2.model.QueryRequest queryRequest2 = new com.amazonaws.services.dynamodbv2.model.QueryRequest()
-                    .withTableName(table.getTableName())
-                    .withKeyConditions(keyConditions)
-                    .withLimit(queryRequest.getLimit());
-
-            QueryResult queryResult = amazonDynamoDB.query(queryRequest2);
         }
 
         items.registerLowLevelResultListener(new LowLevelResultListener<QueryOutcome>() {
