@@ -20,7 +20,6 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
-import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.util.IOUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.n3twork.dynamap.test.ExampleDocument;
@@ -91,7 +90,7 @@ public class DynamapTest {
         Assert.assertNull(dynamap.getObject(new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue("blah").withRangeKeyValue(1), null));
 
         // Update nested object
-        NestedTypeUpdates nestedTypeUpdates = new NestedTypeUpdates(nestedObject, objectMapper, exampleId, 1);
+        NestedTypeUpdates nestedTypeUpdates = new NestedTypeUpdates(nestedObject, exampleId, 1);
         nestedTypeUpdates.setBio("test");
         dynamap.update(nestedTypeUpdates);
 

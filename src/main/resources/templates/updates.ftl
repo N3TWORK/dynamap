@@ -60,27 +60,19 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     </#if>
 </#list>
 
-    private final DynamoExpressionBuilder expression;
-
-    public ${updatesName}(${type.name} ${currentState}, ObjectMapper objectMapper, String hashKeyValue, Object rangeKeyValue) {
+    public ${updatesName}(${type.name} ${currentState}, String hashKeyValue, Object rangeKeyValue) {
         this.${currentState} = ${currentState};
-        this.expression = new DynamoExpressionBuilder(objectMapper);
         this.hashKeyValue = hashKeyValue;
         this.rangeKeyValue = rangeKeyValue;
     }
 
-    public ${updatesName}(${type.name} ${currentState}, ObjectMapper objectMapper, String hashKeyValue) {
-        this(${currentState}, objectMapper, hashKeyValue, null);
+    public ${updatesName}(${type.name} ${currentState}, String hashKeyValue) {
+        this(${currentState}, hashKeyValue, null);
     }
 
     @Override
     public String getTableName() {
         return "${tableName}";
-    }
-
-    @Override
-    public DynamoExpressionBuilder withExpression() {
-        return expression;
     }
 
     @Override
@@ -194,9 +186,11 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     //////////////// Updates Interface Methods //////////
 
     @Override
-    public String getUpdateExpression() {
+    public DynamoExpressionBuilder getUpdateExpression(ObjectMapper objectMapper) {
 
         String parentDynamoFieldName = <#if isRoot>null;<#else>"${parentFieldName}";</#if>
+
+        DynamoExpressionBuilder expression = new DynamoExpressionBuilder(objectMapper);
 
     <#list type.fields as field>
         <#if field.multiValue! == 'MAP'>
@@ -250,12 +244,11 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         </#if>
     </#list>
 
-        return expression.buildUpdateExpression();
+        return expression;
     }
 
     @Override
-    public String getConditionalExpression() {
+    public void addConditionalExpression(DynamoExpressionBuilder expression) {
         expression.addCheckFieldValueCondition(null, "schemaVersion", ${rootType}.SCHEMA_VERSION);
-        return expression.buildConditionalExpression();
     }
 }

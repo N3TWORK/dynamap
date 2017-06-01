@@ -476,8 +476,8 @@ public class Dynamap {
     }
 
     private UpdateItemSpec getUpdateItemSpec(Updates updates, TableDefinition tableDefinition) {
-        String updateExpression = updates.getUpdateExpression();
-        String conditionalExpression = updates.getConditionalExpression();
+        DynamoExpressionBuilder expressionBuilder = updates.getUpdateExpression(objectMapper);
+        updates.addConditionalExpression(expressionBuilder);
         UpdateItemSpec result = new UpdateItemSpec().withReturnValues(ReturnValue.ALL_NEW);
         Field hashField = tableDefinition.getField(tableDefinition.getHashKey());
         if (updates.getRangeKeyValue() != null) {
@@ -486,17 +486,19 @@ public class Dynamap {
         } else {
             result.withPrimaryKey(hashField.getDynamoName(), updates.getHashKeyValue());
         }
+        String conditionalExpression = expressionBuilder.buildConditionalExpression();
         if (null != conditionalExpression && !"".equals(conditionalExpression)) {
             result = result.withConditionExpression(conditionalExpression);
         }
+        String updateExpression = expressionBuilder.buildUpdateExpression();
         if (null != updateExpression && !"".equals(updateExpression)) {
             result = result.withUpdateExpression(updateExpression);
         }
-        if (!updates.withExpression().getNameMap().isEmpty()) {
-            result = result.withNameMap(updates.withExpression().getNameMap());
+        if (!expressionBuilder.getNameMap().isEmpty()) {
+            result = result.withNameMap(expressionBuilder.getNameMap());
         }
-        if (!updates.withExpression().getValueMap().isEmpty()) {
-            result = result.withValueMap(updates.withExpression().getValueMap());
+        if (!expressionBuilder.getValueMap().isEmpty()) {
+            result = result.withValueMap(expressionBuilder.getValueMap());
         }
         return result;
     }

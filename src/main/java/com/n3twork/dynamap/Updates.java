@@ -16,13 +16,13 @@
 
 package com.n3twork.dynamap;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 public interface Updates<T extends DynamapPersisted> {
 
-    String getUpdateExpression();
+    DynamoExpressionBuilder getUpdateExpression(ObjectMapper objectMapper);
 
-    String getConditionalExpression();
-
-    DynamoExpressionBuilder withExpression();
+    void addConditionalExpression(DynamoExpressionBuilder expression);
 
     String getTableName();
 
