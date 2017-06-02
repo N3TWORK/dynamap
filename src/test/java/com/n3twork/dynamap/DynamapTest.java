@@ -34,7 +34,9 @@ import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -185,6 +187,20 @@ public class DynamapTest {
 
     @Test
     public void testBatchSave() {
+        batchSave(null);
+    }
+
+    @Test
+    public void testBatchSaveWithRateLimiter() {
+        Map<String, DynamoRateLimiter> limiterMap = new HashMap<>();
+        limiterMap.put(ExampleDocumentBean.getTableName(), new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.WRITE, 100));
+        limiterMap.put(DummyDocBean.getTableName(), new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.WRITE, 100));
+
+        //TODO: need to do a better test the verifies correct limiter behavior
+        batchSave(limiterMap);
+    }
+
+    private void batchSave(Map<String, DynamoRateLimiter> limiterMap) {
         SchemaRegistry schemaRegistry = new SchemaRegistry(getClass().getResourceAsStream("/TestSchema.json"));
         Dynamap dynamap = new Dynamap(ddb, schemaRegistry).withPrefix("test").withObjectMapper(objectMapper);
         dynamap.createTables(true);
@@ -217,7 +233,7 @@ public class DynamapTest {
             docsToSave.add(doc);
         }
 
-        dynamap.batchSave(docsToSave, null);
+        dynamap.batchSave(docsToSave, limiterMap);
 
         QueryRequest<ExampleDocumentBean> queryRequest = new QueryRequest<>(ExampleDocumentBean.class);
         List<ExampleDocumentBean> savedExampleDocs = dynamap.scan(queryRequest, null);

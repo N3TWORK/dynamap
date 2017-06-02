@@ -531,15 +531,15 @@ public class Dynamap {
        table.deleteItem(deleteItemSpec);
     }
 
-    public <T extends DynamapRecordBean> void batchSave(List<T> objects, DynamoRateLimiter writeLimiter) {
+    public <T extends DynamapRecordBean> void batchSave(List<T> objects, Map<String, DynamoRateLimiter> writeLimiterMap) {
         final List<List<T>> objectsBatch = Lists.partition(objects, MAX_BATCH_SIZE);
         for (List<T> batch : objectsBatch) {
             logger.debug("Sending batch to save of size: {}", batch.size());
-            doBatchWriteItem(batch, writeLimiter);
+            doBatchWriteItem(batch, writeLimiterMap);
         }
     }
 
-    public <T extends DynamapRecordBean> void doBatchWriteItem(List<T> objects, DynamoRateLimiter writeLimiter) {
+    public <T extends DynamapRecordBean> void doBatchWriteItem(List<T> objects, Map<String, DynamoRateLimiter> writeLimiterMap) {
         Map<String, TableWriteItems> tableWriteItems = new HashMap<>();
 
         for (DynamapRecordBean object: objects) {
@@ -557,6 +557,18 @@ public class Dynamap {
         BatchWriteItemOutcome outcome = dynamoDB.batchWriteItem(batchWriteItemSpec);
 
         while (outcome.getUnprocessedItems().size() > 0) {
+            if (writeLimiterMap != null && outcome.getBatchWriteItemResult().getConsumedCapacity() != null) {
+                // need better testing
+                for (ConsumedCapacity consumedCapacity : outcome.getBatchWriteItemResult().getConsumedCapacity()) {
+                    DynamoRateLimiter rateLimiter = writeLimiterMap.get(consumedCapacity.getTableName());
+                    rateLimiter.setConsumedCapacity(consumedCapacity);
+                    logger.debug("Set rate limiter capacity {}", consumedCapacity.getCapacityUnits());
+                    Table table = dynamoDB.getTable(consumedCapacity.getTableName()); //TODO: this should be cached
+                    rateLimiter.init(table);
+                    rateLimiter.acquire();
+                }
+            }
+
             Map<String, List<WriteRequest>> unprocessedItems = outcome.getUnprocessedItems();
             logger.debug("Retrieving unprocessed items, size: {}", unprocessedItems.size());
             outcome = dynamoDB.batchWriteItemUnprocessed(unprocessedItems);
