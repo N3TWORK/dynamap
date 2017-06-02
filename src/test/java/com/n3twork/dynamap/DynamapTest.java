@@ -22,14 +22,21 @@ import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
 import com.amazonaws.util.IOUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.n3twork.dynamap.test.*;
+import com.n3twork.dynamap.test.DummyDocBean;
+import com.n3twork.dynamap.test.ExampleDocument;
+import com.n3twork.dynamap.test.ExampleDocumentBean;
+import com.n3twork.dynamap.test.ExampleDocumentUpdates;
+import com.n3twork.dynamap.test.NestedTypeBean;
+import com.n3twork.dynamap.test.NestedTypeUpdates;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class DynamapTest {
 
@@ -174,9 +181,57 @@ public class DynamapTest {
         getObjectRequest3 = new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId).withRangeKeyValue(sequence);
         exampleDocument3 = dynamap.getObject(getObjectRequest3, null);
         Assert.assertNull(exampleDocument3);
-
-
     }
 
+    @Test
+    public void testBatchSave() {
+        SchemaRegistry schemaRegistry = new SchemaRegistry(getClass().getResourceAsStream("/TestSchema.json"));
+        Dynamap dynamap = new Dynamap(ddb, schemaRegistry).withPrefix("test").withObjectMapper(objectMapper);
+        dynamap.createTables(true);
 
+        final int EXAMPLE_DOCS_SIZE = 22;
+        final int DUMMY_DOCS_SIZE = 23;
+        List<DynamapRecordBean> docsToSave = new ArrayList<>();
+        List<String> exampleDocsIds = new ArrayList<>();
+        List<String> dummyDocsIds = new ArrayList<>();
+
+        String bigString = new String(new char[10000]).replace('\0', 'X');
+
+        for (int i = 0; i < EXAMPLE_DOCS_SIZE; i++) {
+            String exampleId = UUID.randomUUID().toString();
+            String nestedId = UUID.randomUUID().toString();
+            NestedTypeBean nestedObject = new NestedTypeBean(nestedId, null, null, null, null, null,
+                    null, null, null, null);
+            ExampleDocumentBean doc = new ExampleDocumentBean(exampleId,
+                    1, nestedObject, null, null, "alias");
+
+            exampleDocsIds.add(exampleId);
+            docsToSave.add(doc);
+        }
+
+        for (int i = 0; i < DUMMY_DOCS_SIZE; i++) {
+            String id = UUID.randomUUID().toString();
+            DummyDocBean doc = new DummyDocBean(id, bigString, i);
+
+            dummyDocsIds.add(id);
+            docsToSave.add(doc);
+        }
+
+        dynamap.batchSave(docsToSave, null);
+
+        QueryRequest<ExampleDocumentBean> queryRequest = new QueryRequest<>(ExampleDocumentBean.class);
+        List<ExampleDocumentBean> savedExampleDocs = dynamap.scan(queryRequest, null);
+
+        QueryRequest<DummyDocBean> queryRequest2 = new QueryRequest<>(DummyDocBean.class);
+        List<DummyDocBean> savedDummyDocs = dynamap.scan(queryRequest2, null);
+
+        Assert.assertEquals(savedExampleDocs.size(), EXAMPLE_DOCS_SIZE);
+        Assert.assertEquals(savedDummyDocs.size(), DUMMY_DOCS_SIZE);
+
+        List<String> savedExampleDocsIds = savedExampleDocs.stream().map(ExampleDocumentBean::getExampleId).collect(Collectors.toList());
+        List<String> savedDummyDocsIds = savedDummyDocs.stream().map(DummyDocBean::getId).collect(Collectors.toList());
+
+        Assert.assertTrue(savedExampleDocsIds.containsAll(exampleDocsIds) && exampleDocsIds.containsAll(savedExampleDocsIds));
+        Assert.assertTrue(savedDummyDocsIds.containsAll(dummyDocsIds) && dummyDocsIds.containsAll(savedDummyDocsIds));
+    }
 }

@@ -18,6 +18,7 @@ package com.n3twork.dynamap;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.document.*;
+import com.amazonaws.services.dynamodbv2.document.spec.BatchWriteItemSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.DeleteItemSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.PutItemSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
@@ -28,6 +29,7 @@ import com.amazonaws.services.dynamodbv2.util.TableUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.n3twork.dynamap.model.Field;
 import com.n3twork.dynamap.model.Schema;
@@ -48,6 +50,8 @@ public class Dynamap {
     private final SchemaRegistry schemaRegistry;
     private String prefix;
     private ObjectMapper objectMapper;
+
+    private static final int MAX_BATCH_SIZE = 25;
 
     public Dynamap(AmazonDynamoDB amazonDynamoDB, SchemaRegistry schemaRegistry) {
         this.amazonDynamoDB = amazonDynamoDB;
@@ -407,47 +411,54 @@ public class Dynamap {
         return result;
     }
 
+    private <T extends DynamapRecordBean> Item buildDynamoItemFromObject(T object, TableDefinition tableDefinition) {
+        Map<String, Object> map = objectMapper.convertValue(object, new TypeReference<Map<String, Object>>() {
+        });
+        Item item = new Item().withInt(Schema.SCHEMA_VERSION_FIELD, tableDefinition.getVersion());
+        Type type = tableDefinition.getTypes().stream().filter(t -> t.getName().equals(tableDefinition.getType())).findFirst().get();
+        for (Field field : type.getFields()) {
+            if (field.getMultiValue() != null) {
+                if (field.getMultiValue().equals("Map")) {
+                    item.withMap(field.getDynamoName(), (Map) map.get(field.getDynamoName()));
+                } else if (field.getMultiValue().equals("Set")) {
+                    if (field.getType().equals("String")) {
+                        item.withStringSet(field.getDynamoName(), (String) map.get(field.getDynamoName()));
+                    } else if (field.isNumber()) {
+                        item.withNumberSet(field.getDynamoName(), (Number) map.get(field.getDynamoName()));
+                    } else {
+                        throw new RuntimeException("Invalid type for Set: " + field.getName() + ":" + field.getType());
+                    }
+                } else if (field.getMultiValue().equals("List")) {
+                    item.withList(field.getDynamoName(), map.get(field.getDynamoName()));
+                }
+            } else if (field.getType().equals("String")) {
+                item.withString(field.getDynamoName(), (String) map.get(field.getDynamoName()));
+            } else if (field.isNumber()) {
+                item.withNumber(field.getDynamoName(), (Number) map.get(field.getDynamoName()));
+            } else {
+                item.with(field.getDynamoName(), map.get(field.getDynamoName()));
+            }
+        }
+
+        String hashKeyFieldName = tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName();
+        if (object.getRangeKeyValue() != null) {
+            String rangeKeyFieldName = tableDefinition.getField(tableDefinition.getRangeKey()).getDynamoName();
+            item.withPrimaryKey(hashKeyFieldName, object.getHashKeyValue(), rangeKeyFieldName, object.getRangeKeyValue());
+        } else {
+            item.withPrimaryKey(hashKeyFieldName, object.getHashKeyValue());
+        }
+
+        return item;
+    }
+
     private <T extends DynamapRecordBean> void putObject(T object, TableDefinition tableDefinition, boolean overwrite, DynamoRateLimiter writeLimiter) {
         try {
-            Map<String, Object> map = objectMapper.convertValue(object, new TypeReference<Map<String, Object>>() {
-            });
-            Item item = new Item().withInt(Schema.SCHEMA_VERSION_FIELD, tableDefinition.getVersion());
-            Type type = tableDefinition.getTypes().stream().filter(t -> t.getName().equals(tableDefinition.getType())).findFirst().get();
-            for (Field field : type.getFields()) {
-                if (field.getMultiValue() != null) {
-                    if (field.getMultiValue().equals("Map")) {
-                        item.withMap(field.getDynamoName(), (Map) map.get(field.getDynamoName()));
-                    } else if (field.getMultiValue().equals("Set")) {
-                        if (field.getType().equals("String")) {
-                            item.withStringSet(field.getDynamoName(), (String) map.get(field.getDynamoName()));
-                        } else if (field.isNumber()) {
-                            item.withNumberSet(field.getDynamoName(), (Number) map.get(field.getDynamoName()));
-                        } else {
-                            throw new RuntimeException("Invalid type for Set: " + field.getName() + ":" + field.getType());
-                        }
-                    } else if (field.getMultiValue().equals("List")) {
-                        item.withList(field.getDynamoName(), map.get(field.getDynamoName()));
-                    }
-                } else if (field.getType().equals("String")) {
-                    item.withString(field.getDynamoName(), (String) map.get(field.getDynamoName()));
-                } else if (field.isNumber()) {
-                    item.withNumber(field.getDynamoName(), (Number) map.get(field.getDynamoName()));
-                } else {
-                    item.with(field.getDynamoName(), map.get(field.getDynamoName()));
-                }
-            }
-
-            String hashKeyFieldName = tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName();
-            if (object.getRangeKeyValue() != null) {
-                String rangeKeyFieldName = tableDefinition.getField(tableDefinition.getRangeKey()).getDynamoName();
-                item.withPrimaryKey(hashKeyFieldName, object.getHashKeyValue(), rangeKeyFieldName, object.getRangeKeyValue());
-            } else {
-                item.withPrimaryKey(hashKeyFieldName, object.getHashKeyValue());
-            }
+            Item item = buildDynamoItemFromObject(object, tableDefinition);
             PutItemSpec putItemSpec = new PutItemSpec()
                     .withItem(item)
                     .withReturnValues(ReturnValue.NONE);
 
+            String hashKeyFieldName = tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName();
             if (!overwrite) {
                 putItemSpec.withConditionExpression( "attribute_not_exists("+hashKeyFieldName+")");
             }
@@ -518,6 +529,40 @@ public class Dynamap {
         }
 
        table.deleteItem(deleteItemSpec);
+    }
+
+    public <T extends DynamapRecordBean> void batchSave(List<T> objects, DynamoRateLimiter writeLimiter) {
+        final List<List<T>> objectsBatch = Lists.partition(objects, MAX_BATCH_SIZE);
+        for (List<T> batch : objectsBatch) {
+            logger.debug("Sending batch to save of size: {}", batch.size());
+            doBatchWriteItem(batch, writeLimiter);
+        }
+    }
+
+    public <T extends DynamapRecordBean> void doBatchWriteItem(List<T> objects, DynamoRateLimiter writeLimiter) {
+        Map<String, TableWriteItems> tableWriteItems = new HashMap<>();
+
+        for (DynamapRecordBean object: objects) {
+            TableDefinition tableDefinition = schemaRegistry.getTableDefinition(object.getClass());
+            Item item = buildDynamoItemFromObject(object, tableDefinition);
+
+            String tableName = tableDefinition.getTableName(prefix);
+            TableWriteItems writeItems = tableWriteItems.getOrDefault(tableName, new TableWriteItems(tableName));
+            tableWriteItems.put(tableName, writeItems.addItemToPut(item));
+        }
+
+        BatchWriteItemSpec batchWriteItemSpec = new BatchWriteItemSpec()
+                .withTableWriteItems(tableWriteItems.values().toArray(new TableWriteItems[tableWriteItems.size()]));
+
+        BatchWriteItemOutcome outcome = dynamoDB.batchWriteItem(batchWriteItemSpec);
+
+        while (outcome.getUnprocessedItems().size() > 0) {
+            Map<String, List<WriteRequest>> unprocessedItems = outcome.getUnprocessedItems();
+            logger.debug("Retrieving unprocessed items, size: {}", unprocessedItems.size());
+            outcome = dynamoDB.batchWriteItemUnprocessed(unprocessedItems);
+        }
+
+        logger.debug("doBatchWriteItem done");
     }
 
 }
