@@ -32,10 +32,11 @@ public class TableDefinition {
     private final int version;
     private final List<Type> types;
     private final List<Index> globalSecondaryIndexes;
+    private final boolean optimisticLocking;
 
     @JsonCreator
     public TableDefinition(@JsonProperty("table") String tableName, @JsonProperty("package") String packageName, @JsonProperty("type") String type, @JsonProperty("hashKey") String hashKey, @JsonProperty("rangeKey") String rangeKey,
-                           @JsonProperty("version") int version, @JsonProperty("fields") List<Field> fields, @JsonProperty("types") List<Type> types, @JsonProperty("globalSecondaryIndexes") List<Index> globalSecondaryIndexes) {
+                           @JsonProperty("version") int version, @JsonProperty("fields") List<Field> fields, @JsonProperty("types") List<Type> types, @JsonProperty("globalSecondaryIndexes") List<Index> globalSecondaryIndexes, @JsonProperty("optimisticLocking") boolean optimisticLocking) {
         this.tableName = tableName;
         this.packageName = packageName;
         this.type = type;
@@ -44,6 +45,7 @@ public class TableDefinition {
         this.version = version;
         this.types = types;
         this.globalSecondaryIndexes = globalSecondaryIndexes;
+        this.optimisticLocking = optimisticLocking;
     }
 
     public String getTableName() {
@@ -85,6 +87,10 @@ public class TableDefinition {
 
     public List<Index> getGlobalSecondaryIndexes() {
         return globalSecondaryIndexes;
+    }
+
+    public boolean getOptimisticLocking() {
+        return optimisticLocking;
     }
 
     public Field getField(String fieldName) {

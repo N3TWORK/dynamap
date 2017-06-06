@@ -37,6 +37,9 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     private final ${type.name} ${currentState};
     private final String hashKeyValue;
     private final Object rangeKeyValue;
+<#if isRoot && optimisticLocking>
+    private final Integer revision;
+</#if>
 
 <#list type.fields as field>
     private <@field_type field=field /> ${field.name};
@@ -64,14 +67,28 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     </#if>
 </#list>
 
-    public ${updatesName}(${type.name} ${currentState}, String hashKeyValue, Object rangeKeyValue) {
+    private final boolean disableOptimisticLocking;
+
+    public ${updatesName}(${type.name} ${currentState}, String hashKeyValue, Object rangeKeyValue, boolean disableOptimisticLocking) {
         this.${currentState} = ${currentState};
         this.hashKeyValue = hashKeyValue;
         this.rangeKeyValue = rangeKeyValue;
+        this.disableOptimisticLocking = disableOptimisticLocking;
+<#if isRoot && optimisticLocking>
+        this.revision = ${currentState}.getRevision();
+</#if>
+    }
+
+    public ${updatesName}(${type.name} ${currentState}, String hashKeyValue, Object rangeKeyValue) {
+        this(${currentState}, hashKeyValue, rangeKeyValue, true);
+    }
+
+    public ${updatesName}(${type.name} ${currentState}, String hashKeyValue, boolean disableOptimisticLocking) {
+        this(${currentState}, hashKeyValue, null, disableOptimisticLocking);
     }
 
     public ${updatesName}(${type.name} ${currentState}, String hashKeyValue) {
-        this(${currentState}, hashKeyValue, null);
+        this(${currentState}, hashKeyValue, null, true);
     }
 
     @Override
@@ -136,6 +153,12 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     </#if>
 
 </#list>
+<#if isRoot && optimisticLocking>
+    @Override
+    public Integer getRevision() {
+        return this.revision == null ? ${currentState}.getRevision() : this.revision;
+    }
+</#if>
 
     /////// Mutator methods ///////////////////////
 
@@ -217,6 +240,11 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     public void addUpdateExpression(DynamoExpressionBuilder expression) {
 
         String parentDynamoFieldName = <#if isRoot>null;<#else>"${parentFieldName}";</#if>
+<#if isRoot && optimisticLocking>
+        if (disableOptimisticLocking) {
+            expression.incrementNumber(parentDynamoFieldName, "rv", 1);
+        }
+</#if>
 
     <#list type.fields as field>
         <#if field.multiValue! == 'MAP'>
@@ -279,5 +307,11 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     @Override
     public void addConditionalExpression(DynamoExpressionBuilder expression) {
         expression.addCheckFieldValueCondition(null, "schemaVersion", ${rootType}.SCHEMA_VERSION);
+<#if isRoot && optimisticLocking>
+        if (disableOptimisticLocking) {
+            expression.addCheckFieldValueCondition(null, "rv", ${currentState}.getRevision());
+        }
+</#if>
     }
+
 }

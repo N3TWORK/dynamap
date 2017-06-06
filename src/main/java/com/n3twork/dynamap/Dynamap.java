@@ -415,6 +415,11 @@ public class Dynamap {
         Map<String, Object> map = objectMapper.convertValue(object, new TypeReference<Map<String, Object>>() {
         });
         Item item = new Item().withInt(Schema.SCHEMA_VERSION_FIELD, tableDefinition.getVersion());
+
+        if (tableDefinition.getOptimisticLocking()) {
+            item.withInt(Schema.REVISION_FIELD, 1);
+        }
+
         Type type = tableDefinition.getTypes().stream().filter(t -> t.getName().equals(tableDefinition.getType())).findFirst().get();
         for (Field field : type.getFields()) {
             if (field.getMultiValue() != null) {

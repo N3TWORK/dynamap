@@ -23,12 +23,14 @@ import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
 import com.amazonaws.util.IOUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.n3twork.dynamap.test.DummyDocBean;
+import com.n3twork.dynamap.test.DummyDocUpdates;
 import com.n3twork.dynamap.test.ExampleDocument;
 import com.n3twork.dynamap.test.ExampleDocumentBean;
 import com.n3twork.dynamap.test.ExampleDocumentUpdates;
 import com.n3twork.dynamap.test.NestedTypeBean;
 import com.n3twork.dynamap.test.NestedTypeUpdates;
 import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
@@ -43,6 +45,8 @@ import java.util.stream.Collectors;
 public class DynamapTest {
 
     private AmazonDynamoDB ddb;
+    private Dynamap dynamap;
+    private SchemaRegistry schemaRegistry;
 
     private final static ObjectMapper objectMapper = new ObjectMapper();
 
@@ -52,14 +56,16 @@ public class DynamapTest {
         ddb = DynamoDBEmbedded.create().amazonDynamoDB();
     }
 
+    @BeforeMethod
+    public void setup() {
+        schemaRegistry = new SchemaRegistry(getClass().getResourceAsStream("/TestSchema.json"));
+        // Create tables
+        dynamap = new Dynamap(ddb, schemaRegistry).withPrefix("test").withObjectMapper(objectMapper);
+        dynamap.createTables(true);
+    }
+
     @Test
     public void testDynaMap() throws Exception {
-        SchemaRegistry schemaRegistry = new SchemaRegistry(getClass().getResourceAsStream("/TestSchema.json"));
-
-        // Create tables
-        Dynamap dynamap = new Dynamap(ddb, schemaRegistry).withPrefix("test").withObjectMapper(objectMapper);
-        dynamap.createTables(true);
-
         // Save
         String exampleId = UUID.randomUUID().toString();
         String nestedId = UUID.randomUUID().toString();
@@ -114,6 +120,7 @@ public class DynamapTest {
 
 
         // Update parent and nested object
+        exampleDocumentUpdates = new ExampleDocumentUpdates(exampleDocument, exampleDocument.getHashKeyValue(), exampleDocument.getRangeKeyValue());
         exampleDocumentUpdates.setAlias("alias");
         nestedTypeUpdates.setBio("test");
         exampleDocumentUpdates.setNestedObjectUpdates(nestedTypeUpdates);
@@ -186,6 +193,53 @@ public class DynamapTest {
     }
 
     @Test
+    public void testOptimisticLocking() {
+        final String DOC_ID = "1";
+        DummyDocBean doc = new DummyDocBean(DOC_ID, "test", 6);
+        dynamap.save(doc, null);
+
+        DummyDocBean savedDoc = dynamap.getObject(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID), null);
+
+        Assert.assertEquals(savedDoc.getRevision().intValue(), 1);
+
+        DummyDocUpdates docUpdates = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue(), true);
+        docUpdates.setWeight(100);
+        dynamap.update(docUpdates);
+
+        savedDoc = dynamap.getObject(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID), null);
+
+        Assert.assertEquals(savedDoc.getRevision().intValue(), 2);
+
+
+        // two simultaneous updates, second one should fail
+        DummyDocUpdates docUpdates1 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue(), true);
+        DummyDocUpdates docUpdates2 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue(), true);
+
+        dynamap.update(docUpdates1);
+
+        savedDoc = dynamap.getObject(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID), null);
+        Assert.assertEquals(savedDoc.getRevision().intValue(), 3);
+
+        try {
+            dynamap.update(docUpdates2);
+            Assert.fail();
+        }
+        catch (RuntimeException ex){
+            Assert.assertNotNull(ex);
+        }
+
+        // optimist locking disabled
+        DummyDocUpdates docUpdates3 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue(), false);
+        DummyDocUpdates docUpdates4 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue(), false);
+        dynamap.update(docUpdates3);
+        dynamap.update(docUpdates4);
+
+        savedDoc = dynamap.getObject(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID), null);
+        Assert.assertEquals(savedDoc.getRevision().intValue(), 3);
+
+    }
+
+    @Test
     public void testBatchSave() {
         batchSave(null);
     }
@@ -201,10 +255,6 @@ public class DynamapTest {
     }
 
     private void batchSave(Map<String, DynamoRateLimiter> limiterMap) {
-        SchemaRegistry schemaRegistry = new SchemaRegistry(getClass().getResourceAsStream("/TestSchema.json"));
-        Dynamap dynamap = new Dynamap(ddb, schemaRegistry).withPrefix("test").withObjectMapper(objectMapper);
-        dynamap.createTables(true);
-
         final int EXAMPLE_DOCS_SIZE = 22;
         final int DUMMY_DOCS_SIZE = 23;
         List<DynamapRecordBean> docsToSave = new ArrayList<>();

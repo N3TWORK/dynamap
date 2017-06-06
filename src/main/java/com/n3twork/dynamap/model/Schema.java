@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 public class Schema {
 
     public static final String SCHEMA_VERSION_FIELD = "schemaVersion";
+    public static final String REVISION_FIELD = "rv";
 
     private final List<TableDefinition> tableDefinitions;
     private final Map<String, String> tablesForClass = new HashMap<>();

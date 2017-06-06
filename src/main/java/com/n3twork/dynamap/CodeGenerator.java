@@ -114,6 +114,8 @@ public class CodeGenerator {
                 model.put("parentFieldName", field.getDynamoName());
             }
 
+            model.put("optimisticLocking", tableDefinition.getOptimisticLocking());
+
             try (Writer writer = new OutputStreamWriter(new FileOutputStream(outputPath + "/" + packageDir + "/" + type.getName() + ".java"))) {
                 interfaceTemplate.process(model, writer);
             }
