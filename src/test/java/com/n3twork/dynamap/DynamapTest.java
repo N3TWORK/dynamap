@@ -226,6 +226,7 @@ public class DynamapTest {
         }
         catch (RuntimeException ex){
             Assert.assertNotNull(ex);
+            Assert.assertTrue(ex.getCause() instanceof com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException);
         }
 
         // optimist locking disabled
