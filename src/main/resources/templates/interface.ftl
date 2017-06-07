@@ -30,7 +30,7 @@ public interface ${type.name} extends DynamapPersisted {
     public static final Integer SCHEMA_VERSION = ${schemaVersion};
 </#if>
 <#if isRoot && optimisticLocking>
-    String REVISION_FIELD = "rv";
+    String REVISION_FIELD = "${revisionFieldName}";
 </#if>
 <#list type.fields as field>
     String ${field.name?upper_case}_FIELD = "${field.dynamoName}";

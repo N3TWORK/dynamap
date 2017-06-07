@@ -242,7 +242,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         String parentDynamoFieldName = <#if isRoot>null;<#else>"${parentFieldName}";</#if>
 <#if isRoot && optimisticLocking>
         if (disableOptimisticLocking) {
-            expression.incrementNumber(parentDynamoFieldName, "rv", 1);
+            expression.incrementNumber(parentDynamoFieldName, "${revisionFieldName}", 1);
         }
 </#if>
 
@@ -309,7 +309,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         expression.addCheckFieldValueCondition(null, "schemaVersion", ${rootType}.SCHEMA_VERSION);
 <#if isRoot && optimisticLocking>
         if (disableOptimisticLocking) {
-            expression.addCheckFieldValueCondition(null, "rv", ${currentState}.getRevision());
+            expression.addCheckFieldValueCondition(null, "${revisionFieldName}", ${currentState}.getRevision());
         }
 </#if>
     }
