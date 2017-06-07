@@ -17,7 +17,6 @@
 package com.n3twork.dynamap;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.CaseFormat;
 import com.google.common.collect.Sets;
 import com.n3twork.dynamap.model.Field;
 import com.n3twork.dynamap.model.Schema;
@@ -114,7 +113,7 @@ public class CodeGenerator {
                 model.put("parentFieldName", field.getDynamoName());
             }
 
-            model.put("optimisticLocking", tableDefinition.getOptimisticLocking());
+            model.put("optimisticLocking", tableDefinition.isOptimisticLocking());
             model.put("revisionFieldName", Schema.REVISION_FIELD);
 
             try (Writer writer = new OutputStreamWriter(new FileOutputStream(outputPath + "/" + packageDir + "/" + type.getName() + ".java"))) {

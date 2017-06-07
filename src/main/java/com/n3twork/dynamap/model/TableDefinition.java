@@ -89,7 +89,7 @@ public class TableDefinition {
         return globalSecondaryIndexes;
     }
 
-    public boolean getOptimisticLocking() {
+    public boolean isOptimisticLocking() {
         return optimisticLocking;
     }
 

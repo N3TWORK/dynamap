@@ -416,7 +416,7 @@ public class Dynamap {
         });
         Item item = new Item().withInt(Schema.SCHEMA_VERSION_FIELD, tableDefinition.getVersion());
 
-        if (tableDefinition.getOptimisticLocking()) {
+        if (tableDefinition.isOptimisticLocking()) {
             item.withInt(Schema.REVISION_FIELD, (int) map.getOrDefault(Schema.REVISION_FIELD, 1));
         }
 
