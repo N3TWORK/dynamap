@@ -45,27 +45,37 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     private ${beanName}() {
     }
 
-    @JsonCreator
+<#if isRoot && optimisticLocking>
     public ${beanName}(
         <#list type.fields as field>
             @JsonProperty(${field.name?upper_case}_FIELD) <#if field.generatedType>${field.type}Bean<#else><@field_type field=field /></#if> ${field.name}<#sep>,
         </#list>) {
+        this(<#list type.fields as field>${field.name}<#sep>,</#list>, null);
+    }
+</#if>
 
+    @JsonCreator
+    public ${beanName}(
         <#list type.fields as field>
-            <#if field.multiValue??>
-                <#if field.multiValue == 'MAP'>
-                this.${field.name} = ${field.name} == null ? Collections.emptyMap() : ${field.name};
-                <#elseif field.multiValue == 'LIST'>
-                this.${field.name} = ${field.name} == null ? Collections.emptyList() : ${field.name};
-                <#elseif field.multiValue == 'SET'>
-                this.${field.name} = ${field.name} == null ? Collections.emptySet() : ${field.name};
-                </#if>
-            <#else>
-            this.${field.name} = ${field.name} == null ? ${field.defaultValue} : ${field.name};
+        @JsonProperty(${field.name?upper_case}_FIELD) <#if field.generatedType>${field.type}Bean<#else><@field_type field=field /></#if> ${field.name}<#sep>,
+        </#list><#if isRoot && optimisticLocking>,
+        @JsonProperty(REVISION_FIELD) Integer revision</#if>) {
+
+    <#list type.fields as field>
+        <#if field.multiValue??>
+            <#if field.multiValue == 'MAP'>
+            this.${field.name} = ${field.name} == null ? Collections.emptyMap() : ${field.name};
+            <#elseif field.multiValue == 'LIST'>
+            this.${field.name} = ${field.name} == null ? Collections.emptyList() : ${field.name};
+            <#elseif field.multiValue == 'SET'>
+            this.${field.name} = ${field.name} == null ? Collections.emptySet() : ${field.name};
             </#if>
-        </#list>
+        <#else>
+        this.${field.name} = ${field.name} == null ? ${field.defaultValue} : ${field.name};
+        </#if>
+    </#list>
     <#if isRoot && optimisticLocking>
-            this.revision = 1;
+        this.revision = revision == null ? 1 : revision;
     </#if>
     }
 
