@@ -39,7 +39,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     </#list>
     <#if isRoot && optimisticLocking>
     @JsonProperty(REVISION_FIELD)
-    private Integer revision;
+    private Integer _revision;
     </#if>
     //Empty constructor for Kryo
     private ${beanName}() {
@@ -59,7 +59,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
         <#list type.fields as field>
         @JsonProperty(${field.name?upper_case}_FIELD) <#if field.generatedType>${field.type}Bean<#else><@field_type field=field /></#if> ${field.name}<#sep>,
         </#list><#if isRoot && optimisticLocking>,
-        @JsonProperty(REVISION_FIELD) Integer revision</#if>) {
+        @JsonProperty(REVISION_FIELD) Integer _revision</#if>) {
 
     <#list type.fields as field>
         <#if field.multiValue??>
@@ -75,7 +75,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
         </#if>
     </#list>
     <#if isRoot && optimisticLocking>
-        this.revision = revision == null ? 1 : revision;
+        this._revision = _revision == null ? 1 : _revision;
     </#if>
     }
 
@@ -94,7 +94,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
         </#if>
      </#list>
     <#if isRoot && optimisticLocking>
-        this.revision = bean.getRevision();
+        this._revision = bean.getRevision();
     </#if>
     }
 
@@ -157,10 +157,10 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     </#list>
     <#if isRoot && optimisticLocking>
     public Integer getRevision() {
-        return this.revision;
+        return this._revision;
     }
     public void setRevision(Integer value) {
-        this.revision = value;
+        this._revision = value;
     }
     </#if>
 }
