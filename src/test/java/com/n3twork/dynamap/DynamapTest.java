@@ -202,7 +202,7 @@ public class DynamapTest {
 
         Assert.assertEquals(savedDoc.getRevision().intValue(), 1);
 
-        DummyDocUpdates docUpdates = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue(), true);
+        DummyDocUpdates docUpdates = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue());
         docUpdates.setWeight(100);
         dynamap.update(docUpdates);
 
@@ -212,8 +212,8 @@ public class DynamapTest {
 
 
         // two simultaneous updates, second one should fail
-        DummyDocUpdates docUpdates1 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue(), true);
-        DummyDocUpdates docUpdates2 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue(), true);
+        DummyDocUpdates docUpdates1 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue());
+        DummyDocUpdates docUpdates2 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue());
 
         dynamap.update(docUpdates1);
 
@@ -230,8 +230,8 @@ public class DynamapTest {
         }
 
         // optimist locking disabled
-        DummyDocUpdates docUpdates3 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue(), false);
-        DummyDocUpdates docUpdates4 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue(), false);
+        DummyDocUpdates docUpdates3 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue(), true);
+        DummyDocUpdates docUpdates4 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue(), true);
         dynamap.update(docUpdates3);
         dynamap.update(docUpdates4);
 
