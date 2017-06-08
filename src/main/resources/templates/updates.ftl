@@ -23,6 +23,7 @@ import ${import};
 </#list>
 
 import java.util.*;
+import com.google.common.collect.ImmutableMap;
 import com.n3twork.dynamap.*;
 import com.amazonaws.services.dynamodbv2.document.PrimaryKey;
 import com.amazonaws.services.dynamodbv2.document.spec.UpdateItemSpec;
@@ -38,7 +39,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     private final String hashKeyValue;
     private final Object rangeKeyValue;
 <#if isRoot && optimisticLocking>
-    private final Integer revision;
+    private final Integer _revision;
 </#if>
 
 <#list type.fields as field>
@@ -66,7 +67,6 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     private ${field.type} ${field.name}Delta;
     </#if>
 </#list>
-
     private final boolean disableOptimisticLocking;
 
     public ${updatesName}(${type.name} ${currentState}, String hashKeyValue, Object rangeKeyValue, boolean disableOptimisticLocking) {
@@ -75,12 +75,12 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         this.rangeKeyValue = rangeKeyValue;
         this.disableOptimisticLocking = disableOptimisticLocking;
 <#if isRoot && optimisticLocking>
-        this.revision = ${currentState}.getRevision();
+        this._revision = ${currentState}.getRevision();
 </#if>
     }
 
     public ${updatesName}(${type.name} ${currentState}, String hashKeyValue, Object rangeKeyValue) {
-        this(${currentState}, hashKeyValue, rangeKeyValue, true);
+        this(${currentState}, hashKeyValue, rangeKeyValue, false);
     }
 
     public ${updatesName}(${type.name} ${currentState}, String hashKeyValue, boolean disableOptimisticLocking) {
@@ -88,7 +88,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     }
 
     public ${updatesName}(${type.name} ${currentState}, String hashKeyValue) {
-        this(${currentState}, hashKeyValue, null, true);
+        this(${currentState}, hashKeyValue, null, false);
     }
 
     @Override
@@ -156,7 +156,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
 <#if isRoot && optimisticLocking>
     @Override
     public Integer getRevision() {
-        return this.revision == null ? ${currentState}.getRevision() : this.revision;
+        return this._revision == null ? ${currentState}.getRevision() : this._revision;
     }
 </#if>
 
@@ -241,8 +241,8 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
 
         String parentDynamoFieldName = <#if isRoot>null;<#else>"${parentFieldName}";</#if>
 <#if isRoot && optimisticLocking>
-        if (disableOptimisticLocking) {
-            expression.incrementNumber(parentDynamoFieldName, "${revisionFieldName}", 1);
+        if (!disableOptimisticLocking) {
+            expression.incrementNumber(parentDynamoFieldName, "${revisionFieldName}", 1, true);
         }
 </#if>
 
@@ -308,8 +308,8 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     public void addConditionalExpression(DynamoExpressionBuilder expression) {
         expression.addCheckFieldValueCondition(null, "schemaVersion", ${rootType}.SCHEMA_VERSION);
 <#if isRoot && optimisticLocking>
-        if (disableOptimisticLocking) {
-            expression.addCheckFieldValueCondition(null, "${revisionFieldName}", ${currentState}.getRevision());
+        if (!disableOptimisticLocking) {
+            expression.addCheckFieldValueCondition(null, "${revisionFieldName}", ${currentState}.getRevision(), true);
         }
 </#if>
     }
