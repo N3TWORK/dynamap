@@ -24,6 +24,7 @@ import com.amazonaws.services.dynamodbv2.document.spec.PutItemSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
 import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.UpdateItemSpec;
+import com.amazonaws.services.dynamodbv2.document.utils.NameMap;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.model.*;
 import com.amazonaws.services.dynamodbv2.util.TableUtils;
@@ -474,6 +475,7 @@ public class Dynamap {
                     .withReturnValues(ReturnValue.NONE);
             String hashKeyFieldName = tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName();
             ValueMap valueMap = new ValueMap();
+            NameMap nameMap = new NameMap();
             List<String> conditionalExpressions = new ArrayList<>();
             if (!overwrite) {
                 conditionalExpressions.add("attribute_not_exists("+hashKeyFieldName+")");
@@ -483,7 +485,8 @@ public class Dynamap {
                 // value is incremented in buildDynamoItemFromObject, so here i must get the original value
                 int revision = item.getInt(Schema.REVISION_FIELD) - 1;
                 if (revision > 0) {
-                    conditionalExpressions.add(Schema.REVISION_FIELD + "=:val0");
+                    conditionalExpressions.add("#name0=:val0");
+                    nameMap.with("#name0", Schema.REVISION_FIELD);
                     valueMap.withInt(":val0", revision);
                 }
             }
@@ -491,6 +494,7 @@ public class Dynamap {
             if (conditionalExpressions.size() > 0) {
                 putItemSpec.withConditionExpression(String.join(" AND ", conditionalExpressions));
                 if (valueMap.size() > 0 ) {
+                    putItemSpec.withNameMap(nameMap);
                     putItemSpec.withValueMap(valueMap);
                 }
             }
