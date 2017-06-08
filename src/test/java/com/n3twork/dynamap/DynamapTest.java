@@ -240,6 +240,41 @@ public class DynamapTest {
 
     }
 
+
+    @Test
+    public void testOptimisticLockingWithSave() {
+        final String DOC_ID = "1";
+        DummyDocBean doc = new DummyDocBean(DOC_ID, "test", 6);
+        dynamap.save(doc, null);
+
+        DummyDocBean savedDoc = dynamap.getObject(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID), null);
+
+        Assert.assertEquals(savedDoc.getRevision().intValue(), 1);
+
+        savedDoc.setWeight(100);
+
+        // two simultaneous updates, second one should fail
+        dynamap.save(savedDoc, null);
+
+        try {
+            dynamap.save(savedDoc, null);
+            Assert.fail();
+        }
+        catch (RuntimeException ex){
+            Assert.assertNotNull(ex);
+            Assert.assertTrue(ex.getCause() instanceof com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException);
+        }
+
+        savedDoc = dynamap.getObject(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID), null);
+
+        // two simultaneous updates, second one should fail
+        dynamap.save(savedDoc, true, true, null);
+        // two simultaneous updates, second one should fail
+        dynamap.save(savedDoc, true, true, null);
+
+        Assert.assertEquals(savedDoc.getRevision().intValue(), 2);
+    }
+
     @Test
     public void testBatchSave() {
         batchSave(null);

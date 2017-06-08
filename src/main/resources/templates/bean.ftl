@@ -75,7 +75,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
         </#if>
     </#list>
     <#if isRoot && optimisticLocking>
-        this._revision = _revision == null ? 1 : _revision;
+        this._revision = _revision == null ? 0 : _revision;
     </#if>
     }
 

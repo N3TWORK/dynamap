@@ -24,6 +24,7 @@ import com.amazonaws.services.dynamodbv2.document.spec.PutItemSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
 import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.UpdateItemSpec;
+import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.model.*;
 import com.amazonaws.services.dynamodbv2.util.TableUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -268,13 +269,17 @@ public class Dynamap {
     }
 
     public void save(DynamapRecordBean object, DynamoRateLimiter writeLimiter) {
-        TableDefinition tableDefinition = schemaRegistry.getTableDefinition(object.getClass());
-        putObject(object, tableDefinition, true, writeLimiter);
+        save(object, true, false, writeLimiter);
+
     }
 
     public void save(DynamapRecordBean object, boolean overwrite, DynamoRateLimiter writeLimiter) {
+        save(object, overwrite, false, writeLimiter);
+    }
+
+    public void save(DynamapRecordBean object, boolean overwrite, boolean disableOptimisticLocking, DynamoRateLimiter writeLimiter) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(object.getClass());
-        putObject(object, tableDefinition, overwrite, writeLimiter);
+        putObject(object, tableDefinition, overwrite, disableOptimisticLocking, writeLimiter);
     }
 
     public <T extends DynamapPersisted> T update(Updates<T> updates) {
@@ -400,7 +405,7 @@ public class Dynamap {
                 item = item.withInt(Schema.SCHEMA_VERSION_FIELD, tableDefinition.getVersion());
                 result = objectMapper.convertValue(item.asMap(), resultClass);
                 if (writeBack) {
-                    putObject(result, tableDefinition, true, writeRateLimiter);
+                    putObject(result, tableDefinition, true, false, writeRateLimiter);
                 }
             } else {
                 result = objectMapper.convertValue(item.asMap(), resultClass);
@@ -411,13 +416,14 @@ public class Dynamap {
         return result;
     }
 
-    private <T extends DynamapRecordBean> Item buildDynamoItemFromObject(T object, TableDefinition tableDefinition) {
+    private <T extends DynamapRecordBean> Item buildDynamoItemFromObject(T object, TableDefinition tableDefinition, boolean disableOptimisticLocking) {
         Map<String, Object> map = objectMapper.convertValue(object, new TypeReference<Map<String, Object>>() {
         });
         Item item = new Item().withInt(Schema.SCHEMA_VERSION_FIELD, tableDefinition.getVersion());
 
-        if (tableDefinition.isOptimisticLocking()) {
-            item.withInt(Schema.REVISION_FIELD, (int) map.getOrDefault(Schema.REVISION_FIELD, 1));
+        if (!disableOptimisticLocking && tableDefinition.isOptimisticLocking()) {
+            int revision = (int) map.getOrDefault(Schema.REVISION_FIELD, 0);
+            item.withInt(Schema.REVISION_FIELD, revision + 1);
         }
 
         Type type = tableDefinition.getTypes().stream().filter(t -> t.getName().equals(tableDefinition.getType())).findFirst().get();
@@ -456,16 +462,37 @@ public class Dynamap {
         return item;
     }
 
-    private <T extends DynamapRecordBean> void putObject(T object, TableDefinition tableDefinition, boolean overwrite, DynamoRateLimiter writeLimiter) {
+    private <T extends DynamapRecordBean> Item buildDynamoItemFromObject(T object, TableDefinition tableDefinition) {
+        return buildDynamoItemFromObject(object, tableDefinition, false);
+    }
+
+    private <T extends DynamapRecordBean> void putObject(T object, TableDefinition tableDefinition, boolean overwrite, boolean disableOptimisticLocking, DynamoRateLimiter writeLimiter) {
         try {
-            Item item = buildDynamoItemFromObject(object, tableDefinition);
+            Item item = buildDynamoItemFromObject(object, tableDefinition, disableOptimisticLocking);
             PutItemSpec putItemSpec = new PutItemSpec()
                     .withItem(item)
                     .withReturnValues(ReturnValue.NONE);
-
             String hashKeyFieldName = tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName();
+            ValueMap valueMap = new ValueMap();
+            List<String> conditionalExpressions = new ArrayList<>();
             if (!overwrite) {
-                putItemSpec.withConditionExpression( "attribute_not_exists("+hashKeyFieldName+")");
+                conditionalExpressions.add("attribute_not_exists("+hashKeyFieldName+")");
+            }
+
+            if (!disableOptimisticLocking && tableDefinition.isOptimisticLocking()) {
+                // value is incremented in buildDynamoItemFromObject, so here i must get the original value
+                int revision = item.getInt(Schema.REVISION_FIELD) - 1;
+                if (revision > 0) {
+                    conditionalExpressions.add(Schema.REVISION_FIELD + "=:val0");
+                    valueMap.withInt(":val0", revision);
+                }
+            }
+
+            if (conditionalExpressions.size() > 0) {
+                putItemSpec.withConditionExpression(String.join(" AND ", conditionalExpressions));
+                if (valueMap.size() > 0 ) {
+                    putItemSpec.withValueMap(valueMap);
+                }
             }
 
             Table table = dynamoDB.getTable(tableDefinition.getTableName(prefix)); //TODO: this should be cached
