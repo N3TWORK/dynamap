@@ -115,6 +115,7 @@ public class CodeGenerator {
 
             model.put("optimisticLocking", tableDefinition.isOptimisticLocking());
             model.put("revisionFieldName", Schema.REVISION_FIELD);
+            model.put("schemaVersionFieldName", Schema.SCHEMA_VERSION_FIELD);
 
             try (Writer writer = new OutputStreamWriter(new FileOutputStream(outputPath + "/" + packageDir + "/" + type.getName() + ".java"))) {
                 interfaceTemplate.process(model, writer);

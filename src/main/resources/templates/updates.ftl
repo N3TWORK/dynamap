@@ -306,7 +306,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
 
     @Override
     public void addConditionalExpression(DynamoExpressionBuilder expression) {
-        expression.addCheckFieldValueCondition(null, "schemaVersion", ${rootType}.SCHEMA_VERSION);
+        expression.addCheckFieldValueCondition(null, "${schemaVersionFieldName}", ${rootType}.SCHEMA_VERSION, true);
 <#if isRoot && optimisticLocking>
         if (!disableOptimisticLocking) {
             expression.addCheckFieldValueCondition(null, "${revisionFieldName}", ${currentState}.getRevision(), true);

@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 
 public class Schema {
 
-    public static final String SCHEMA_VERSION_FIELD = "schemaVersion";
+    public static final String SCHEMA_VERSION_FIELD = "_schv";
     public static final String REVISION_FIELD = "_rv";
 
     private final List<TableDefinition> tableDefinitions;
