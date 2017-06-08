@@ -58,13 +58,27 @@ public class DynamoExpressionBuilder {
     }
 
     public DynamoExpressionBuilder incrementNumber(String parentField, String fieldName, Number amount) {
+        return incrementNumber(parentField, fieldName, amount, false);
+    }
+
+    public DynamoExpressionBuilder incrementNumber(String parentField, String fieldName, Number amount, boolean useNameMap) {
         String alias = vals.next();
         if (amount instanceof Integer) {
             valueMap = valueMap.withInt(alias, (Integer) amount);
         } else if (amount instanceof Long) {
             valueMap = valueMap.withLong(alias, (Long) amount);
         }
-        addSection.add(String.format("%s %s", joinFields(parentField, fieldName), alias));
+
+        String attributeName;
+        if (useNameMap) {
+            String nameAlias = names.next();
+            nameMap = nameMap.with(nameAlias, joinFields(parentField, fieldName));
+            attributeName = nameAlias;
+        }
+        else {
+            attributeName = joinFields(parentField, fieldName);
+        }
+        addSection.add(String.format("%s %s", attributeName, alias));
         return this;
     }
 
@@ -116,7 +130,21 @@ public class DynamoExpressionBuilder {
     //////// Conditional Expression ////
 
     public DynamoExpressionBuilder addCheckFieldValueCondition(String parentField, String fieldName, Object value) {
-        conditions.add(String.format("%s=%s", joinFields(parentField, fieldName), processValueAlias(condVals, value)));
+        return addCheckFieldValueCondition(parentField, fieldName, value, false);
+    }
+
+    public DynamoExpressionBuilder addCheckFieldValueCondition(String parentField, String fieldName, Object value, boolean useNameMap) {
+        String attributeName;
+        if (useNameMap) {
+            String nameAlias = condNames.next();
+            nameMap = nameMap.with(nameAlias, joinFields(parentField, fieldName));
+            attributeName = nameAlias;
+        }
+        else {
+            attributeName = joinFields(parentField, fieldName);
+        }
+
+        conditions.add(String.format("%s=%s", attributeName, processValueAlias(condVals, value)));
         return this;
     }
 
