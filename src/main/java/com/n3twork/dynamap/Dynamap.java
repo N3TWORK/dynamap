@@ -49,6 +49,7 @@ public class Dynamap {
     private ObjectMapper objectMapper;
 
     private static final int MAX_BATCH_SIZE = 25;
+    private static final int MAX_BATCH_GET_SIZE = 100;
 
     public Dynamap(AmazonDynamoDB amazonDynamoDB, SchemaRegistry schemaRegistry) {
         this.amazonDynamoDB = amazonDynamoDB;
@@ -151,49 +152,52 @@ public class Dynamap {
     // or just be aware of the actual behavior
     public Map<String, List<Object>> batchGetObject(Collection<GetObjectRequest> getObjectRequests, Object migrationContext) {
 
-        Map<String, GetItemInfo> queryInfos = new HashMap<>();
+        List<List<GetObjectRequest>> partitions = Lists.partition(new ArrayList<>(getObjectRequests),MAX_BATCH_GET_SIZE);
         Map<String, List<Object>> results = new HashMap<>();
+        for (List<GetObjectRequest> getObjectRequestBatch : partitions) {
 
-        for (GetObjectRequest getObjectRequest : getObjectRequests) {
-            TableDefinition tableDefinition = schemaRegistry.getTableDefinition(getObjectRequest.getResultClass());
-            String tableName = tableDefinition.getTableName(prefix);
-            TableKeysAndAttributes keysAndAttributes;
-            if (queryInfos.get(tableName) != null) {
-                keysAndAttributes = queryInfos.get(tableName).keysAndAttributes;
-            } else {
-                keysAndAttributes = new TableKeysAndAttributes(tableName)
-                        .withConsistentRead(getObjectRequest.isConsistentRead());
+            Map<String, GetItemInfo> queryInfos = new HashMap<>();
+
+            for (GetObjectRequest getObjectRequest : getObjectRequestBatch) {
+                TableDefinition tableDefinition = schemaRegistry.getTableDefinition(getObjectRequest.getResultClass());
+                String tableName = tableDefinition.getTableName(prefix);
+                TableKeysAndAttributes keysAndAttributes;
+                if (queryInfos.get(tableName) != null) {
+                    keysAndAttributes = queryInfos.get(tableName).keysAndAttributes;
+                } else {
+                    keysAndAttributes = new TableKeysAndAttributes(tableName)
+                            .withConsistentRead(getObjectRequest.isConsistentRead());
+                }
+
+                String hashKeyFieldName = tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName();
+                if (getObjectRequest.getRangeKeyValue() != null) {
+                    String rangeKeyFieldName = tableDefinition.getField(tableDefinition.getRangeKey()).getDynamoName();
+                    keysAndAttributes.addHashAndRangePrimaryKey(hashKeyFieldName, getObjectRequest.getHashKeyValue(), rangeKeyFieldName, getObjectRequest.getRangeKeyValue());
+                } else {
+                    keysAndAttributes.addHashOnlyPrimaryKey(hashKeyFieldName, getObjectRequest.getHashKeyValue());
+                }
+                GetItemInfo getItemInfo = new GetItemInfo();
+                getItemInfo.keysAndAttributes = keysAndAttributes;
+                getItemInfo.tableDefinition = tableDefinition;
+                getItemInfo.getObjectRequest = getObjectRequest;
+                queryInfos.put(tableName, getItemInfo);
+                getItemInfo.table = dynamoDB.getTable(tableName);
             }
 
-            String hashKeyFieldName = tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName();
-            if (getObjectRequest.getRangeKeyValue() != null) {
-                String rangeKeyFieldName = tableDefinition.getField(tableDefinition.getRangeKey()).getDynamoName();
-                keysAndAttributes.addHashAndRangePrimaryKey(hashKeyFieldName, getObjectRequest.getHashKeyValue(), rangeKeyFieldName, getObjectRequest.getRangeKeyValue());
-            } else {
-                keysAndAttributes.addHashOnlyPrimaryKey(hashKeyFieldName, getObjectRequest.getHashKeyValue());
-            }
-            GetItemInfo getItemInfo = new GetItemInfo();
-            getItemInfo.keysAndAttributes = keysAndAttributes;
-            getItemInfo.tableDefinition = tableDefinition;
-            getItemInfo.getObjectRequest = getObjectRequest;
-            queryInfos.put(tableName, getItemInfo);
-            getItemInfo.table = dynamoDB.getTable(tableName);
-        }
+            Multimap<String, Item> allItems = doBatchGetItem(queryInfos);
+            for (GetItemInfo getItemInfo : queryInfos.values()) {
 
-
-        Multimap<String, Item> allItems = doBatchGetItem(queryInfos);
-        for (GetItemInfo getItemInfo : queryInfos.values()) {
-
-            Collection<Item> items = allItems.get(getItemInfo.tableDefinition.getTableName(prefix));
-            List<Object> resultsForTable = results.get(getItemInfo.tableDefinition.getTableName());
-            if (resultsForTable == null) {
-                resultsForTable = new ArrayList<>();
-                results.put(getItemInfo.tableDefinition.getTableName(), resultsForTable);
-            }
-            for (Item item : items) {
-                resultsForTable.add(buildObjectFromDynamoItem(item, getItemInfo.tableDefinition,
-                        getItemInfo.getObjectRequest.getResultClass(), getItemInfo.getObjectRequest.getWriteRateLimiter(),
-                        migrationContext, true));
+                Collection<Item> items = allItems.get(getItemInfo.tableDefinition.getTableName(prefix));
+                List<Object> resultsForTable = results.get(getItemInfo.tableDefinition.getTableName());
+                if (resultsForTable == null) {
+                    resultsForTable = new ArrayList<>();
+                    results.put(getItemInfo.tableDefinition.getTableName(), resultsForTable);
+                }
+                for (Item item : items) {
+                    resultsForTable.add(buildObjectFromDynamoItem(item, getItemInfo.tableDefinition,
+                            getItemInfo.getObjectRequest.getResultClass(), getItemInfo.getObjectRequest.getWriteRateLimiter(),
+                            migrationContext, true));
+                }
             }
         }
         return results;
