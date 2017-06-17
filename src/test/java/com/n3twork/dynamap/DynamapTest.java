@@ -22,24 +22,15 @@ import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
 import com.amazonaws.util.IOUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.n3twork.dynamap.test.DummyDocBean;
-import com.n3twork.dynamap.test.DummyDocUpdates;
-import com.n3twork.dynamap.test.ExampleDocument;
-import com.n3twork.dynamap.test.ExampleDocumentBean;
-import com.n3twork.dynamap.test.ExampleDocumentUpdates;
-import com.n3twork.dynamap.test.NestedTypeBean;
-import com.n3twork.dynamap.test.NestedTypeUpdates;
+import com.google.common.collect.ImmutableList;
+import com.n3twork.dynamap.test.*;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class DynamapTest {
@@ -67,15 +58,16 @@ public class DynamapTest {
     @Test
     public void testDynaMap() throws Exception {
         // Save
-        String exampleId = UUID.randomUUID().toString();
-        String nestedId = UUID.randomUUID().toString();
-        NestedTypeBean nestedObject = new NestedTypeBean(nestedId, null, null, null, null, null,
+        String exampleId1 = UUID.randomUUID().toString();
+        String nestedId1 = UUID.randomUUID().toString();
+
+        NestedTypeBean nestedObject = new NestedTypeBean(nestedId1, null, null, null, null, null,
                 null, null, null, null);
-        ExampleDocumentBean doc = new ExampleDocumentBean(exampleId,
+        ExampleDocumentBean doc = new ExampleDocumentBean(exampleId1,
                 1, nestedObject, null, null, "alias");
         dynamap.save(doc, null);
 
-        ExampleDocumentBean doc2 = new ExampleDocumentBean(exampleId,
+        ExampleDocumentBean doc2 = new ExampleDocumentBean(exampleId1,
                 2, nestedObject, null, null, "alias");
 
         // overwrite allowed
@@ -85,18 +77,17 @@ public class DynamapTest {
         try {
             dynamap.save(doc2, false, null);
             Assert.fail();
-        }
-        catch (RuntimeException ex){
+        } catch (RuntimeException ex) {
             Assert.assertNotNull(ex);
         }
 
         // Get Object
-        GetObjectRequest<ExampleDocumentBean> getObjectRequest = new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId).withRangeKeyValue(1);
+        GetObjectRequest<ExampleDocumentBean> getObjectRequest = new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId1).withRangeKeyValue(1);
         ExampleDocumentBean exampleDocument = dynamap.getObject(getObjectRequest, null);
 
-        Assert.assertEquals(exampleDocument.getExampleId(), exampleId);
+        Assert.assertEquals(exampleDocument.getExampleId(), exampleId1);
         nestedObject = new NestedTypeBean(exampleDocument.getNestedObject());
-        Assert.assertEquals(nestedObject.getId(), nestedId);
+        Assert.assertEquals(nestedObject.getId(), nestedId1);
 
         // Get Not Exists
         Assert.assertNull(dynamap.getObject(new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue("blah").withRangeKeyValue(1), null));
@@ -111,7 +102,7 @@ public class DynamapTest {
 
 
         // Update nested object
-        NestedTypeUpdates nestedTypeUpdates = new NestedTypeUpdates(nestedObject, exampleId, 1);
+        NestedTypeUpdates nestedTypeUpdates = new NestedTypeUpdates(nestedObject, exampleId1, 1);
         nestedTypeUpdates.setBio("test nested");
         dynamap.update(nestedTypeUpdates);
 
@@ -166,30 +157,53 @@ public class DynamapTest {
 
 
         dynamap = new Dynamap(ddb, schemaRegistry).withPrefix("test").withObjectMapper(objectMapper);
-        getObjectRequest = new GetObjectRequest(ExampleDocumentBean.class).withHashKeyValue(exampleId).withRangeKeyValue(1);
+        getObjectRequest = new GetObjectRequest(ExampleDocumentBean.class).withHashKeyValue(exampleId1).withRangeKeyValue(1);
         exampleDocument = dynamap.getObject(getObjectRequest, null);
         Assert.assertEquals(exampleDocument.getAlias(), "newAlias");
 
 
         // Delete
         final int sequence = 3;
-        ExampleDocumentBean doc3 = new ExampleDocumentBean(exampleId,
+        ExampleDocumentBean doc3 = new ExampleDocumentBean(exampleId1,
                 sequence, nestedObject, null, null, "alias");
         dynamap.save(doc3, false, null);
 
-        GetObjectRequest<ExampleDocumentBean> getObjectRequest3 = new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId).withRangeKeyValue(sequence);
+        GetObjectRequest<ExampleDocumentBean> getObjectRequest3 = new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId1).withRangeKeyValue(sequence);
         ExampleDocument exampleDocument3 = dynamap.getObject(getObjectRequest3, null);
         Assert.assertNotNull(exampleDocument3);
 
         DeleteRequest<ExampleDocumentBean> deleteRequest = new DeleteRequest<>(ExampleDocumentBean.class)
-                .withHashKeyValue(exampleId)
+                .withHashKeyValue(exampleId1)
                 .withRangeKeyValue(sequence);
 
         dynamap.delete(deleteRequest);
 
-        getObjectRequest3 = new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId).withRangeKeyValue(sequence);
+        getObjectRequest3 = new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId1).withRangeKeyValue(sequence);
         exampleDocument3 = dynamap.getObject(getObjectRequest3, null);
         Assert.assertNull(exampleDocument3);
+    }
+
+    @Test
+    public void testBatchGetItem() {
+        String exampleId1 = UUID.randomUUID().toString();
+        String nestedId1 = UUID.randomUUID().toString();
+        String exampleId2 = UUID.randomUUID().toString();
+        String nestedId2 = UUID.randomUUID().toString();
+        dynamap.save(new ExampleDocumentBean(exampleId1,
+                1, new NestedTypeBean(nestedId1, null, null, null, null, null,
+                null, null, null, null), null, null, "alias"), null);
+        dynamap.save(new ExampleDocumentBean(exampleId2,
+                1, new NestedTypeBean(nestedId2, null, null, null, null, null,
+                null, null, null, null), null, null, "alias"), null);
+
+
+        List<ExampleDocumentBean> exampleDocuments;
+
+        exampleDocuments = dynamap.batchGetObjectSingleCollection(ImmutableList.of(
+                new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId1).withRangeKeyValue(1),
+                new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId2).withRangeKeyValue(1)), null);
+
+        Assert.assertEquals(2, exampleDocuments.size());
     }
 
     @Test
@@ -223,8 +237,7 @@ public class DynamapTest {
         try {
             dynamap.update(docUpdates2);
             Assert.fail();
-        }
-        catch (RuntimeException ex){
+        } catch (RuntimeException ex) {
             Assert.assertNotNull(ex);
             Assert.assertTrue(ex.getCause() instanceof com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException);
         }
@@ -259,8 +272,7 @@ public class DynamapTest {
         try {
             dynamap.save(savedDoc, null);
             Assert.fail();
-        }
-        catch (RuntimeException ex){
+        } catch (RuntimeException ex) {
             Assert.assertNotNull(ex);
             Assert.assertTrue(ex.getCause() instanceof com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException);
         }

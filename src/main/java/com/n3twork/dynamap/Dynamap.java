@@ -18,12 +18,7 @@ package com.n3twork.dynamap;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.document.*;
-import com.amazonaws.services.dynamodbv2.document.spec.BatchWriteItemSpec;
-import com.amazonaws.services.dynamodbv2.document.spec.DeleteItemSpec;
-import com.amazonaws.services.dynamodbv2.document.spec.PutItemSpec;
-import com.amazonaws.services.dynamodbv2.document.spec.QuerySpec;
-import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
-import com.amazonaws.services.dynamodbv2.document.spec.UpdateItemSpec;
+import com.amazonaws.services.dynamodbv2.document.spec.*;
 import com.amazonaws.services.dynamodbv2.document.utils.NameMap;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.model.*;
@@ -165,8 +160,7 @@ public class Dynamap {
             TableKeysAndAttributes keysAndAttributes;
             if (queryInfos.get(tableName) != null) {
                 keysAndAttributes = queryInfos.get(tableName).keysAndAttributes;
-            }
-            else {
+            } else {
                 keysAndAttributes = new TableKeysAndAttributes(tableName)
                         .withConsistentRead(getObjectRequest.isConsistentRead());
             }
@@ -204,6 +198,21 @@ public class Dynamap {
         }
         return results;
     }
+
+    public <T extends DynamapRecordBean> List<T> batchGetObjectSingleCollection(Collection<GetObjectRequest<T>> getObjectRequests, Object migrationContext) {
+        if (getObjectRequests.size() == 0) {
+            return Collections.emptyList();
+        }
+        // ensure that only one result class has been specified
+        GetObjectRequest<T> getObjectRequest = getObjectRequests.iterator().next();
+        String resultClass = getObjectRequest.getResultClass().getCanonicalName();
+        if (getObjectRequests.stream().anyMatch(r -> !r.getResultClass().getCanonicalName().equals(resultClass))) {
+            throw new IllegalArgumentException("More than one ResultClass has been specified");
+        }
+        TableDefinition tableDefinition = schemaRegistry.getTableDefinition(getObjectRequest.getResultClass());
+        return (List<T>) batchGetObject((Collection) getObjectRequests, migrationContext).get(tableDefinition.getTableName());
+    }
+
 
     public <T extends DynamapRecordBean> List<T> query(QueryRequest<T> queryRequest, Object migrationContext) {
         List<T> results = new ArrayList<>();
@@ -478,7 +487,7 @@ public class Dynamap {
             NameMap nameMap = new NameMap();
             List<String> conditionalExpressions = new ArrayList<>();
             if (!overwrite) {
-                conditionalExpressions.add("attribute_not_exists("+hashKeyFieldName+")");
+                conditionalExpressions.add("attribute_not_exists(" + hashKeyFieldName + ")");
             }
 
             if (!disableOptimisticLocking && tableDefinition.isOptimisticLocking()) {
@@ -493,7 +502,7 @@ public class Dynamap {
 
             if (conditionalExpressions.size() > 0) {
                 putItemSpec.withConditionExpression(String.join(" AND ", conditionalExpressions));
-                if (valueMap.size() > 0 ) {
+                if (valueMap.size() > 0) {
                     putItemSpec.withNameMap(nameMap);
                     putItemSpec.withValueMap(valueMap);
                 }
@@ -564,7 +573,7 @@ public class Dynamap {
             deleteItemSpec.withPrimaryKey(hashField.getDynamoName(), deleteRequest.getHashKeyValue());
         }
 
-       table.deleteItem(deleteItemSpec);
+        table.deleteItem(deleteItemSpec);
     }
 
     public <T extends DynamapRecordBean> void batchSave(List<T> objects, Map<String, DynamoRateLimiter> writeLimiterMap) {
@@ -578,7 +587,7 @@ public class Dynamap {
     public <T extends DynamapRecordBean> void doBatchWriteItem(List<T> objects, Map<String, DynamoRateLimiter> writeLimiterMap) {
         Map<String, TableWriteItems> tableWriteItems = new HashMap<>();
 
-        for (DynamapRecordBean object: objects) {
+        for (DynamapRecordBean object : objects) {
             TableDefinition tableDefinition = schemaRegistry.getTableDefinition(object.getClass());
             Item item = buildDynamoItemFromObject(object, tableDefinition);
 
