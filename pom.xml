@@ -22,6 +22,21 @@
         </repository>
     </repositories>
 
+    <distributionManagement>
+        <site>
+            <id>maven.n3twork.com</id>
+            <url>s3://n3twork-maven/site</url>
+        </site>
+        <repository>
+            <id>maven.n3twork.com</id>
+            <url>s3://n3twork-maven/release</url>
+        </repository>
+        <snapshotRepository>
+            <id>maven.n3twork.com</id>
+            <url>s3://n3twork-maven/snapshot</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <dependencies>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -106,9 +121,26 @@
         </dependency>
     </dependencies>
 
-    <profiles>
 
-    </profiles>
+    <!--<profiles>-->
+    <!--<profile>-->
+    <!--<id>platform</id>-->
+    <!--<distributionManagement>-->
+    <!--<site>-->
+    <!--<id>maven.n3twork.com</id>-->
+    <!--<url>s3://n3twork-maven/site</url>-->
+    <!--</site>-->
+    <!--<repository>-->
+    <!--<id>maven.n3twork.com</id>-->
+    <!--<url>s3://n3twork-maven/release</url>-->
+    <!--</repository>-->
+    <!--<snapshotRepository>-->
+    <!--<id>maven.n3twork.com</id>-->
+    <!--<url>s3://n3twork-maven/snapshot</url>-->
+    <!--</snapshotRepository>-->
+    <!--</distributionManagement>-->
+    <!--</profile>-->
+    <!--</profiles>-->
 
     <build>
         <plugins>
@@ -199,6 +231,18 @@
                 </executions>
             </plugin>
         </plugins>
+        <extensions>
+            <extension>
+                <groupId>org.springframework.build</groupId>
+                <artifactId>aws-maven</artifactId>
+                <version>5.0.0.RELEASE</version>
+            </extension>
+            <!--<extension>-->
+            <!--<groupId>org.kuali.maven.wagons</groupId>-->
+            <!--<artifactId>maven-s3-wagon</artifactId>-->
+            <!--<version>1.2.1</version>-->
+            <!--</extension>-->
+        </extensions>
     </build>
 
 </project>
