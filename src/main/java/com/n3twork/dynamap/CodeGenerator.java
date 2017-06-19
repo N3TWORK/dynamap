@@ -57,22 +57,27 @@ public class CodeGenerator {
         }
         ///
 
-        InputStream schemaInput = new FileInputStream(cmd.getOptionValue(OPT_SCHEMA_FILE_PATH));
-        new CodeGenerator(schemaInput, cmd.getOptionValue(OPT_OUTPUT_PATH));
+        String[] paths = cmd.getOptionValues(OPT_SCHEMA_FILE_PATH);
+        InputStream[] inputStreams = new InputStream[paths.length];
+        for (int idx = 0; idx < paths.length; idx++) {
+            inputStreams[idx] = new FileInputStream(paths[idx]);
+        }
+        new CodeGenerator(cmd.getOptionValue(OPT_OUTPUT_PATH), inputStreams);
     }
 
-    public CodeGenerator(InputStream schemaInput, String outputPath) throws Exception {
+    public CodeGenerator(String outputPath, InputStream... schemaInputs) throws Exception {
 
         Configuration cfg = new Configuration(Configuration.DEFAULT_INCOMPATIBLE_IMPROVEMENTS);
         cfg.setClassForTemplateLoading(this.getClass(), "/templates");
         cfg.setLogTemplateExceptions(false);
 
         ObjectMapper objectMapper = new ObjectMapper();
-        Schema schema = objectMapper.readValue(schemaInput, Schema.class);
-        for (TableDefinition tableDefinition : schema.getTableDefinitions()) {
-            generateSchemaClasses(tableDefinition, outputPath, cfg);
+        for (InputStream schemaInput : schemaInputs) {
+            Schema schema = objectMapper.readValue(schemaInput, Schema.class);
+            for (TableDefinition tableDefinition : schema.getTableDefinitions()) {
+                generateSchemaClasses(tableDefinition, outputPath, cfg);
+            }
         }
-
     }
 
     private void generateSchemaClasses(TableDefinition tableDefinition, String outputPath, Configuration cfg) throws Exception {

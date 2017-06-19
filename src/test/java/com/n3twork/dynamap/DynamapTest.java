@@ -49,7 +49,7 @@ public class DynamapTest {
 
     @BeforeMethod
     public void setup() {
-        schemaRegistry = new SchemaRegistry(getClass().getResourceAsStream("/TestSchema.json"));
+        schemaRegistry = new SchemaRegistry(getClass().getResourceAsStream("/ExampleSchema.json"),getClass().getResourceAsStream("/DummySchema.json") );
         // Create tables
         dynamap = new Dynamap(ddb, schemaRegistry).withPrefix("test").withObjectMapper(objectMapper);
         dynamap.createTables(true);
@@ -134,7 +134,7 @@ public class DynamapTest {
 
 
         // Migration
-        String jsonSchema = IOUtils.toString(getClass().getResourceAsStream("/TestSchema.json"));
+        String jsonSchema = IOUtils.toString(getClass().getResourceAsStream("/ExampleSchema.json"));
         jsonSchema = jsonSchema.replace("\"version\": 1,", "\"version\": 2,");
         schemaRegistry = new SchemaRegistry(new ByteArrayInputStream(jsonSchema.getBytes()));
         schemaRegistry.registerMigration("Example", new Migration() {

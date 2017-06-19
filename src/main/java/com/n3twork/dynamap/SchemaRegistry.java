@@ -35,15 +35,20 @@ public class SchemaRegistry {
     private final Map<String, List<Migration>> tableMigrations = new HashMap<>();
     private final Map<String, Method> getTableNameMethods = new HashMap<>();
 
+    public SchemaRegistry(InputStream... schemaInput) {
+        List<TableDefinition> tableDefinitions = new ArrayList<>();
+        for (InputStream inputStream : schemaInput) {
+            try {
+                Schema schema = new ObjectMapper().readValue(inputStream, Schema.class);
+                tableDefinitions.addAll(schema.getTableDefinitions());
 
-    public SchemaRegistry(InputStream schemaInput) {
-        try {
-            this.schema = new ObjectMapper().readValue(schemaInput, Schema.class);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-            IOUtils.closeQuietly(schemaInput);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            } finally {
+                IOUtils.closeQuietly(inputStream);
+            }
         }
+        this.schema = new Schema(tableDefinitions);
     }
 
     public void registerMigration(String tableName, Migration migration) {

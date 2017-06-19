@@ -205,7 +205,9 @@
                             <mainClass>com.n3twork.dynamap.CodeGenerator</mainClass>
                             <arguments>
                                 <argument>--schema</argument>
-                                <argument>${project.basedir}/src/test/resources/TestSchema.json</argument>
+                                <argument>${project.basedir}/src/test/resources/ExampleSchema.json</argument>
+                                <argument>--schema</argument>
+                                <argument>${project.basedir}/src/test/resources/DummySchema.json</argument>
                                 <argument>--output</argument>
                                 <argument>${project.build.directory}/generated-test-sources</argument>
                             </arguments>

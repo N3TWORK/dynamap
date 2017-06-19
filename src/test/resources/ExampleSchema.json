@@ -121,36 +121,6 @@
           ]
         }
       ]
-    },
-    {
-      "table": "DummyTable",
-      "package": "com.n3twork.dynamap.test",
-      "type": "DummyDoc",
-      "version": 1,
-      "optimisticLocking": true,
-      "hashKey": "id",
-      "types": [
-        {
-          "name": "DummyDoc",
-          "fields": [
-            {
-              "name": "id",
-              "dynamoName": "fdId",
-              "type": "String"
-            },
-            {
-              "name": "name",
-              "dynamoName": "pstRfId",
-              "type": "String"
-            },
-            {
-              "name": "weight",
-              "dynamoName": "wght",
-              "type": "Integer"
-            }
-          ]
-        }
-      ]
     }
   ]
 }

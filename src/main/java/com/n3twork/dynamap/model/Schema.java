@@ -19,9 +19,7 @@ package com.n3twork.dynamap.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -30,9 +28,8 @@ public class Schema {
     public static final String REVISION_FIELD = "_rv";
 
     private final List<TableDefinition> tableDefinitions;
-    private final Map<String, String> tablesForClass = new HashMap<>();
 
-    public Schema(@JsonProperty("registryClass") String registryClass, @JsonProperty("tables") List<TableDefinition> tableDefinitions) {
+    public Schema(@JsonProperty("tables") List<TableDefinition> tableDefinitions) {
 
         this.tableDefinitions = tableDefinitions;
 
