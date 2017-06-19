@@ -89,15 +89,19 @@ public class DynamapTest {
         nestedObject = new NestedTypeBean(exampleDocument.getNestedObject());
         Assert.assertEquals(nestedObject.getId(), nestedId1);
 
+        /// Test with rate limiters
+        ReadWriteRateLimiterPair rateLimiterPair = ReadWriteRateLimiterPair.of(new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.READ, 20),
+                new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.WRITE, 20));
+
         // Get Not Exists
-        Assert.assertNull(dynamap.getObject(new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue("blah").withRangeKeyValue(1), null));
+        Assert.assertNull(dynamap.getObject(new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue("blah").withRangeKeyValue(1), rateLimiterPair, null));
 
         // Update root object
         ExampleDocumentUpdates exampleDocumentUpdates = new ExampleDocumentUpdates(exampleDocument, exampleDocument.getHashKeyValue(), exampleDocument.getRangeKeyValue());
         exampleDocumentUpdates.setAlias("new alias");
         dynamap.update(exampleDocumentUpdates);
 
-        exampleDocument = dynamap.getObject(getObjectRequest, null);
+        exampleDocument = dynamap.getObject(getObjectRequest, rateLimiterPair, null);
         Assert.assertEquals(exampleDocument.getAlias(), "new alias");
 
 
@@ -106,7 +110,7 @@ public class DynamapTest {
         nestedTypeUpdates.setBio("test nested");
         dynamap.update(nestedTypeUpdates);
 
-        exampleDocument = dynamap.getObject(getObjectRequest, null);
+        exampleDocument = dynamap.getObject(getObjectRequest, rateLimiterPair, null);
         Assert.assertEquals(exampleDocument.getNestedObject().getBio(), "test nested");
 
 
@@ -199,9 +203,13 @@ public class DynamapTest {
 
         List<ExampleDocumentBean> exampleDocuments;
 
+        ReadWriteRateLimiterPair rateLimiterPair = ReadWriteRateLimiterPair.of(new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.READ, 20),
+                new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.WRITE, 20));
+
+
         exampleDocuments = dynamap.batchGetObjectSingleCollection(ImmutableList.of(
                 new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId1).withRangeKeyValue(1),
-                new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId2).withRangeKeyValue(1)), null);
+                new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId2).withRangeKeyValue(1)), rateLimiterPair, null);
 
         Assert.assertEquals(2, exampleDocuments.size());
     }

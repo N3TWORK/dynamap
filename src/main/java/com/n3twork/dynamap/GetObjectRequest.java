@@ -18,8 +18,6 @@ package com.n3twork.dynamap;
 
 public class GetObjectRequest<T extends DynamapRecordBean> {
 
-    private DynamoRateLimiter readRateLimiter;
-    private DynamoRateLimiter writeRateLimiter;
     private String hashKeyValue;
     private Object rangeKeyValue;
     private boolean consistentRead;
@@ -27,16 +25,6 @@ public class GetObjectRequest<T extends DynamapRecordBean> {
 
     public GetObjectRequest(Class<T> resultClass) {
         this.resultClass = resultClass;
-    }
-
-    public GetObjectRequest<T> withReadRateLimiter(DynamoRateLimiter readRateLimiter) {
-        this.readRateLimiter = readRateLimiter;
-        return this;
-    }
-
-    public GetObjectRequest<T> withWriteRateLimiter(DynamoRateLimiter writeRateLimiter) {
-        this.writeRateLimiter = writeRateLimiter;
-        return this;
     }
 
     public GetObjectRequest<T> withHashKeyValue(String hashKeyValue) {
@@ -52,14 +40,6 @@ public class GetObjectRequest<T extends DynamapRecordBean> {
     public GetObjectRequest<T> withConsistentRead(boolean consistentRead) {
         this.consistentRead = consistentRead;
         return this;
-    }
-
-    public DynamoRateLimiter getReadRateLimiter() {
-        return readRateLimiter;
-    }
-
-    public DynamoRateLimiter getWriteRateLimiter() {
-        return writeRateLimiter;
     }
 
     public String getHashKeyValue() {

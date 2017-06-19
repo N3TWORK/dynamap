@@ -26,6 +26,7 @@ import com.amazonaws.services.dynamodbv2.util.TableUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.n3twork.dynamap.model.Field;
@@ -47,6 +48,7 @@ public class Dynamap {
     private final SchemaRegistry schemaRegistry;
     private String prefix;
     private ObjectMapper objectMapper;
+    private Map<String, Table> tableCache = new HashMap<>();
 
     private static final int MAX_BATCH_SIZE = 25;
     private static final int MAX_BATCH_GET_SIZE = 100;
@@ -137,7 +139,7 @@ public class Dynamap {
     }
 
     public <T extends DynamapRecordBean> T getObject(GetObjectRequest<T> getObjectRequest, Object migrationContext) {
-        Map<String, List<Object>> results = batchGetObject(Arrays.asList(getObjectRequest), migrationContext);
+        Map<String, List<Object>> results = batchGetObject(Arrays.asList(getObjectRequest), null, migrationContext);
         List<Object> resultList = results.values().iterator().next();
         if (resultList.size() > 0) {
             return (T) resultList.get(0);
@@ -145,14 +147,24 @@ public class Dynamap {
         return null;
     }
 
-    // TODO:
-    // for each request GetObjectRequest there is info about read consistency, read rate limiter and write rate limiter
-    // but for each iteration the above values are being overwritten so only the the values from the last GetObjectRequest will be used.
-    // anyway the above mentiond values make sense only for the full table, so they should passed in another object
-    // or just be aware of the actual behavior
-    public Map<String, List<Object>> batchGetObject(Collection<GetObjectRequest> getObjectRequests, Object migrationContext) {
+    public <T extends DynamapRecordBean> T getObject(GetObjectRequest<T> getObjectRequest, ReadWriteRateLimiterPair rateLimiters, Object migrationContext) {
+        Map<String, List<Object>> results = batchGetObject(Arrays.asList(getObjectRequest), ImmutableMap.of(getObjectRequest.getResultClass(), rateLimiters), migrationContext);
+        List<Object> resultList = results.values().iterator().next();
+        if (resultList.size() > 0) {
+            return (T) resultList.get(0);
+        }
+        return null;
+    }
 
-        List<List<GetObjectRequest>> partitions = Lists.partition(new ArrayList<>(getObjectRequests),MAX_BATCH_GET_SIZE);
+    public Map<String, List<Object>> batchGetObject(Collection<GetObjectRequest> getObjectRequests, Map<Class, ReadWriteRateLimiterPair> rateLimiters, Object migrationContext) {
+        Map<String, ReadWriteRateLimiterPair> rateLimitersByTable = new HashMap<>();
+        if (rateLimiters != null) {
+            for (Class resultClass : rateLimiters.keySet()) {
+                rateLimitersByTable.put(schemaRegistry.getTableDefinition(resultClass).getTableName(prefix), rateLimiters.get(resultClass));
+            }
+        }
+
+        List<List<GetObjectRequest>> partitions = Lists.partition(new ArrayList<>(getObjectRequests), MAX_BATCH_GET_SIZE);
         Map<String, List<Object>> results = new HashMap<>();
         for (List<GetObjectRequest> getObjectRequestBatch : partitions) {
 
@@ -181,10 +193,10 @@ public class Dynamap {
                 getItemInfo.tableDefinition = tableDefinition;
                 getItemInfo.getObjectRequest = getObjectRequest;
                 queryInfos.put(tableName, getItemInfo);
-                getItemInfo.table = dynamoDB.getTable(tableName);
+                getItemInfo.table = getTable(tableName);
             }
 
-            Multimap<String, Item> allItems = doBatchGetItem(queryInfos);
+            Multimap<String, Item> allItems = doBatchGetItem(queryInfos, rateLimitersByTable);
             for (GetItemInfo getItemInfo : queryInfos.values()) {
 
                 Collection<Item> items = allItems.get(getItemInfo.tableDefinition.getTableName(prefix));
@@ -194,8 +206,15 @@ public class Dynamap {
                     results.put(getItemInfo.tableDefinition.getTableName(), resultsForTable);
                 }
                 for (Item item : items) {
+                    DynamoRateLimiter writeLimiter = null;
+                    if (rateLimiters != null) {
+                        ReadWriteRateLimiterPair pair = rateLimiters.get(getItemInfo.getObjectRequest.getResultClass());
+                        if (pair != null) {
+                            writeLimiter = pair.getWriteLimiter();
+                        }
+                    }
                     resultsForTable.add(buildObjectFromDynamoItem(item, getItemInfo.tableDefinition,
-                            getItemInfo.getObjectRequest.getResultClass(), getItemInfo.getObjectRequest.getWriteRateLimiter(),
+                            getItemInfo.getObjectRequest.getResultClass(), writeLimiter,
                             migrationContext, true));
                 }
             }
@@ -203,7 +222,7 @@ public class Dynamap {
         return results;
     }
 
-    public <T extends DynamapRecordBean> List<T> batchGetObjectSingleCollection(Collection<GetObjectRequest<T>> getObjectRequests, Object migrationContext) {
+    public <T extends DynamapRecordBean> List<T> batchGetObjectSingleCollection(Collection<GetObjectRequest<T>> getObjectRequests, ReadWriteRateLimiterPair rateLimiters, Object migrationContext) {
         if (getObjectRequests.size() == 0) {
             return Collections.emptyList();
         }
@@ -214,14 +233,15 @@ public class Dynamap {
             throw new IllegalArgumentException("More than one ResultClass has been specified");
         }
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(getObjectRequest.getResultClass());
-        return (List<T>) batchGetObject((Collection) getObjectRequests, migrationContext).get(tableDefinition.getTableName());
+        Map<Class, ReadWriteRateLimiterPair> rateLimiterMap = ImmutableMap.of(getObjectRequest.getResultClass(), rateLimiters);
+        return (List<T>) batchGetObject((Collection) getObjectRequests, rateLimiterMap, migrationContext).get(tableDefinition.getTableName());
     }
 
 
     public <T extends DynamapRecordBean> List<T> query(QueryRequest<T> queryRequest, Object migrationContext) {
         List<T> results = new ArrayList<>();
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(queryRequest.getResultClass());
-        Table table = dynamoDB.getTable(tableDefinition.getTableName(prefix));
+        Table table = getTable(tableDefinition.getTableName(prefix));
         QuerySpec querySpec = new QuerySpec().withHashKey(tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName(), queryRequest.getHashKeyValue())
                 .withRangeKeyCondition(queryRequest.getRangeKeyCondition())
                 .withConsistentRead(queryRequest.isConsistentRead())
@@ -269,7 +289,7 @@ public class Dynamap {
     public <T extends DynamapRecordBean> List<T> scan(QueryRequest<T> queryRequest, Object migrationContext) {
         List<T> results = new ArrayList<>();
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(queryRequest.getResultClass());
-        Table table = dynamoDB.getTable(tableDefinition.getTableName(prefix));
+        Table table = getTable(tableDefinition.getTableName(prefix));
 
         ScanSpec spec = new ScanSpec();
 
@@ -299,7 +319,7 @@ public class Dynamap {
     public <T extends DynamapPersisted> T update(Updates<T> updates) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(updates.getTableName());
         UpdateItemSpec updateItemSpec = getUpdateItemSpec(updates, tableDefinition);
-        Table table = dynamoDB.getTable(tableDefinition.getTableName(prefix));
+        Table table = getTable(tableDefinition.getTableName(prefix));
 
         logger.debug("About to submit DynamoDB Update: Update expression: {}, Conditional expression: {}, Values {}, Names: {}", updateItemSpec.getUpdateExpression(), updateItemSpec.getConditionExpression(), updateItemSpec.getValueMap(), updateItemSpec.getNameMap());
         try {
@@ -327,7 +347,7 @@ public class Dynamap {
         public Table table;
     }
 
-    private Multimap<String, Item> doBatchGetItem(Map<String, GetItemInfo> queryInfos) {
+    private Multimap<String, Item> doBatchGetItem(Map<String, GetItemInfo> queryInfos, Map<String, ReadWriteRateLimiterPair> rateLimiters) {
         Multimap<String, Item> results = ArrayListMultimap.create();
         try {
             TableKeysAndAttributes[] tableKeysAndAttributes = new TableKeysAndAttributes[queryInfos.size()];
@@ -344,7 +364,7 @@ public class Dynamap {
 
                 if (outcome.getBatchGetItemResult().getConsumedCapacity() != null) {
                     for (ConsumedCapacity consumedCapacity : outcome.getBatchGetItemResult().getConsumedCapacity()) {
-                        setConsumedUnits(queryInfos, consumedCapacity, false);
+                        setConsumedUnits(rateLimiters, consumedCapacity, false);
                     }
                 }
 
@@ -361,7 +381,7 @@ public class Dynamap {
 
                 unprocessedKeyCount = outcome.getUnprocessedKeys().size();
                 if (unprocessedKeyCount != 0) {
-                    initAndAcquire(queryInfos, false);
+                    initAndAcquire(rateLimiters, false);
                     outcome = dynamoDB.batchGetItemUnprocessed(unprocessedKeys);
                 }
 
@@ -373,20 +393,25 @@ public class Dynamap {
         }
     }
 
-    private void setConsumedUnits(Map<String, GetItemInfo> queryInfos, ConsumedCapacity consumedCapacity, boolean write) {
-        GetItemInfo getItemInfo = queryInfos.get(consumedCapacity.getTableName());
-        DynamoRateLimiter rateLimiter = write ? getItemInfo.getObjectRequest.getWriteRateLimiter() : getItemInfo.getObjectRequest.getReadRateLimiter();
-        if (rateLimiter != null) {
-            rateLimiter.setConsumedCapacity(consumedCapacity);
+    private void setConsumedUnits(Map<String, ReadWriteRateLimiterPair> rateLimiters, ConsumedCapacity consumedCapacity, boolean write) {
+        ReadWriteRateLimiterPair rateLimiterPair = rateLimiters.get(consumedCapacity.getTableName());
+        if (rateLimiterPair != null) {
+            DynamoRateLimiter rateLimiter = write ? rateLimiterPair.getWriteLimiter() : rateLimiterPair.getReadLimiter();
+            if (rateLimiter != null) {
+                rateLimiter.setConsumedCapacity(consumedCapacity);
+            }
         }
     }
 
-    private void initAndAcquire(Map<String, GetItemInfo> queryInfos, boolean write) {
-        for (GetItemInfo getItemInfo : queryInfos.values()) {
-            DynamoRateLimiter rateLimiter = write ? getItemInfo.getObjectRequest.getWriteRateLimiter() : getItemInfo.getObjectRequest.getReadRateLimiter();
-            if (rateLimiter != null) {
-                rateLimiter.init(getItemInfo.table);
-                rateLimiter.acquire();
+    private void initAndAcquire(Map<String, ReadWriteRateLimiterPair> rateLimiters, boolean write) {
+        for (String tableName : rateLimiters.keySet()) {
+            Table table = getTable(tableName);
+            for (ReadWriteRateLimiterPair dynamoRateLimiters : rateLimiters.values()) {
+                DynamoRateLimiter rateLimiter = write ? dynamoRateLimiters.getWriteLimiter() : dynamoRateLimiters.getReadLimiter();
+                if (rateLimiter != null) {
+                    rateLimiter.init(table);
+                    rateLimiter.acquire();
+                }
             }
         }
     }
@@ -512,7 +537,7 @@ public class Dynamap {
                 }
             }
 
-            Table table = dynamoDB.getTable(tableDefinition.getTableName(prefix)); //TODO: this should be cached
+            Table table = getTable(tableDefinition.getTableName(prefix));
             try {
                 if (writeLimiter != null) {
                     writeLimiter.init(table);
@@ -566,7 +591,7 @@ public class Dynamap {
 
     public void delete(DeleteRequest deleteRequest) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(deleteRequest.getResultClass());
-        Table table = dynamoDB.getTable(tableDefinition.getTableName(prefix));
+        Table table = getTable(tableDefinition.getTableName(prefix));
 
         DeleteItemSpec deleteItemSpec = new DeleteItemSpec();
         Field hashField = tableDefinition.getField(tableDefinition.getHashKey());
@@ -612,7 +637,7 @@ public class Dynamap {
                     DynamoRateLimiter rateLimiter = writeLimiterMap.get(consumedCapacity.getTableName());
                     rateLimiter.setConsumedCapacity(consumedCapacity);
                     logger.debug("Set rate limiter capacity {}", consumedCapacity.getCapacityUnits());
-                    Table table = dynamoDB.getTable(consumedCapacity.getTableName()); //TODO: this should be cached
+                    Table table = getTable(consumedCapacity.getTableName());
                     rateLimiter.init(table);
                     rateLimiter.acquire();
                 }
@@ -624,6 +649,15 @@ public class Dynamap {
         }
 
         logger.debug("doBatchWriteItem done");
+    }
+
+    private Table getTable(String tableName) {
+        Table table = tableCache.get(tableName);
+        if (table == null) {
+            table = dynamoDB.getTable(tableName);
+            tableCache.put(tableName, table);
+        }
+        return table;
     }
 
 }
