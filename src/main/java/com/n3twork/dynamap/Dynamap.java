@@ -46,9 +46,9 @@ public class Dynamap {
     private final AmazonDynamoDB amazonDynamoDB;
     private final DynamoDB dynamoDB;
     private final SchemaRegistry schemaRegistry;
+    private final Map<String, Table> tableCache = new HashMap<>();
     private String prefix;
     private ObjectMapper objectMapper;
-    private Map<String, Table> tableCache = new HashMap<>();
 
     private static final int MAX_BATCH_SIZE = 25;
     private static final int MAX_BATCH_GET_SIZE = 100;
