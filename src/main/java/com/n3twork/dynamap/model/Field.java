@@ -21,9 +21,6 @@ import com.fasterxml.jackson.annotation.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Field {
 
-    public static final String SCHEMA_VERSION_FIELD_NAME = Schema.SCHEMA_VERSION_FIELD;
-    public static final String SCHEMA_VERSION_DYNAMO_FIELD_NAME = "schema";
-
     public enum MultiValue {
 
         MAP("Map"), LIST("List"), SET("Set");

@@ -428,7 +428,7 @@ public class Dynamap {
         }
 
         T result;
-        int currentVersion = item.getInt(Schema.SCHEMA_VERSION_FIELD);
+        int currentVersion = item.getInt(tableDefinition.getSchemaVersionField());
         try {
             if (currentVersion != tableDefinition.getVersion()) {
                 for (Migration migration : schemaRegistry.getMigrations(tableDefinition.getTableName())) {
@@ -441,7 +441,7 @@ public class Dynamap {
                         migration.postMigration(item, currentVersion, migrationContext);
                     }
                 }
-                item = item.withInt(Schema.SCHEMA_VERSION_FIELD, tableDefinition.getVersion());
+                item = item.withInt(tableDefinition.getSchemaVersionField(), tableDefinition.getVersion());
                 result = objectMapper.convertValue(item.asMap(), resultClass);
                 if (writeBack) {
                     putObject(result, tableDefinition, true, false, writeRateLimiter);
@@ -458,7 +458,7 @@ public class Dynamap {
     private <T extends DynamapRecordBean> Item buildDynamoItemFromObject(T object, TableDefinition tableDefinition, boolean disableOptimisticLocking) {
         Map<String, Object> map = objectMapper.convertValue(object, new TypeReference<Map<String, Object>>() {
         });
-        Item item = new Item().withInt(Schema.SCHEMA_VERSION_FIELD, tableDefinition.getVersion());
+        Item item = new Item().withInt(tableDefinition.getSchemaVersionField(), tableDefinition.getVersion());
 
         if (!disableOptimisticLocking && tableDefinition.isOptimisticLocking()) {
             int revision = (int) map.getOrDefault(Schema.REVISION_FIELD, 0);

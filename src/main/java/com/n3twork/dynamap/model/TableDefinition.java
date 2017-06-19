@@ -16,13 +16,15 @@
 
 package com.n3twork.dynamap.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.*;
 
 import java.util.List;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class TableDefinition {
+
+    private static final String DEFAULT_SCHEMA_VERSION_FIELD = "_schv";
 
     private final String tableName;
     private final String packageName;
@@ -33,10 +35,12 @@ public class TableDefinition {
     private final List<Type> types;
     private final List<Index> globalSecondaryIndexes;
     private final boolean optimisticLocking;
+    private final String schemaVersionField;
 
     @JsonCreator
     public TableDefinition(@JsonProperty("table") String tableName, @JsonProperty("package") String packageName, @JsonProperty("type") String type, @JsonProperty("hashKey") String hashKey, @JsonProperty("rangeKey") String rangeKey,
-                           @JsonProperty("version") int version, @JsonProperty("fields") List<Field> fields, @JsonProperty("types") List<Type> types, @JsonProperty("globalSecondaryIndexes") List<Index> globalSecondaryIndexes, @JsonProperty("optimisticLocking") boolean optimisticLocking) {
+                           @JsonProperty("version") int version, @JsonProperty("fields") List<Field> fields, @JsonProperty("types") List<Type> types, @JsonProperty("globalSecondaryIndexes") List<Index> globalSecondaryIndexes, @JsonProperty("optimisticLocking") boolean optimisticLocking,
+                           @JsonProperty("schemaVersionField") String schemaVersionField) {
         this.tableName = tableName;
         this.packageName = packageName;
         this.type = type;
@@ -46,6 +50,7 @@ public class TableDefinition {
         this.types = types;
         this.globalSecondaryIndexes = globalSecondaryIndexes;
         this.optimisticLocking = optimisticLocking;
+        this.schemaVersionField = schemaVersionField == null ? DEFAULT_SCHEMA_VERSION_FIELD : schemaVersionField;
     }
 
     public String getTableName() {
@@ -91,6 +96,10 @@ public class TableDefinition {
 
     public boolean isOptimisticLocking() {
         return optimisticLocking;
+    }
+
+    public String getSchemaVersionField() {
+        return schemaVersionField;
     }
 
     public Field getField(String fieldName) {
