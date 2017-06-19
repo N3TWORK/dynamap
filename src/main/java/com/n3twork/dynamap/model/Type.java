@@ -17,9 +17,11 @@
 package com.n3twork.dynamap.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class Type {
 
@@ -39,6 +41,11 @@ public class Type {
 
     public List<Field> getFields() {
         return fields;
+    }
+
+    @JsonIgnore
+    public List<Field> getPersistedFields() {
+        return fields.stream().filter(f -> f.isPersisted()).collect(Collectors.toList());
     }
 
 }

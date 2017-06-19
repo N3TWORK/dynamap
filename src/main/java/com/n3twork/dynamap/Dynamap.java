@@ -233,7 +233,7 @@ public class Dynamap {
             throw new IllegalArgumentException("More than one ResultClass has been specified");
         }
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(getObjectRequest.getResultClass());
-        Map<Class, ReadWriteRateLimiterPair> rateLimiterMap = rateLimiters != null? ImmutableMap.of(getObjectRequest.getResultClass(), rateLimiters): null;
+        Map<Class, ReadWriteRateLimiterPair> rateLimiterMap = rateLimiters != null ? ImmutableMap.of(getObjectRequest.getResultClass(), rateLimiters) : null;
         return (List<T>) batchGetObject((Collection) getObjectRequests, rateLimiterMap, migrationContext).get(tableDefinition.getTableName());
     }
 
@@ -466,7 +466,7 @@ public class Dynamap {
         }
 
         Type type = tableDefinition.getTypes().stream().filter(t -> t.getName().equals(tableDefinition.getType())).findFirst().get();
-        for (Field field : type.getFields()) {
+        for (Field field : type.getPersistedFields()) {
             if (field.getMultiValue() != null) {
                 if (field.getMultiValue().equals("Map")) {
                     item.withMap(field.getDynamoName(), (Map) map.get(field.getDynamoName()));

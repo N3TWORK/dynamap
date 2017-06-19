@@ -246,7 +246,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         }
 </#if>
 
-    <#list type.fields as field>
+    <#list type.persistedFields as field>
         <#if field.multiValue! == 'MAP'>
             <#if field.isNumber()>
             <#if field.isReplace()>

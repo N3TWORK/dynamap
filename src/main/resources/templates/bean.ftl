@@ -34,7 +34,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<${type.name}></#if> {
 
     <#list type.fields as field>
+    <#if field.persisted>
     @JsonProperty(${field.name?upper_case}_FIELD)
+    </#if>
     private <@field_type field=field /> ${field.name};
     </#list>
     <#if isRoot && optimisticLocking>
@@ -47,21 +49,21 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
 
 <#if isRoot && optimisticLocking>
     public ${beanName}(
-        <#list type.fields as field>
+        <#list type.persistedFields as field>
             @JsonProperty(${field.name?upper_case}_FIELD) <#if field.generatedType>${field.type}Bean<#else><@field_type field=field /></#if> ${field.name}<#sep>,
         </#list>) {
-        this(<#list type.fields as field>${field.name}<#sep>,</#list>, null);
+        this(<#list type.persistedFields as field>${field.name}<#sep>,</#list>, null);
     }
 </#if>
 
     @JsonCreator
     public ${beanName}(
-        <#list type.fields as field>
+        <#list type.persistedFields as field>
         @JsonProperty(${field.name?upper_case}_FIELD) <#if field.generatedType>${field.type}Bean<#else><@field_type field=field /></#if> ${field.name}<#sep>,
         </#list><#if isRoot && optimisticLocking>,
         @JsonProperty(REVISION_FIELD) Integer _revision</#if>) {
 
-    <#list type.fields as field>
+    <#list type.persistedFields as field>
         <#if field.multiValue??>
             <#if field.multiValue == 'MAP'>
             this.${field.name} = ${field.name} == null ? Collections.emptyMap() : ${field.name};
@@ -134,6 +136,9 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     </#if>
 
     <#list type.fields as field>
+    <#if !field.persisted>
+    @JsonIgnore
+    </#if>
     public <@field_type field=field /> get${field.name?cap_first}() {
         return this.${field.name};
     }

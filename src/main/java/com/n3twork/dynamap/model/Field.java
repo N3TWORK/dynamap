@@ -44,13 +44,14 @@ public class Field {
     private final MultiValue multiValue;
     private final Boolean useDefaultForMap;
     private final Boolean replace;
+    private final Boolean persisted;
 
     private boolean generatedType;
 
     @JsonCreator
     public Field(@JsonProperty("name") String name, @JsonProperty("dynamoName") String dynamoName, @JsonProperty("type") String type,
                  @JsonProperty("default") String defaultValue, @JsonProperty("multivalue") MultiValue multiValue,
-                 @JsonProperty("useDefaultForMap") Boolean useDefaultForMap, @JsonProperty("replace") Boolean replace) {
+                 @JsonProperty("useDefaultForMap") Boolean useDefaultForMap, @JsonProperty("replace") Boolean replace, @JsonProperty("persisted") Boolean persisted) {
         this.name = name;
         this.dynamoName = dynamoName;
         this.type = type;
@@ -82,6 +83,7 @@ public class Field {
         this.multiValue = multiValue;
         this.useDefaultForMap = useDefaultForMap == null ? Boolean.FALSE : useDefaultForMap;
         this.replace = replace == null ? Boolean.FALSE : replace;
+        this.persisted = persisted == null ? Boolean.TRUE : persisted;
     }
 
     public String getName() {
@@ -125,4 +127,8 @@ public class Field {
         this.generatedType = isGeneratedType;
     }
 
+
+    public boolean isPersisted() {
+        return persisted;
+    }
 }

@@ -25,6 +25,12 @@
               "name": "weight",
               "dynamoName": "wght",
               "type": "Integer"
+            },
+            {
+              "name": "notPersisted",
+              "dynamoName": "notPersisted",
+              "persisted": false,
+              "type": "Integer"
             }
           ]
         }
