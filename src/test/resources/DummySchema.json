@@ -28,7 +28,6 @@
             },
             {
               "name": "notPersisted",
-              "dynamoName": "notPersisted",
               "persisted": false,
               "type": "Integer"
             }
