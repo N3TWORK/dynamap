@@ -28,10 +28,7 @@ import org.apache.commons.cli.*;
 import org.apache.commons.io.FileUtils;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class CodeGenerator {
@@ -88,7 +85,11 @@ public class CodeGenerator {
         Template interfaceTemplate = cfg.getTemplate("interface.ftl");
         Template beanTemplate = cfg.getTemplate("bean.ftl");
         Template updatesTemplate = cfg.getTemplate("updates.ftl");
-        Type tableType = tableDefinition.getTypes().stream().filter(t -> t.getName().equals(tableDefinition.getType())).findFirst().get();
+        Optional<Type> tableTypeOptional = tableDefinition.getTypes().stream().filter(t -> t.getName().equals(tableDefinition.getType())).findFirst();
+        if (!tableTypeOptional.isPresent()) {
+            throw new RuntimeException("Cannot find type definition for " + tableDefinition.getType());
+        }
+        Type tableType = tableTypeOptional.get();
         for (Type type : tableDefinition.getTypes()) {
             Map<String, Object> model = new HashMap<>();
             String beanName = type.getName() + "Bean";
