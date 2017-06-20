@@ -43,8 +43,8 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     @JsonProperty(REVISION_FIELD)
     private Integer _revision;
     </#if>
-    //Empty constructor for Kryo
-    private ${beanName}() {
+
+    public ${beanName}() {
     }
 
 <#if isRoot && optimisticLocking>
@@ -142,8 +142,9 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     public <@field_type field=field /> get${field.name?cap_first}() {
         return this.${field.name};
     }
-    public void set${field.name?cap_first}(<@field_type field=field /> value) {
+    public ${beanName} set${field.name?cap_first}(<@field_type field=field /> value) {
         this.${field.name} = value;
+        return this;
     }
     <#if field.multiValue! == 'MAP'>
         @JsonIgnore
@@ -164,8 +165,9 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     public Integer getRevision() {
         return this._revision;
     }
-    public void setRevision(Integer value) {
+    public ${beanName} setRevision(Integer value) {
         this._revision = value;
+        return this;
     }
     </#if>
 }

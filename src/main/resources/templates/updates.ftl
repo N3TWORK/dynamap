@@ -69,26 +69,22 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
 </#list>
     private final boolean disableOptimisticLocking;
 
-    public ${updatesName}(${type.name} ${currentState}, String hashKeyValue, Object rangeKeyValue, boolean disableOptimisticLocking) {
+    public ${updatesName}(${type.name} ${currentState}, String hashKeyValue, <#if tableDefinition.rangeKey??>Object rangeKeyValue,</#if> boolean disableOptimisticLocking) {
         this.${currentState} = ${currentState};
         this.hashKeyValue = hashKeyValue;
+        <#if tableDefinition.rangeKey??>
         this.rangeKeyValue = rangeKeyValue;
+        <#else>
+        this.rangeKeyValue = null;
+        </#if>
         this.disableOptimisticLocking = disableOptimisticLocking;
 <#if isRoot && optimisticLocking>
         this._revision = ${currentState}.getRevision();
 </#if>
     }
 
-    public ${updatesName}(${type.name} ${currentState}, String hashKeyValue, Object rangeKeyValue) {
-        this(${currentState}, hashKeyValue, rangeKeyValue, false);
-    }
-
-    public ${updatesName}(${type.name} ${currentState}, String hashKeyValue, boolean disableOptimisticLocking) {
-        this(${currentState}, hashKeyValue, null, disableOptimisticLocking);
-    }
-
-    public ${updatesName}(${type.name} ${currentState}, String hashKeyValue) {
-        this(${currentState}, hashKeyValue, null, false);
+    public ${updatesName}(${type.name} ${currentState}, String hashKeyValue<#if tableDefinition.rangeKey??>,Object rangeKeyValue</#if>) {
+        this(${currentState}, hashKeyValue, <#if tableDefinition.rangeKey??>rangeKeyValue,</#if> false);
     }
 
     @Override

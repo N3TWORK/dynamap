@@ -27,7 +27,6 @@ public class Type {
 
     private final String name;
     private final List<Field> fields;
-    private Type rootType;
 
     @JsonCreator
     public Type(@JsonProperty("name") String name, @JsonProperty("fields") List<Field> fields) {
