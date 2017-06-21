@@ -129,7 +129,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     public Map<String,${field.type}> get${field.name?cap_first}() {
         <#if field.isNumber()>
         if ( ${field.name}Deltas.size() > 0 || ${field.name}Deletes.size() > 0 || ${field.name}Sets.size() > 0) {
-            Map<String, Long> allItems = new HashMap<>();
+            Map<String, ${field.type}> allItems = new HashMap<>();
             for (String id : get${field.name?cap_first}Ids()) {
                 allItems.put(id, get${field.name?cap_first}Value(id));
             }
