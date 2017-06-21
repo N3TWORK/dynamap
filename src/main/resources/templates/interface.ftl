@@ -40,6 +40,7 @@ public interface ${type.name} extends DynamapPersisted {
     <#if field.multiValue! == 'MAP'>
     Set<String> get${field.name?cap_first}Ids();
     ${field.type} get${field.name?cap_first}Value(String id);
+    Map<String,${field.type}> get${field.name?cap_first}();
     <#else>
     <@field_type field=field /> get${field.name?cap_first}();
     </#if>

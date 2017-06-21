@@ -125,6 +125,21 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         return MergeUtil.getLatestValue(id, ${currentState}.get${field.name?cap_first}Value(id), ${field.name}Sets, ${field.name}Deletes);
         </#if>
     }
+    @Override
+    public Map<String,${field.type}> get${field.name?cap_first}() {
+        <#if field.isNumber()>
+        if ( ${field.name}Deltas.size() > 0 || ${field.name}Deletes.size() > 0 || ${field.name}Sets.size() > 0) {
+            Map<String, Long> allItems = new HashMap<>();
+            for (String id : get${field.name?cap_first}Ids()) {
+                allItems.put(id, get${field.name?cap_first}Value(id));
+            }
+            return allItems;
+        }
+        return ${currentState}.get${field.name?cap_first}();
+        <#else>
+        return MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}(), ${field.name}Sets, ${field.name}Deletes, false);
+        </#if>
+    }
     <#elseif field.multiValue == 'LIST'>
     @Override
     public List<${field.type}> get${field.name?cap_first}() {
@@ -136,7 +151,6 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         return MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}(), null, ${field.name}Sets, ${field.name}Deletes);
     }
     </#if>
-
     <#else>
     @Override
     public ${field.type} get${field.name?cap_first}() {
@@ -244,21 +258,15 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
 
     <#list type.persistedFields as field>
         <#if field.multiValue! == 'MAP'>
-            <#if field.isNumber()>
             <#if field.isReplace()>
-            if ( ${field.name}Deltas.size() > 0 || ${field.name}Deletes.size() > 0) {
-            Map<String, Long> allItems = new HashMap<>();
-            for (String id : get${field.name}Ids()) {
-                allItems.put(id, get${field.name}Value(id));
-            }
-            expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", allItems, ${field.type}.class);
+                expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.type}.class);
             <#else>
-            expression.updateMap(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Deltas, ${field.name}Sets, ${field.name}Deletes);
-            </#if>
-            <#elseif field.type != 'String'>
-            expression.updateMap(parentDynamoFieldName, "${field.dynamoName}", null, ${field.name}Sets, ${field.name}Deletes);
-            <#else>
-            </#if>
+                <#if field.isNumber()>
+                    expression.updateMap(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Deltas, ${field.name}Sets, ${field.name}Deletes);
+                <#else>
+                    expression.updateMap(parentDynamoFieldName, "${field.dynamoName}", null, ${field.name}Sets, ${field.name}Deletes);
+                </#if>
+             </#if>
 
         <#elseif field.multiValue! == 'LIST'>
             if (${field.name} != null) {

@@ -139,6 +139,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     <#if !field.persisted>
     @JsonIgnore
     </#if>
+    @Override
     public <@field_type field=field /> get${field.name?cap_first}() {
         return this.${field.name};
     }
