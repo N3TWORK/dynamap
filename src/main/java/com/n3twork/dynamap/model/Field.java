@@ -42,7 +42,7 @@ public class Field {
     private final String type;
     private final String defaultValue;
     private final MultiValue multiValue;
-    private final Boolean useDefaultForMap;
+    private final Boolean useDefaultForNulls;
     private final Boolean replace;
     private final Boolean persisted;
 
@@ -51,7 +51,7 @@ public class Field {
     @JsonCreator
     public Field(@JsonProperty("name") String name, @JsonProperty("dynamoName") String dynamoName, @JsonProperty("type") String type,
                  @JsonProperty("default") String defaultValue, @JsonProperty("multivalue") MultiValue multiValue,
-                 @JsonProperty("useDefaultForMap") Boolean useDefaultForMap, @JsonProperty("replace") Boolean replace, @JsonProperty("persisted") Boolean persisted) {
+                 @JsonProperty("useDefaultForNulls") Boolean useDefaultForNulls, @JsonProperty("replace") Boolean replace, @JsonProperty("persisted") Boolean persisted) {
         this.name = name;
         this.dynamoName = dynamoName;
         this.type = type;
@@ -81,7 +81,7 @@ public class Field {
             this.defaultValue = defaultValue;
         }
         this.multiValue = multiValue;
-        this.useDefaultForMap = useDefaultForMap == null ? Boolean.FALSE : useDefaultForMap;
+        this.useDefaultForNulls = useDefaultForNulls == null ? Boolean.FALSE : useDefaultForNulls;
         this.replace = replace == null ? Boolean.FALSE : replace;
         this.persisted = persisted == null ? Boolean.TRUE : persisted;
     }
@@ -111,7 +111,7 @@ public class Field {
     }
 
     public Boolean isUseDefaultForMap() {
-        return useDefaultForMap;
+        return useDefaultForNulls;
     }
 
     public Boolean isReplace() {

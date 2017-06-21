@@ -280,7 +280,7 @@ The following is a full schema that is used by the unit tests:
               "dynamoName": "mapOfLong",
               "type": "Long",
               "multivalue": "Map",
-              "useDefaultForMap": "true"
+              "useDefaultForNulls": "true"
             },
             {
               "name": "setOfLong",
