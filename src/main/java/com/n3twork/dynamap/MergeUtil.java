@@ -41,7 +41,10 @@ public class MergeUtil {
         return merged;
     }
 
-    public static <K> Set<K> mergeUpdatesAndDeletes(Set<K> orig, Set<K> deltas, Set<K> setUpdates, Collection<K> deletedKeys) {
+    public static <K> Set<K> mergeUpdatesAndDeletes(Set<K> orig, Set<K> deltas, Set<K> setUpdates, Collection<K> deletedKeys, boolean clear) {
+        if (clear) {
+            return Collections.emptySet();
+        }
         Set<K> keys = new HashSet<>();
         if (orig != null) {
             keys.addAll(orig);
@@ -58,7 +61,10 @@ public class MergeUtil {
         return keys;
     }
 
-    public static <V> List<V> mergeAdds(List<V> orig, List<V> adds) {
+    public static <V> List<V> mergeAdds(List<V> orig, List<V> adds, boolean clear) {
+        if (clear) {
+            return Collections.emptyList();
+        }
         List<V> values = new ArrayList();
         if (orig != null) {
             values.addAll(orig);
@@ -89,7 +95,10 @@ public class MergeUtil {
         return orig;
     }
 
-    public static <K, V extends Number> V getLatestNumericValue(K key, V orig, Map<K, V> deltas, Map<K, V> setUpdates) {
+    public static <K, V extends Number> V getLatestNumericValue(K key, V orig, Map<K, V> deltas, Map<K, V> setUpdates, boolean clear) {
+        if (clear) {
+            return null;
+        }
         if (setUpdates != null) {
             if (setUpdates.get(key) != null) {
                 return setUpdates.get(key);
@@ -113,7 +122,10 @@ public class MergeUtil {
         return orig;
     }
 
-    public static <K, V> V getLatestValue(K key, V orig, Map<K, V> updates, Set<K> deletes) {
+    public static <K, V> V getLatestValue(K key, V orig, Map<K, V> updates, Set<K> deletes, boolean clear) {
+        if (clear) {
+            return null;
+        }
         if (deletes != null && deletes.contains(key)) {
             return null;
         }

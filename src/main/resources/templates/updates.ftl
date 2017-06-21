@@ -49,6 +49,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     </#if>
 
     <#if field.multiValue??>
+    private boolean ${field.name}Clear = false;
     <#if field.multiValue == 'LIST'>
     private <@field_type field=field /> ${field.name}Adds = new ArrayList();
     </#if>
@@ -119,18 +120,27 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         <#else>
             <#assign deltas>null</#assign>
         </#if>
-        return MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}Ids(), ${deltas}, ${field.name}Sets.keySet(), ${field.name}Deletes);
+        return MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}Ids(), ${deltas}, ${field.name}Sets.keySet(), ${field.name}Deletes, ${field.name}Clear);
     }
     @Override
     public ${field.type} get${field.name?cap_first}Value(String id) {
         <#if field.isNumber()>
-        return MergeUtil.getLatestNumericValue(id, ${currentState}.get${field.name?cap_first}Value(id), ${field.name}Deltas, ${field.name}Sets);
+        ${field.type} value = MergeUtil.getLatestNumericValue(id, ${currentState}.get${field.name?cap_first}Value(id), ${field.name}Deltas, ${field.name}Sets, ${field.name}Clear);
         <#else>
-        return MergeUtil.getLatestValue(id, ${currentState}.get${field.name?cap_first}Value(id), ${field.name}Sets, ${field.name}Deletes);
+        ${field.type} value = MergeUtil.getLatestValue(id, ${currentState}.get${field.name?cap_first}Value(id), ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
         </#if>
+        <#if field.isUseDefaultForNulls()>
+        if (value == null) {
+            return ${field.defaultValue};
+        }
+        </#if>
+        return value;
     }
     @Override
     public Map<String,${field.type}> get${field.name?cap_first}() {
+        if (${field.name}Clear) {
+            return Collections.emptyMap();
+        }
         <#if field.isNumber()>
         if ( ${field.name}Deltas.size() > 0 || ${field.name}Deletes.size() > 0 || ${field.name}Sets.size() > 0) {
             Map<String, ${field.type}> allItems = new HashMap<>();
@@ -141,18 +151,18 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         }
         return ${currentState}.get${field.name?cap_first}();
         <#else>
-        return MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}(), ${field.name}Sets, ${field.name}Deletes, false);
+        return MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}(), ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
         </#if>
     }
     <#elseif field.multiValue == 'LIST'>
     @Override
     public List<${field.type}> get${field.name?cap_first}() {
-        return MergeUtil.mergeAdds(${currentState}.get${field.name?cap_first}(), ${field.name}Adds);
+        return MergeUtil.mergeAdds(${currentState}.get${field.name?cap_first}(), ${field.name}Adds, ${field.name}Clear);
     }
     <#elseif field.multiValue == 'SET'>
     @Override
     public Set<${field.type}> get${field.name?cap_first}() {
-        return MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}(), null, ${field.name}Sets, ${field.name}Deletes);
+        return MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}(), null, ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
     }
     </#if>
     <#else>
@@ -177,6 +187,12 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     /////// Mutator methods ///////////////////////
 
 <#list type.fields as field>
+  <#if field.multiValue??>
+  public ${updatesName} clear${field.name?cap_first}() {
+    ${field.name}Clear = true;
+    return this;
+  }
+  </#if>
     <#if field.multiValue! == 'MAP'>
         <#if field.isNumber()>
     public ${updatesName} increment${field.name?cap_first}Amount(String id, ${field.type} amount) {
