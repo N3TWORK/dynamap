@@ -81,7 +81,7 @@
               "dynamoName": "mapOfLong",
               "type": "Long",
               "multivalue": "Map",
-              "useDefaultForMap": "true"
+              "useDefaultForNulls": "true"
             },
             {
               "name": "setOfLong",

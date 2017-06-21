@@ -110,7 +110,7 @@ public class Field {
         return multiValue;
     }
 
-    public Boolean isUseDefaultForMap() {
+    public Boolean isUseDefaultForNulls() {
         return useDefaultForNulls;
     }
 
