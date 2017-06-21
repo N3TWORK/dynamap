@@ -179,6 +179,10 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         ${field.name}Deltas.put(id, ${field.name}Deltas.getOrDefault(id, ${field.defaultValue}) + amount);
         return this;
     }
+    public ${updatesName} decrement${field.name?cap_first}Amount(String id, ${field.type} amount) {
+        ${field.name}Deltas.put(id, ${field.name}Deltas.getOrDefault(id, ${field.defaultValue}) - amount);
+        return this;
+    }
         </#if>
     public ${updatesName} set${field.name?cap_first}Value(String id, ${field.type} value) {
         ${field.name}Sets.put(id, value);
