@@ -216,6 +216,10 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         ${field.name}Delta = (${field.name}Delta == null ? ${field.defaultValue} : ${field.name}Delta) + amount;
         return this;
     }
+    public ${updatesName} decrement${field.name?cap_first}(${field.type} amount) {
+        ${field.name}Delta = (${field.name}Delta == null ? ${field.defaultValue} : ${field.name}Delta) - amount;
+        return this;
+    }
     </#if>
     </#if>
 </#list>
