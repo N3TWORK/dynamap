@@ -104,6 +104,10 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
 
     ////// ${type.name} interface methods //////
 
+    public ${type.name} getCurrentState() {
+        return ${currentState};
+    }
+
 <#list type.fields as field>
     <#if field.multiValue??>
 
