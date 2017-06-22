@@ -41,6 +41,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
 <#if isRoot && optimisticLocking>
     private final Integer _revision;
 </#if>
+    private boolean pendingUpdates = false;
 
 <#list type.fields as field>
     private <@field_type field=field /> ${field.name};
@@ -190,6 +191,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
   <#if field.multiValue??>
   public ${updatesName} clear${field.name?cap_first}() {
     ${field.name}Clear = true;
+    pendingUpdates = true;
     return this;
   }
   </#if>
@@ -197,51 +199,62 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         <#if field.isNumber()>
     public ${updatesName} increment${field.name?cap_first}Amount(String id, ${field.type} amount) {
         ${field.name}Deltas.put(id, ${field.name}Deltas.getOrDefault(id, ${field.defaultValue}) + amount);
+        pendingUpdates = true;
         return this;
     }
     public ${updatesName} decrement${field.name?cap_first}Amount(String id, ${field.type} amount) {
         ${field.name}Deltas.put(id, ${field.name}Deltas.getOrDefault(id, ${field.defaultValue}) - amount);
+        pendingUpdates = true;
         return this;
     }
         </#if>
     public ${updatesName} set${field.name?cap_first}Value(String id, ${field.type} value) {
         ${field.name}Sets.put(id, value);
+        pendingUpdates = true;
         return this;
     }
     public ${updatesName} delete${field.name?cap_first}Value(String id) {
         ${field.name}Deletes.remove(id);
+        pendingUpdates = true;
         return this;
     }
     <#elseif field.multiValue! == 'LIST'>
     public ${updatesName} add${field.name?cap_first}Value(${field.type} value) {
         ${field.name}Adds.add(value);
+        pendingUpdates = true;
         return this;
     }
     public ${updatesName} set${field.name?cap_first}(List<${field.type}> list) {
         this.${field.name} = list;
+        pendingUpdates = true;
         return this;
     }
     <#elseif field.multiValue! == 'SET'>
     public ${updatesName} setValue${field.name?cap_first}Value(${field.type} value) {
         ${field.name}Sets.add(value);
+        pendingUpdates = true;
         return this;
     }
     public ${updatesName} delete${field.name?cap_first}Value(${field.type} value) {
         ${field.name}Deletes.remove(value);
+        pendingUpdates = true;
         return this;
     }
     <#else>
     public ${updatesName} set${field.name?cap_first}(${field.type} value) {
         this.${field.name} = value;
+        pendingUpdates = true;
         return this;
     }
     <#if field.isNumber()>
     public ${updatesName} increment${field.name?cap_first}(${field.type} amount) {
         ${field.name}Delta = (${field.name}Delta == null ? ${field.defaultValue} : ${field.name}Delta) + amount;
+        pendingUpdates = true;
         return this;
     }
     public ${updatesName} decrement${field.name?cap_first}(${field.type} amount) {
         ${field.name}Delta = (${field.name}Delta == null ? ${field.defaultValue} : ${field.name}Delta) - amount;
+        pendingUpdates = true;
         return this;
     }
     </#if>
@@ -260,12 +273,18 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
             throw new IllegalStateException("Nested property: ${field.name}, should not be set when passing its Updates object");
         }
         this.${field.name}Updates = value;
+        pendingUpdates = true;
         return this;
     }
     </#if>
     </#list>
 
     //////////////// Updates Interface Methods //////////
+
+    @Override
+    public boolean pendingUpdates() {
+        return pendingUpdates;
+    }
 
     @Override
     public DynamoExpressionBuilder getUpdateExpression(ObjectMapper objectMapper) {

@@ -32,4 +32,6 @@ public interface Updates<T extends DynamapPersisted> {
 
     Object getRangeKeyValue();
 
+    boolean pendingUpdates();
+
 }
