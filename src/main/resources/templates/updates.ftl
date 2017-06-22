@@ -116,6 +116,9 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     <#if field.multiValue == 'MAP'>
     @Override
     public Set<String> get${field.name?cap_first}Ids() {
+        if (${field.name} != null) {
+            return ${field.name}.keySet();
+        }
         <#if field.isNumber()>
             <#assign deltas>${field.name}Deltas.keySet()</#assign>
         <#else>
@@ -125,6 +128,13 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     }
     @Override
     public ${field.type} get${field.name?cap_first}Value(String id) {
+        if (${field.name} != null) {
+          <#if field.isUseDefaultForNulls()>
+            return ${field.name}.getOrDefault(id, ${field.defaultValue});
+          <#else>
+            return ${field.name}.get(id);
+          </#if>
+        }
         <#if field.isNumber()>
         ${field.type} value = MergeUtil.getLatestNumericValue(id, ${currentState}.get${field.name?cap_first}Value(id), ${field.name}Deltas, ${field.name}Sets, ${field.name}Clear);
         <#else>
@@ -139,6 +149,9 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     }
     @Override
     public Map<String,${field.type}> get${field.name?cap_first}() {
+        if (${field.name} != null) {
+            return ${field.name};
+        }
         if (${field.name}Clear) {
             return Collections.emptyMap();
         }
@@ -158,11 +171,17 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     <#elseif field.multiValue == 'LIST'>
     @Override
     public List<${field.type}> get${field.name?cap_first}() {
+        if (${field.name} != null) {
+            return ${field.name};
+        }
         return MergeUtil.mergeAdds(${currentState}.get${field.name?cap_first}(), ${field.name}Adds, ${field.name}Clear);
     }
     <#elseif field.multiValue == 'SET'>
     @Override
     public Set<${field.type}> get${field.name?cap_first}() {
+        if (${field.name} != null) {
+            return ${field.name};
+        }
         return MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}(), null, ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
     }
     </#if>
@@ -189,13 +208,18 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
 
 <#list type.fields as field>
   <#if field.multiValue??>
-  public ${updatesName} clear${field.name?cap_first}() {
-    ${field.name}Clear = true;
-    pendingUpdates = true;
-    return this;
-  }
+    public ${updatesName} clear${field.name?cap_first}() {
+        ${field.name}Clear = true;
+        pendingUpdates = true;
+        return this;
+    }
   </#if>
     <#if field.multiValue! == 'MAP'>
+       public ${updatesName} set${field.name?cap_first}(Map<String,${field.type}> value) {
+            this.${field.name} = value;
+            pendingUpdates = true;
+            return this;
+        }
         <#if field.isNumber()>
     public ${updatesName} increment${field.name?cap_first}Amount(String id, ${field.type} amount) {
         ${field.name}Deltas.put(id, ${field.name}Deltas.getOrDefault(id, ${field.defaultValue}) + amount);
@@ -230,6 +254,11 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         return this;
     }
     <#elseif field.multiValue! == 'SET'>
+    public ${updatesName} set${field.name?cap_first}(Set<${field.type}> value) {
+        this.${field.name} = value;
+        pendingUpdates = true;
+        return this;
+    }
     public ${updatesName} setValue${field.name?cap_first}Value(${field.type} value) {
         ${field.name}Sets.add(value);
         pendingUpdates = true;
@@ -305,6 +334,10 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
 
     <#list type.persistedFields as field>
         <#if field.multiValue! == 'MAP'>
+                if (${field.name} != null) {
+                    expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.type}.class);
+                }
+                else {
             <#if field.isReplace()>
                 expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.type}.class);
             <#else>
@@ -314,6 +347,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
                     expression.updateMap(parentDynamoFieldName, "${field.dynamoName}", null, ${field.name}Sets, ${field.name}Deletes);
                 </#if>
              </#if>
+                }
 
         <#elseif field.multiValue! == 'LIST'>
             if (${field.name} != null) {
