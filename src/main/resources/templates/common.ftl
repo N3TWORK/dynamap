@@ -29,3 +29,13 @@
         </#if>
     </#compress>
 </#macro>
+
+<#macro collection_item field>
+    <#compress>
+        <#if field.isNumber()>
+        Value
+        <#else>
+        Item
+        </#if>
+    </#compress>
+</#macro>

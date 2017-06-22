@@ -88,7 +88,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
         <#if field.multiValue == 'MAP'>
         this.${field.name} = new HashMap();
         for (String id : bean.get${field.name?cap_first}Ids()) {
-            this.${field.name}.put(id, bean.get${field.name?cap_first}Value(id));
+            this.${field.name}.put(id, bean.get${field.name?cap_first}<@collection_item field=field />(id));
         }
         </#if>
         <#else>
@@ -153,7 +153,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
         return this.${field.name}.keySet();
         }
         @JsonIgnore
-        public ${field.type} get${field.name?cap_first}Value(String id) {
+        public ${field.type} get${field.name?cap_first}<@collection_item field=field />(String id) {
             <#if field.useDefaultForNulls()>
             return this.${field.name}.getOrDefault(id, ${field.defaultValue});
             <#else>

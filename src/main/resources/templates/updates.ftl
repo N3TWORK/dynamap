@@ -127,7 +127,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         return MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}Ids(), ${deltas}, ${field.name}Sets.keySet(), ${field.name}Deletes, ${field.name}Clear);
     }
     @Override
-    public ${field.type} get${field.name?cap_first}Value(String id) {
+    public ${field.type} get${field.name?cap_first}<@collection_item field=field />(String id) {
         if (${field.name} != null) {
           <#if field.useDefaultForNulls()>
             return ${field.name}.getOrDefault(id, ${field.defaultValue});
@@ -136,9 +136,9 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
           </#if>
         }
         <#if field.isNumber()>
-        ${field.type} value = MergeUtil.getLatestNumericValue(id, ${currentState}.get${field.name?cap_first}Value(id), ${field.name}Deltas, ${field.name}Sets, ${field.name}Clear);
+        ${field.type} value = MergeUtil.getLatestNumericValue(id, ${currentState}.get${field.name?cap_first}<@collection_item field=field />(id), ${field.name}Deltas, ${field.name}Sets, ${field.name}Clear);
         <#else>
-        ${field.type} value = MergeUtil.getLatestValue(id, ${currentState}.get${field.name?cap_first}Value(id), ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
+        ${field.type} value = MergeUtil.getLatestValue(id, ${currentState}.get${field.name?cap_first}<@collection_item field=field />(id), ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
         </#if>
         <#if field.useDefaultForNulls()>
         if (value == null) {
@@ -159,7 +159,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         if ( ${field.name}Deltas.size() > 0 || ${field.name}Deletes.size() > 0 || ${field.name}Sets.size() > 0) {
             Map<String, ${field.type}> allItems = new HashMap<>();
             for (String id : get${field.name?cap_first}Ids()) {
-                allItems.put(id, get${field.name?cap_first}Value(id));
+                allItems.put(id, get${field.name?cap_first}<@collection_item field=field />(id));
             }
             return allItems;
         }
@@ -228,12 +228,12 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         return this;
     }
         </#if>
-    public ${updatesName} set${field.name?cap_first}Value(String id, ${field.type} value) {
+    public ${updatesName} set${field.name?cap_first}<@collection_item field=field />(String id, ${field.type} value) {
         ${field.name}Sets.put(id, value);
         pendingUpdates = true;
         return this;
     }
-    public ${updatesName} delete${field.name?cap_first}Value(String id) {
+    public ${updatesName} delete${field.name?cap_first}<@collection_item field=field />(String id) {
         ${field.name}Deletes.remove(id);
         pendingUpdates = true;
         return this;
@@ -248,7 +248,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     </#if>
 
     <#elseif field.multiValue! == 'LIST'>
-    public ${updatesName} add${field.name?cap_first}Value(${field.type} value) {
+    public ${updatesName} add${field.name?cap_first}<@collection_item field=field />(${field.type} value) {
         ${field.name}Adds.add(value);
         pendingUpdates = true;
         return this;
@@ -260,12 +260,12 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     }
     <#elseif field.multiValue! == 'SET'>
     <#if field.useDeltas()>
-    public ${updatesName} setValue${field.name?cap_first}Value(${field.type} value) {
+    public ${updatesName} set${field.name?cap_first}<@collection_item field=field />(${field.type} value) {
         ${field.name}Sets.add(value);
         pendingUpdates = true;
         return this;
     }
-    public ${updatesName} delete${field.name?cap_first}Value(${field.type} value) {
+    public ${updatesName} delete${field.name?cap_first}<@collection_item field=field />(${field.type} value) {
         ${field.name}Deletes.remove(value);
         pendingUpdates = true;
         return this;
