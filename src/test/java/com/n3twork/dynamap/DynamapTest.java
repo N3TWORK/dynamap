@@ -49,7 +49,7 @@ public class DynamapTest {
 
     @BeforeMethod
     public void setup() {
-        schemaRegistry = new SchemaRegistry(getClass().getResourceAsStream("/ExampleSchema.json"),getClass().getResourceAsStream("/DummySchema.json") );
+        schemaRegistry = new SchemaRegistry(getClass().getResourceAsStream("/ExampleSchema.json"), getClass().getResourceAsStream("/DummySchema.json"));
         // Create tables
         dynamap = new Dynamap(ddb, schemaRegistry).withPrefix("test").withObjectMapper(objectMapper);
         dynamap.createTables(true);
@@ -61,7 +61,7 @@ public class DynamapTest {
         String exampleId1 = UUID.randomUUID().toString();
         String nestedId1 = UUID.randomUUID().toString();
 
-        NestedTypeBean nestedObject = new NestedTypeBean(nestedId1, null, null, null, null, null,
+        NestedTypeBean nestedObject = new NestedTypeBean(nestedId1, null, null, null, null, null, null,
                 null, null, null, null);
         ExampleDocumentBean doc = new ExampleDocumentBean(exampleId1,
                 1, nestedObject, null, null, "alias");
@@ -194,10 +194,10 @@ public class DynamapTest {
         String exampleId2 = UUID.randomUUID().toString();
         String nestedId2 = UUID.randomUUID().toString();
         dynamap.save(new ExampleDocumentBean(exampleId1,
-                1, new NestedTypeBean(nestedId1, null, null, null, null, null,
+                1, new NestedTypeBean(nestedId1, null, null, null, null, null, null,
                 null, null, null, null), null, null, "alias"), null);
         dynamap.save(new ExampleDocumentBean(exampleId2,
-                1, new NestedTypeBean(nestedId2, null, null, null, null, null,
+                1, new NestedTypeBean(nestedId2, null, null, null, null, null, null,
                 null, null, null, null), null, null, "alias"), null);
 
 
@@ -322,7 +322,7 @@ public class DynamapTest {
         for (int i = 0; i < EXAMPLE_DOCS_SIZE; i++) {
             String exampleId = UUID.randomUUID().toString();
             String nestedId = UUID.randomUUID().toString();
-            NestedTypeBean nestedObject = new NestedTypeBean(nestedId, null, null, null, null, null,
+            NestedTypeBean nestedObject = new NestedTypeBean(nestedId, null, null, null, null, null, null,
                     null, null, null, null);
             ExampleDocumentBean doc = new ExampleDocumentBean(exampleId,
                     1, nestedObject, null, null, "alias");

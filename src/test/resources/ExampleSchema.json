@@ -108,6 +108,13 @@
               "replace": true
             },
             {
+              "name": "noDeltaMapOfCustomType",
+              "dynamoName": "noDeltaMapOfBean",
+              "type": "com.n3twork.dynamap.CustomType",
+              "multivalue": "Map",
+              "deltas": false
+            },
+            {
               "name": "setOfCustomType",
               "dynamoName": "setOfCustomType",
               "type": "com.n3twork.dynamap.CustomType",

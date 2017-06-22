@@ -154,7 +154,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
         }
         @JsonIgnore
         public ${field.type} get${field.name?cap_first}Value(String id) {
-            <#if field.isUseDefaultForNulls()>
+            <#if field.useDefaultForNulls()>
             return this.${field.name}.getOrDefault(id, ${field.defaultValue});
             <#else>
             return this.${field.name}.get(id);

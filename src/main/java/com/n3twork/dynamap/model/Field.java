@@ -45,13 +45,14 @@ public class Field {
     private final Boolean useDefaultForNulls;
     private final Boolean replace;
     private final Boolean persisted;
+    private final Boolean deltas;
 
     private boolean generatedType;
 
     @JsonCreator
     public Field(@JsonProperty("name") String name, @JsonProperty("dynamoName") String dynamoName, @JsonProperty("type") String type,
                  @JsonProperty("default") String defaultValue, @JsonProperty("multivalue") MultiValue multiValue,
-                 @JsonProperty("useDefaultForNulls") Boolean useDefaultForNulls, @JsonProperty("replace") Boolean replace, @JsonProperty("persisted") Boolean persisted) {
+                 @JsonProperty("useDefaultForNulls") Boolean useDefaultForNulls, @JsonProperty("replace") Boolean replace, @JsonProperty("persisted") Boolean persisted, @JsonProperty("deltas") Boolean deltas) {
         this.name = name;
         this.dynamoName = dynamoName;
         this.type = type;
@@ -84,6 +85,7 @@ public class Field {
         this.useDefaultForNulls = useDefaultForNulls == null ? Boolean.FALSE : useDefaultForNulls;
         this.replace = replace == null ? Boolean.FALSE : replace;
         this.persisted = persisted == null ? Boolean.TRUE : persisted;
+        this.deltas = deltas == null ? Boolean.TRUE : deltas;
     }
 
     public String getName() {
@@ -110,7 +112,7 @@ public class Field {
         return multiValue;
     }
 
-    public Boolean isUseDefaultForNulls() {
+    public Boolean useDefaultForNulls() {
         return useDefaultForNulls;
     }
 
@@ -131,4 +133,9 @@ public class Field {
     public boolean isPersisted() {
         return persisted;
     }
+
+    public boolean useDeltas() {
+        return deltas;
+    }
+
 }

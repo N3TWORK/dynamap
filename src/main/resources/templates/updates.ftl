@@ -129,7 +129,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     @Override
     public ${field.type} get${field.name?cap_first}Value(String id) {
         if (${field.name} != null) {
-          <#if field.isUseDefaultForNulls()>
+          <#if field.useDefaultForNulls()>
             return ${field.name}.getOrDefault(id, ${field.defaultValue});
           <#else>
             return ${field.name}.get(id);
@@ -140,7 +140,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         <#else>
         ${field.type} value = MergeUtil.getLatestValue(id, ${currentState}.get${field.name?cap_first}Value(id), ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
         </#if>
-        <#if field.isUseDefaultForNulls()>
+        <#if field.useDefaultForNulls()>
         if (value == null) {
             return ${field.defaultValue};
         }
@@ -215,11 +215,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     }
   </#if>
     <#if field.multiValue! == 'MAP'>
-       public ${updatesName} set${field.name?cap_first}(Map<String,${field.type}> value) {
-            this.${field.name} = value;
-            pendingUpdates = true;
-            return this;
-        }
+    <#if field.useDeltas()>
         <#if field.isNumber()>
     public ${updatesName} increment${field.name?cap_first}Amount(String id, ${field.type} amount) {
         ${field.name}Deltas.put(id, ${field.name}Deltas.getOrDefault(id, ${field.defaultValue}) + amount);
@@ -242,6 +238,15 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         pendingUpdates = true;
         return this;
     }
+
+    <#else>
+       public ${updatesName} set${field.name?cap_first}(Map<String,${field.type}> value) {
+                this.${field.name} = value;
+                pendingUpdates = true;
+                return this;
+        }
+    </#if>
+
     <#elseif field.multiValue! == 'LIST'>
     public ${updatesName} add${field.name?cap_first}Value(${field.type} value) {
         ${field.name}Adds.add(value);
@@ -254,11 +259,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         return this;
     }
     <#elseif field.multiValue! == 'SET'>
-    public ${updatesName} set${field.name?cap_first}(Set<${field.type}> value) {
-        this.${field.name} = value;
-        pendingUpdates = true;
-        return this;
-    }
+    <#if field.useDeltas()>
     public ${updatesName} setValue${field.name?cap_first}Value(${field.type} value) {
         ${field.name}Sets.add(value);
         pendingUpdates = true;
@@ -269,6 +270,13 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         pendingUpdates = true;
         return this;
     }
+    <#else>
+    public ${updatesName} set${field.name?cap_first}(Set<${field.type}> value) {
+        this.${field.name} = value;
+        pendingUpdates = true;
+        return this;
+    }
+    </#if>
     <#else>
     public ${updatesName} set${field.name?cap_first}(${field.type} value) {
         this.${field.name} = value;
@@ -334,10 +342,8 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
 
     <#list type.persistedFields as field>
         <#if field.multiValue! == 'MAP'>
-                if (${field.name} != null) {
-                    expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.type}.class);
-                }
-                else {
+            <#if field.useDeltas()>
+
             <#if field.isReplace()>
                 expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.type}.class);
             <#else>
@@ -347,26 +353,28 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
                     expression.updateMap(parentDynamoFieldName, "${field.dynamoName}", null, ${field.name}Sets, ${field.name}Deletes);
                 </#if>
              </#if>
-                }
+
+            <#else>
+                expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.type}.class);
+            </#if>
 
         <#elseif field.multiValue! == 'LIST'>
-            if (${field.name} != null) {
-                expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", ${field.name}, ${field.type}.class);
-            }
-            else {
+            <#if field.useDeltas()>
                 for (Object value : ${field.name}Adds) {
                     expression.incrementNumber(parentDynamoFieldName, "${field.dynamoName}", (Number) value);
                 }
-            }
-        <#elseif field.multiValue! == 'SET'>
-            if (${field.name} != null) {
+            <#else>
                 expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", ${field.name}, ${field.type}.class);
-            }
-            else {
+            </#if>
+
+        <#elseif field.multiValue! == 'SET'>
+            <#if field.useDeltas()>
                 for (Object value : ${field.name}Sets) {
                     expression.setValue(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Sets);
                 }
-            }
+            <#else>
+                expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", ${field.name}, ${field.type}.class);
+            </#if>
         <#else>
             <#if field.isNumber()>
             if (${field.name} != null) {
