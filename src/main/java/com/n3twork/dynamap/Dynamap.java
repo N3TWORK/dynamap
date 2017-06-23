@@ -70,6 +70,10 @@ public class Dynamap {
         return this;
     }
 
+    public SchemaRegistry getSchemaRegistry() {
+        return schemaRegistry;
+    }
+
     public void createTables(boolean deleteIfExists) {
         for (TableDefinition tableDefinition : schemaRegistry.getSchema().getTableDefinitions()) {
 
