@@ -38,6 +38,7 @@ public class CodeGenerator {
 
     private static final Set<String> BUILT_IN_TYPES = Sets.newHashSet("Integer", "Long", "Boolean", "Float", "Double", "String", "Map", "List", "Set");
 
+    private final Configuration cfg;
 
     public static void main(String[] args) throws Exception {
         Options options = new Options();
@@ -55,19 +56,23 @@ public class CodeGenerator {
         ///
 
         String[] paths = cmd.getOptionValues(OPT_SCHEMA_FILE_PATH);
-        InputStream[] inputStreams = new InputStream[paths.length];
+        CodeGenerator codeGenerator = new CodeGenerator();
         for (int idx = 0; idx < paths.length; idx++) {
-            inputStreams[idx] = new FileInputStream(paths[idx]);
+            try (InputStream is = new FileInputStream(paths[idx])) {
+                codeGenerator.generateCode(cmd.getOptionValue(OPT_OUTPUT_PATH), is);
+            } catch (Exception e) {
+                throw new RuntimeException("Error processing " + paths[idx], e);
+            }
         }
-        new CodeGenerator(cmd.getOptionValue(OPT_OUTPUT_PATH), inputStreams);
     }
 
-    public CodeGenerator(String outputPath, InputStream... schemaInputs) throws Exception {
-
-        Configuration cfg = new Configuration(Configuration.DEFAULT_INCOMPATIBLE_IMPROVEMENTS);
+    public CodeGenerator() {
+        cfg = new Configuration(Configuration.DEFAULT_INCOMPATIBLE_IMPROVEMENTS);
         cfg.setClassForTemplateLoading(this.getClass(), "/templates");
         cfg.setLogTemplateExceptions(false);
+    }
 
+    public void generateCode(String outputPath, InputStream... schemaInputs) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
         for (InputStream schemaInput : schemaInputs) {
             Schema schema = objectMapper.readValue(schemaInput, Schema.class);
