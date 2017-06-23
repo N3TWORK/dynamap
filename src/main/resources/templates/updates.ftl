@@ -168,6 +168,11 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         return MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}(), ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
         </#if>
     }
+    <#if field.isNumber()>
+    public Map<String,${field.type}> get${field.name?cap_first}Deltas() {
+        return ${field.name}Deltas;
+    }
+    </#if>
     <#elseif field.multiValue == 'LIST'>
     @Override
     public List<${field.type}> get${field.name?cap_first}() {
