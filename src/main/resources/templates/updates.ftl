@@ -213,11 +213,13 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
 
 <#list type.fields as field>
   <#if field.multiValue??>
+    <#if field.useDeltas()>
     public ${updatesName} clear${field.name?cap_first}() {
         ${field.name}Clear = true;
         pendingUpdates = true;
         return this;
     }
+    </#if>
   </#if>
     <#if field.multiValue! == 'MAP'>
     <#if field.useDeltas()>
