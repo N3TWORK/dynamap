@@ -143,7 +143,7 @@ public class Dynamap {
     }
 
     public <T extends DynamapRecordBean> T getObject(GetObjectRequest<T> getObjectRequest, Object migrationContext) {
-        Map<Class<T>, List<Object>> results = batchGetObject(Arrays.asList(getObjectRequest), null, migrationContext);
+        Map<Class, List<Object>> results = batchGetObject(Arrays.asList(getObjectRequest), null, migrationContext);
         List<Object> resultList = results.values().iterator().next();
         if (resultList.size() > 0) {
             return (T) resultList.get(0);
@@ -152,7 +152,7 @@ public class Dynamap {
     }
 
     public <T extends DynamapRecordBean> T getObject(GetObjectRequest<T> getObjectRequest, ReadWriteRateLimiterPair rateLimiters, Object migrationContext) {
-        Map<Class<T>, List<Object>> results = batchGetObject(Arrays.asList(getObjectRequest), ImmutableMap.of(getObjectRequest.getResultClass(), rateLimiters), migrationContext);
+        Map<Class, List<Object>> results = batchGetObject(Arrays.asList(getObjectRequest), ImmutableMap.of(getObjectRequest.getResultClass(), rateLimiters), migrationContext);
         List<Object> resultList = results.values().iterator().next();
         if (resultList.size() > 0) {
             return (T) resultList.get(0);
@@ -160,7 +160,7 @@ public class Dynamap {
         return null;
     }
 
-    public <T extends DynamapRecordBean> Map<Class<T>, List<Object>> batchGetObject(Collection<GetObjectRequest> getObjectRequests, Map<Class<T>, ReadWriteRateLimiterPair> rateLimiters, Object migrationContext) {
+    public Map<Class, List<Object>> batchGetObject(Collection<GetObjectRequest> getObjectRequests, Map<Class, ReadWriteRateLimiterPair> rateLimiters, Object migrationContext) {
         Map<String, ReadWriteRateLimiterPair> rateLimitersByTable = new HashMap<>();
         if (rateLimiters != null) {
             for (Class resultClass : rateLimiters.keySet()) {
@@ -169,7 +169,7 @@ public class Dynamap {
         }
 
         List<List<GetObjectRequest>> partitions = Lists.partition(new ArrayList<>(getObjectRequests), MAX_BATCH_GET_SIZE);
-        Map<Class<T>, List<Object>> results = new HashMap<>();
+        Map<Class, List<Object>> results = new HashMap<>();
         for (List<GetObjectRequest> getObjectRequestBatch : partitions) {
 
             Map<String, GetItemInfo> queryInfos = new HashMap<>();
@@ -236,7 +236,7 @@ public class Dynamap {
         if (getObjectRequests.stream().anyMatch(r -> !r.getResultClass().getCanonicalName().equals(resultClass))) {
             throw new IllegalArgumentException("More than one ResultClass has been specified");
         }
-        Map<Class<T>, ReadWriteRateLimiterPair> rateLimiterMap = rateLimiters != null ? ImmutableMap.of(getObjectRequest.getResultClass(), rateLimiters) : null;
+        Map<Class, ReadWriteRateLimiterPair> rateLimiterMap = rateLimiters != null ? ImmutableMap.of(getObjectRequest.getResultClass(), rateLimiters) : null;
         return (List<T>) batchGetObject((Collection) getObjectRequests, rateLimiterMap, migrationContext).get(getObjectRequest.getResultClass());
     }
 
