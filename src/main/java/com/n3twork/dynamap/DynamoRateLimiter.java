@@ -31,9 +31,13 @@ public class DynamoRateLimiter {
     private RateLimiter rateLimiter;
     private int permitsToConsume = 1;
     private final RateLimitType rateLimitType;
-    private final int targetPercent;
+    private Integer targetPercent;
 
     public enum RateLimitType {READ, WRITE}
+
+    public DynamoRateLimiter(RateLimitType rateLimitType) {
+        this.rateLimitType = rateLimitType;
+    }
 
     public DynamoRateLimiter(RateLimitType rateLimitType, int targetPercent) {
         this.rateLimitType = rateLimitType;
@@ -44,7 +48,17 @@ public class DynamoRateLimiter {
         init(table, null);
     }
 
+    public void setTargetPercent(int targetPercent) {
+        if (rateLimiter != null) {
+            throw new IllegalStateException("Rate limiter has already been initialized");
+        }
+        this.targetPercent = targetPercent;
+    }
+
     public void init(Table table, String indexName) {
+        if (targetPercent == null) {
+            throw new IllegalStateException("Target percent has not been set");
+        }
         if (rateLimiter == null) {
             table.describe();
             if (table.getDescription() != null) {
