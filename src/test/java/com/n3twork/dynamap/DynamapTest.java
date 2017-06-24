@@ -99,7 +99,7 @@ public class DynamapTest {
         // Update root object
         ExampleDocumentUpdates exampleDocumentUpdates = new ExampleDocumentUpdates(exampleDocument, exampleDocument.getHashKeyValue(), exampleDocument.getRangeKeyValue());
         exampleDocumentUpdates.setAlias("new alias");
-        dynamap.update(exampleDocumentUpdates);
+        dynamap.update(exampleDocumentUpdates, rateLimiterPair.getWriteLimiter());
 
         exampleDocument = dynamap.getObject(getObjectRequest, rateLimiterPair, null);
         Assert.assertEquals(exampleDocument.getAlias(), "new alias");
@@ -108,7 +108,7 @@ public class DynamapTest {
         // Update nested object
         NestedTypeUpdates nestedTypeUpdates = new NestedTypeUpdates(nestedObject, exampleId1, 1);
         nestedTypeUpdates.setBio("test nested");
-        dynamap.update(nestedTypeUpdates);
+        dynamap.update(nestedTypeUpdates, rateLimiterPair.getWriteLimiter());
 
         exampleDocument = dynamap.getObject(getObjectRequest, rateLimiterPair, null);
         Assert.assertEquals(exampleDocument.getNestedObject().getBio(), "test nested");
@@ -119,7 +119,7 @@ public class DynamapTest {
         exampleDocumentUpdates.setAlias("alias");
         nestedTypeUpdates.setBio("test");
         exampleDocumentUpdates.setNestedObjectUpdates(nestedTypeUpdates);
-        dynamap.update(exampleDocumentUpdates);
+        dynamap.update(exampleDocumentUpdates, rateLimiterPair.getWriteLimiter());
 
         exampleDocument = dynamap.getObject(getObjectRequest, null);
         Assert.assertEquals(exampleDocument.getAlias(), "alias");
@@ -226,7 +226,7 @@ public class DynamapTest {
 
         DummyDocUpdates docUpdates = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue());
         docUpdates.setWeight(100);
-        dynamap.update(docUpdates);
+        dynamap.update(docUpdates, null);
 
         savedDoc = dynamap.getObject(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID), null);
 
@@ -237,13 +237,13 @@ public class DynamapTest {
         DummyDocUpdates docUpdates1 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue());
         DummyDocUpdates docUpdates2 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue());
 
-        dynamap.update(docUpdates1);
+        dynamap.update(docUpdates1, null);
 
         savedDoc = dynamap.getObject(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID), null);
         Assert.assertEquals(savedDoc.getRevision().intValue(), 3);
 
         try {
-            dynamap.update(docUpdates2);
+            dynamap.update(docUpdates2, null);
             Assert.fail();
         } catch (RuntimeException ex) {
             Assert.assertNotNull(ex);
@@ -253,8 +253,8 @@ public class DynamapTest {
         // optimist locking disabled
         DummyDocUpdates docUpdates3 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue(), true);
         DummyDocUpdates docUpdates4 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue(), true);
-        dynamap.update(docUpdates3);
-        dynamap.update(docUpdates4);
+        dynamap.update(docUpdates3, null);
+        dynamap.update(docUpdates4, null);
 
         savedDoc = dynamap.getObject(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID), null);
         Assert.assertEquals(savedDoc.getRevision().intValue(), 3);

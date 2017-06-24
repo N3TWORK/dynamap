@@ -319,17 +319,24 @@ public class Dynamap {
         putObject(object, tableDefinition, overwrite, disableOptimisticLocking, writeLimiter);
     }
 
-    public <T extends DynamapPersisted> T update(Updates<T> updates) {
+    public <T extends DynamapPersisted> T update(Updates<T> updates, DynamoRateLimiter writeLimiter) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(updates.getTableName());
         UpdateItemSpec updateItemSpec = getUpdateItemSpec(updates, tableDefinition);
         Table table = getTable(tableDefinition.getTableName(prefix));
 
         logger.debug("About to submit DynamoDB Update: Update expression: {}, Conditional expression: {}, Values {}, Names: {}", updateItemSpec.getUpdateExpression(), updateItemSpec.getConditionExpression(), updateItemSpec.getValueMap(), updateItemSpec.getNameMap());
         try {
+            if (writeLimiter != null) {
+                writeLimiter.init(table);
+                writeLimiter.acquire();
+            }
             updateItemSpec.withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
             UpdateItemOutcome updateItemOutcome = table.updateItem(updateItemSpec);
             if (logger.isDebugEnabled()) {
                 logger.debug("UpdateItemOutcome: " + updateItemOutcome.getItem().toJSONPretty());
+            }
+            if (writeLimiter != null) {
+                writeLimiter.setConsumedCapacity(updateItemOutcome.getUpdateItemResult().getConsumedCapacity());
             }
             Class beanClass = Class.forName(tableDefinition.getPackageName() + "." + tableDefinition.getType() + "Bean");
             return (T) objectMapper.convertValue(updateItemOutcome.getItem().asMap(), beanClass);
