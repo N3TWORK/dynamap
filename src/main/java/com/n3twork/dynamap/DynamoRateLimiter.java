@@ -48,6 +48,14 @@ public class DynamoRateLimiter {
         init(table, null);
     }
 
+    public Integer getTargetPercent() {
+        return targetPercent;
+    }
+
+    public RateLimitType getRateLimitType() {
+        return rateLimitType;
+    }
+
     public void setTargetPercent(int targetPercent) {
         if (rateLimiter != null) {
             throw new IllegalStateException("Rate limiter has already been initialized");
