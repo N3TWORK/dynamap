@@ -34,7 +34,7 @@ import com.google.common.collect.Maps;
 
 public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
 
-
+    private final DynamoExpressionBuilder expression = new DynamoExpressionBuilder(${typeSequence});
     private final ${type.name} ${currentState};
     private final String hashKeyValue;
     private final Object rangeKeyValue;
@@ -326,19 +326,20 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     //////////////// Updates Interface Methods //////////
 
     @Override
+    public DynamoExpressionBuilder getExpressionBuilder(ObjectMapper objectMapper) {
+        expression.setObjectMapper(objectMapper);
+        return expression;
+    }
+
+    @Override
     public boolean pendingUpdates() {
         return pendingUpdates;
     }
 
     @Override
-    public DynamoExpressionBuilder getUpdateExpression(ObjectMapper objectMapper) {
-        DynamoExpressionBuilder expression = new DynamoExpressionBuilder(objectMapper);
-        addUpdateExpression(expression);
-        return expression;
-    }
+    public void processUpdateExpression(ObjectMapper objectMapper) {
 
-    @Override
-    public void addUpdateExpression(DynamoExpressionBuilder expression) {
+        expression.setObjectMapper(objectMapper);
 
         String parentDynamoFieldName = <#if isRoot>null;<#else>"${parentFieldName}";</#if>
 <#if isRoot && optimisticLocking>
@@ -396,22 +397,22 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
             }
             <#if field.isGeneratedType()>
             else if (${field.name}Updates != null) {
-                this.${field.name}Updates.addUpdateExpression(expression);
+                this.${field.name}Updates.processUpdateExpression(objectMapper);
+                expression.merge(this.${field.name}Updates.getExpressionBuilder(objectMapper));
             }
             </#if>
             </#if>
         </#if>
     </#list>
-    }
 
-    @Override
-    public void addConditionalExpression(DynamoExpressionBuilder expression) {
-        expression.addCheckFieldValueCondition(null, "${schemaVersionFieldName}", ${rootType}.SCHEMA_VERSION, true);
-<#if isRoot && optimisticLocking>
-        if (!disableOptimisticLocking) {
-            expression.addCheckFieldValueCondition(null, "${revisionFieldName}", ${currentState}.getRevision(), true);
-        }
-</#if>
+    // Conditional expression
+    expression.addCheckFieldValueCondition(null, "${schemaVersionFieldName}", ${rootType}.SCHEMA_VERSION, true);
+    <#if isRoot && optimisticLocking>
+            if (!disableOptimisticLocking) {
+                expression.addCheckFieldValueCondition(null, "${revisionFieldName}", ${currentState}.getRevision(), true);
+            }
+    </#if>
+
     }
 
 }

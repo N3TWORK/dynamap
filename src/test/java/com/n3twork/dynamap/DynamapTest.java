@@ -117,6 +117,7 @@ public class DynamapTest {
         // Update parent and nested object
         exampleDocumentUpdates = new ExampleDocumentUpdates(exampleDocument, exampleDocument.getHashKeyValue(), exampleDocument.getRangeKeyValue());
         exampleDocumentUpdates.setAlias("alias");
+        nestedTypeUpdates = new NestedTypeUpdates(exampleDocument.getNestedObject(), exampleId1, 1);
         nestedTypeUpdates.setBio("test");
         exampleDocumentUpdates.setNestedObjectUpdates(nestedTypeUpdates);
         dynamap.update(exampleDocumentUpdates, rateLimiterPair.getWriteLimiter());

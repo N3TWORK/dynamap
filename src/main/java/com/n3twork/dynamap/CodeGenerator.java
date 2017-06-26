@@ -95,10 +95,13 @@ public class CodeGenerator {
             throw new RuntimeException("Cannot find type definition for " + tableDefinition.getType());
         }
         Type tableType = tableTypeOptional.get();
+        int typeSequence = 0;
         for (Type type : tableDefinition.getTypes()) {
             Map<String, Object> model = new HashMap<>();
             String beanName = type.getName() + "Bean";
             String updatesName = type.getName() + "Updates";
+            typeSequence++;
+            model.put("typeSequence", typeSequence);
             model.put("tableDefinition", tableDefinition);
             model.put("package", tableDefinition.getPackageName());
             model.put("schemaVersion", tableDefinition.getVersion());

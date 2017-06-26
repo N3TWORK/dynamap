@@ -21,6 +21,7 @@ import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import java.math.BigDecimal;
@@ -28,24 +29,42 @@ import java.util.*;
 
 public class DynamoExpressionBuilder {
 
-    private final ObjectMapper objectMapper;
+    private ObjectMapper objectMapper;
 
     private static final Set<String> SUPPORTED_JAVA_TYPES = ImmutableSet.of("java.lang.Integer", "java.lang.Long", "java.lang.Float", "java.lang.Double", "java.lang.Number", "java.lang.BigDecimal", "java.lang.String");
 
     private final List<String> addSection = new ArrayList<>();
     private final List<String> setSection = new ArrayList<>();
     private final List<String> removeSection = new ArrayList<>();
-    private final Alias parentNames = new Alias("#doc");
-    private final Alias names = new Alias("#a");
-    private final Alias vals = new Alias(":v");
-    private final Alias condNames = new Alias("#condAttr");
-    private final Alias condVals = new Alias(":condVal");
+    private final Alias parentNames;
+    private final Alias names;
+    private final Alias vals;
+    private final Alias condNames;
+    private final Alias condVals;
     private final List<String> conditions = new ArrayList<>();
 
     private NameMap nameMap = new NameMap();
     private ValueMap valueMap = new ValueMap();
 
-    public DynamoExpressionBuilder(ObjectMapper objectMapper) {
+    public DynamoExpressionBuilder(int prefixNumber) {
+        String prefix = "t" + prefixNumber;
+        parentNames = new Alias("#" + prefix + "doc");
+        names = new Alias("#" + prefix + "a");
+        vals = new Alias(":" + prefix + "v");
+        condNames = new Alias("#" + prefix + "condAttr");
+        condVals = new Alias(":" + prefix + "condVal");
+    }
+
+    public void merge(DynamoExpressionBuilder dynamoExpressionBuilder) {
+        this.addSection.addAll(dynamoExpressionBuilder.addSection);
+        this.setSection.addAll(dynamoExpressionBuilder.setSection);
+        this.removeSection.addAll(dynamoExpressionBuilder.removeSection);
+        this.conditions.addAll(dynamoExpressionBuilder.conditions);
+        nameMap.putAll(dynamoExpressionBuilder.nameMap);
+        valueMap.putAll(dynamoExpressionBuilder.valueMap);
+    }
+
+    public void setObjectMapper(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
@@ -74,8 +93,7 @@ public class DynamoExpressionBuilder {
             String nameAlias = names.next();
             nameMap = nameMap.with(nameAlias, joinFields(parentField, fieldName));
             attributeName = nameAlias;
-        }
-        else {
+        } else {
             attributeName = joinFields(parentField, fieldName);
         }
         addSection.add(String.format("%s %s", attributeName, alias));
@@ -139,8 +157,7 @@ public class DynamoExpressionBuilder {
             String nameAlias = condNames.next();
             nameMap = nameMap.with(nameAlias, joinFields(parentField, fieldName));
             attributeName = nameAlias;
-        }
-        else {
+        } else {
             attributeName = joinFields(parentField, fieldName);
         }
 
@@ -207,6 +224,7 @@ public class DynamoExpressionBuilder {
     }
 
     private String processValueAlias(Alias aliasGenerator, Object value, Class type) {
+        Preconditions.checkNotNull(objectMapper, "ObjectMapper has not been set");
         String alias = aliasGenerator.next();
         if (value instanceof Integer) {
             valueMap = valueMap.withInt(alias, (Integer) value);
