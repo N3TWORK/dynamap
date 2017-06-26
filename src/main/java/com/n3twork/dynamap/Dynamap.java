@@ -571,8 +571,10 @@ public class Dynamap {
     }
 
     private UpdateItemSpec getUpdateItemSpec(Updates updates, TableDefinition tableDefinition) {
-        updates.processUpdateExpression(objectMapper);
-        DynamoExpressionBuilder expressionBuilder = updates.getExpressionBuilder(objectMapper);
+        DynamoExpressionBuilder expressionBuilder = updates.getExpressionBuilder();
+        expressionBuilder.setObjectMapper(objectMapper);
+        updates.processUpdateExpression();
+
         UpdateItemSpec result = new UpdateItemSpec().withReturnValues(ReturnValue.ALL_NEW);
         Field hashField = tableDefinition.getField(tableDefinition.getHashKey());
         if (updates.getRangeKeyValue() != null) {

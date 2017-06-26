@@ -8,9 +8,12 @@ Generates strongly typed Java classes that represent your schema, and provides m
 
 Benefits:
 
-* Define your schema using JSON.
+* Define your schema and attribute behavior using JSON.
 * Strongly typed classes are automatically generated.
 * Update objects hide the complexity of DynamoDB update expressions and provide the ability to execute fine grained, concurrently safe updates.
+* Updates track changes to the state of the object, including delta amounts for numeric types. Original state can be retrieved if necessary.
+* Provides simple methods that hide the complexity of building conditional expressions.
+* Significantly reduces the amount of code you have to write and makes your code easy to read and comprehend
 * Provides a mechanism for schema migrations
 * Provides a mechanism for rate limiting reads and writes
 * Additional custom generated types and can be defined and nested in the top level document
@@ -105,11 +108,19 @@ Update the user, by incrementing a balance
 
 ```java
 UserUpdates updates = new UserUpdates(user, new ObjectMapper(), "userId1");
-updates.incrementBalanceAmount("gold",3);
+updates.incrementBalanceAmount("gold", 3);
 dynamap.update(updates);
 
 ```
 
+Increment the user's balance without having to read the existing user object first
+
+```java
+UserUpdates updates = new UserUpdates(new UserBean(), new ObjectMapper(), "userId1");
+updates.incrementBalanceAmount("gold", 3);
+dynamap.update(updates);
+
+```
 
 
 ## Getting Started

@@ -21,7 +21,6 @@ import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
 import java.math.BigDecimal;
@@ -46,6 +45,21 @@ public class DynamoExpressionBuilder {
     private NameMap nameMap = new NameMap();
     private ValueMap valueMap = new ValueMap();
 
+    public enum ComparisonOperator {
+
+        EQUALS("="), NOT_EQUALS("!="), LESS_THAN("<"), LESS_THAN_EQUAL_TO("<="), GREATHER_THAN(">"), GREATER_THAN_EQUAL_TO(">=");
+
+        private final String value;
+
+        ComparisonOperator(String value) {
+            this.value = value;
+        }
+
+        public String getValue() {
+            return value;
+        }
+    }
+
     public DynamoExpressionBuilder(int prefixNumber) {
         String prefix = "t" + prefixNumber;
         parentNames = new Alias("#" + prefix + "doc");
@@ -66,6 +80,13 @@ public class DynamoExpressionBuilder {
 
     public void setObjectMapper(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
+    }
+
+    public ObjectMapper getObjectMapper() {
+        if (objectMapper == null) {
+            this.objectMapper = new ObjectMapper();
+        }
+        return objectMapper;
     }
 
     public NameMap getNameMap() {
@@ -185,6 +206,15 @@ public class DynamoExpressionBuilder {
         return this;
     }
 
+    public DynamoExpressionBuilder addCheckAttributeSizeCondition(String parentField, String fieldName, Number value, ComparisonOperator op) {
+        String nameAlias = condNames.next();
+        String valueAlias = condVals.next();
+        nameMap.with(nameAlias, fieldName);
+        valueMap.with(valueAlias, value);
+        conditions.add("size(" + joinFields(parentField, fieldName, nameAlias) + op.getValue() + valueAlias);
+        return this;
+    }
+
     public String buildConditionalExpression() {
         if (conditions.isEmpty()) {
             return "";
@@ -224,7 +254,7 @@ public class DynamoExpressionBuilder {
     }
 
     private String processValueAlias(Alias aliasGenerator, Object value, Class type) {
-        Preconditions.checkNotNull(objectMapper, "ObjectMapper has not been set");
+        ObjectMapper objectMapper = getObjectMapper();
         String alias = aliasGenerator.next();
         if (value instanceof Integer) {
             valueMap = valueMap.withInt(alias, (Integer) value);
@@ -301,6 +331,7 @@ public class DynamoExpressionBuilder {
     }
 
     private Set<String> toJsonStringSet(Set<Object> objects) {
+        ObjectMapper objectMapper = getObjectMapper();
         Set<String> results = new HashSet<>();
         for (Object object : objects) {
             results.add(objectMapper.convertValue(object, new TypeReference<Map<String, Object>>() {

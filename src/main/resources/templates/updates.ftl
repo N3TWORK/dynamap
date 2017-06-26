@@ -326,8 +326,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     //////////////// Updates Interface Methods //////////
 
     @Override
-    public DynamoExpressionBuilder getExpressionBuilder(ObjectMapper objectMapper) {
-        expression.setObjectMapper(objectMapper);
+    public DynamoExpressionBuilder getExpressionBuilder() {
         return expression;
     }
 
@@ -337,9 +336,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     }
 
     @Override
-    public void processUpdateExpression(ObjectMapper objectMapper) {
-
-        expression.setObjectMapper(objectMapper);
+    public void processUpdateExpression() {
 
         String parentDynamoFieldName = <#if isRoot>null;<#else>"${parentFieldName}";</#if>
 <#if isRoot && optimisticLocking>
@@ -397,8 +394,10 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
             }
             <#if field.isGeneratedType()>
             else if (${field.name}Updates != null) {
-                this.${field.name}Updates.processUpdateExpression(objectMapper);
-                expression.merge(this.${field.name}Updates.getExpressionBuilder(objectMapper));
+                DynamoExpressionBuilder nestedExpression = this.${field.name}Updates.getExpressionBuilder();
+                nestedExpression.setObjectMapper(expression.getObjectMapper());
+                this.${field.name}Updates.processUpdateExpression();
+                expression.merge(this.${field.name}Updates.getExpressionBuilder());
             }
             </#if>
             </#if>

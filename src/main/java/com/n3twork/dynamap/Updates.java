@@ -20,9 +20,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public interface Updates<T extends DynamapPersisted> {
 
-    DynamoExpressionBuilder getExpressionBuilder(ObjectMapper objectMapper);
+    DynamoExpressionBuilder getExpressionBuilder();
 
-    void processUpdateExpression(ObjectMapper objectMapper);
+    void processUpdateExpression();
 
     String getTableName();
 
