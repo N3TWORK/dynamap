@@ -35,6 +35,7 @@ import com.google.common.collect.Maps;
 public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
 
     private final DynamoExpressionBuilder expression = new DynamoExpressionBuilder(${typeSequence});
+    private boolean updatesApplied = false;
     private final ${type.name} ${currentState};
     private final String hashKeyValue;
     private final Object rangeKeyValue;
@@ -337,6 +338,11 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
 
     @Override
     public void processUpdateExpression() {
+
+        if (updatesApplied) {
+            throw new IllegalStateException("Updates have already been applied. A new Updates object must be created");
+        }
+        updatesApplied = true;
 
         String parentDynamoFieldName = <#if isRoot>null;<#else>"${parentFieldName}";</#if>
 <#if isRoot && optimisticLocking>
