@@ -34,43 +34,43 @@ import com.google.common.collect.Maps;
 
 public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
 
-    private final DynamoExpressionBuilder expression = new DynamoExpressionBuilder(${typeSequence});
-    private boolean updatesApplied = false;
-    private final ${type.name} ${currentState};
-    private final String hashKeyValue;
-    private final Object rangeKeyValue;
+    protected final DynamoExpressionBuilder expression = new DynamoExpressionBuilder(${typeSequence});
+    protected boolean updatesApplied = false;
+    protected final ${type.name} ${currentState};
+    protected final String hashKeyValue;
+    protected final Object rangeKeyValue;
 <#if isRoot && optimisticLocking>
-    private final Integer _revision;
+    protected final Integer _revision;
 </#if>
-    private boolean pendingUpdates = false;
+    protected boolean pendingUpdates = false;
 
 <#list type.fields as field>
-    private <@field_type field=field /> ${field.name};
+    protected <@field_type field=field /> ${field.name};
     <#if field.isGeneratedType()>
-    private ${field.type}Updates ${field.name}Updates;
+    protected ${field.type}Updates ${field.name}Updates;
     </#if>
 
     <#if field.multiValue??>
-    private boolean ${field.name}Clear = false;
+    protected boolean ${field.name}Clear = false;
     <#if field.multiValue == 'LIST'>
-    private <@field_type field=field /> ${field.name}Adds = new ArrayList();
+    protected <@field_type field=field /> ${field.name}Adds = new ArrayList();
     </#if>
     <#if field.multiValue == 'SET'>
-    private <@field_type field=field /> ${field.name}Deletes = new HashSet();
-    private <@field_type field=field /> ${field.name}Sets = new HashSet();
+    protected <@field_type field=field /> ${field.name}Deletes = new HashSet();
+    protected <@field_type field=field /> ${field.name}Sets = new HashSet();
     </#if>
     <#if field.multiValue == 'MAP'>
-    private Set<String> ${field.name}Deletes = new HashSet();
-    private <@field_type field=field /> ${field.name}Sets = new HashMap();
+    protected Set<String> ${field.name}Deletes = new HashSet();
+    protected <@field_type field=field /> ${field.name}Sets = new HashMap();
     </#if>
     <#if field.multiValue == 'MAP' && field.isNumber()>
-    private <@field_type field=field /> ${field.name}Deltas = new HashMap();
+    protected <@field_type field=field /> ${field.name}Deltas = new HashMap();
     </#if>
     <#elseif field.isNumber()>
-    private ${field.type} ${field.name}Delta;
+    protected ${field.type} ${field.name}Delta;
     </#if>
 </#list>
-    private final boolean disableOptimisticLocking;
+    protected final boolean disableOptimisticLocking;
 
     public ${updatesName}(${type.name} ${currentState}, String hashKeyValue, <#if tableDefinition.rangeKey??>Object rangeKeyValue,</#if> boolean disableOptimisticLocking) {
         this.${currentState} = ${currentState};
