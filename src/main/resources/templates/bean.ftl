@@ -64,8 +64,9 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
         </#list><#if isRoot && optimisticLocking>,
         @JsonProperty(REVISION_FIELD) Integer _revision</#if>) {
 
-    <#list type.persistedFields as field>
-        <#if field.multiValue??>
+    <#list type.fields as field>
+        <#if field.isPersisted()>
+            <#if field.multiValue??>
             <#if field.multiValue == 'MAP'>
             this.${field.name} = ${field.name} == null ? Collections.emptyMap() : ${field.name};
             <#elseif field.multiValue == 'LIST'>
@@ -73,8 +74,19 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
             <#elseif field.multiValue == 'SET'>
             this.${field.name} = ${field.name} == null ? Collections.emptySet() : ${field.name};
             </#if>
+            <#else>
+            this.${field.name} = ${field.name} == null ? ${field.defaultValue} : ${field.name};
+            </#if>
         <#else>
-        this.${field.name} = ${field.name} == null ? ${field.defaultValue} : ${field.name};
+           <#if field.multiValue??>
+           <#if field.multiValue == 'MAP'>
+                this.${field.name} = ${field.name} == null ? Collections.emptyMap() : ${field.name};
+                <#elseif field.multiValue == 'LIST'>
+                this.${field.name} = ${field.name} == null ? Collections.emptyList() : ${field.name};
+                <#elseif field.multiValue == 'SET'>
+                this.${field.name} = ${field.name} == null ? Collections.emptySet() : ${field.name};
+           </#if>
+           </#if>
         </#if>
     </#list>
     <#if isRoot && optimisticLocking>
