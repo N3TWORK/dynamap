@@ -478,9 +478,9 @@ public class Dynamap {
         Type type = tableDefinition.getTypes().stream().filter(t -> t.getName().equals(tableDefinition.getType())).findFirst().get();
         for (Field field : type.getPersistedFields()) {
             if (field.getMultiValue() != null) {
-                if (field.getMultiValue().equals("Map")) {
+                if (field.getMultiValue().equals(Field.MultiValue.MAP)) {
                     item.withMap(field.getDynamoName(), (Map) map.get(field.getDynamoName()));
-                } else if (field.getMultiValue().equals("Set")) {
+                } else if (field.getMultiValue().equals(Field.MultiValue.SET)) {
                     if (field.getType().equals("String")) {
                         item.withStringSet(field.getDynamoName(), (String) map.get(field.getDynamoName()));
                     } else if (field.isNumber()) {
@@ -488,7 +488,7 @@ public class Dynamap {
                     } else {
                         throw new RuntimeException("Invalid type for Set: " + field.getName() + ":" + field.getType());
                     }
-                } else if (field.getMultiValue().equals("List")) {
+                } else if (field.getMultiValue().equals(Field.MultiValue.LIST)) {
                     item.withList(field.getDynamoName(), map.get(field.getDynamoName()));
                 }
             } else if (field.getType().equals("String")) {
