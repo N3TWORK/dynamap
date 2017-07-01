@@ -145,11 +145,6 @@ public class DynamapTest {
             }
 
             @Override
-            public int getSequence() {
-                return 0;
-            }
-
-            @Override
             public void migrate(Item item, int version, Object context) {
                 item.withString("alias", "newAlias");
             }

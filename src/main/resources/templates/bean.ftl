@@ -45,7 +45,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     </#if>
 
     public ${beanName}() {
-        this(<#list type.fields as field>null<#sep>,</#list>);
+        this(<#list type.persistedFields as field>null<#sep>,</#list>);
     }
 
 <#if isRoot && optimisticLocking>

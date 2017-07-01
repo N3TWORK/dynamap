@@ -23,10 +23,7 @@ import org.apache.commons.io.IOUtils;
 
 import java.io.InputStream;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class SchemaRegistry {
 
@@ -59,7 +56,7 @@ public class SchemaRegistry {
             tableMigrations.put(tableName, migrations);
         }
         migrations.add(migration);
-        migrations.sort((m1, m2) -> m1.getVersion() == m2.getVersion() ? Integer.compare(m1.getSequence(), m2.getSequence()) : Integer.compare(m1.getVersion(), m2.getVersion()));
+        migrations.sort(Comparator.comparingInt(m -> m.getVersion()));
     }
 
     public List<Migration> getMigrations(String tableName) {
