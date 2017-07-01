@@ -441,12 +441,12 @@ public class Dynamap {
         int currentVersion = item.getInt(tableDefinition.getSchemaVersionField());
         try {
             if (currentVersion != tableDefinition.getVersion()) {
-                for (Migration migration : schemaRegistry.getMigrations(tableDefinition.getTableName())) {
+                for (Migration migration : schemaRegistry.getMigrations(resultClass)) {
                     if (migration.getVersion() > currentVersion) {
                         migration.migrate(item, currentVersion, migrationContext);
                     }
                 }
-                for (Migration migration : schemaRegistry.getMigrations(tableDefinition.getTableName())) {
+                for (Migration migration : schemaRegistry.getMigrations(resultClass)) {
                     if (migration.getVersion() > currentVersion) {
                         migration.postMigration(item, currentVersion, migrationContext);
                     }

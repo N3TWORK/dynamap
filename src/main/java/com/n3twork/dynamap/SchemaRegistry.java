@@ -29,7 +29,7 @@ public class SchemaRegistry {
 
     private final Schema schema;
 
-    private final Map<String, List<Migration>> tableMigrations = new HashMap<>();
+    private final Map<Class<? extends DynamapRecordBean>, List<Migration>> tableMigrations = new HashMap<>();
     private final Map<String, Method> getTableNameMethods = new HashMap<>();
 
     public SchemaRegistry(InputStream... schemaInput) {
@@ -48,19 +48,19 @@ public class SchemaRegistry {
         this.schema = new Schema(tableDefinitions);
     }
 
-    public void registerMigration(String tableName, Migration migration) {
+    public void registerMigration(Class<? extends DynamapRecordBean> resultClass, Migration migration) {
 
-        List<Migration> migrations = tableMigrations.get(tableName);
+        List<Migration> migrations = tableMigrations.get(resultClass);
         if (migrations == null) {
             migrations = new ArrayList<>();
-            tableMigrations.put(tableName, migrations);
+            tableMigrations.put(resultClass, migrations);
         }
         migrations.add(migration);
         migrations.sort(Comparator.comparingInt(m -> m.getVersion()));
     }
 
-    public List<Migration> getMigrations(String tableName) {
-        return tableMigrations.get(tableName);
+    public List<Migration> getMigrations(Class<? extends DynamapRecordBean> resultClass) {
+        return tableMigrations.get(resultClass);
     }
 
     public Schema getSchema() {

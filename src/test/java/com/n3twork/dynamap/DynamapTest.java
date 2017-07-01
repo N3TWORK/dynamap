@@ -138,7 +138,7 @@ public class DynamapTest {
         String jsonSchema = IOUtils.toString(getClass().getResourceAsStream("/ExampleSchema.json"));
         jsonSchema = jsonSchema.replace("\"version\": 1,", "\"version\": 2,");
         schemaRegistry = new SchemaRegistry(new ByteArrayInputStream(jsonSchema.getBytes()));
-        schemaRegistry.registerMigration("Example", new Migration() {
+        schemaRegistry.registerMigration(ExampleDocumentBean.class, new Migration() {
             @Override
             public int getVersion() {
                 return 2;
