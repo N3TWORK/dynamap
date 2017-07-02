@@ -242,7 +242,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         return this;
     }
     public ${updatesName} delete${field.name?cap_first}<@collection_item field=field />(String id) {
-        ${field.name}Deletes.remove(id);
+        ${field.name}Deletes.add(id);
         pendingUpdates = true;
         return this;
     }
