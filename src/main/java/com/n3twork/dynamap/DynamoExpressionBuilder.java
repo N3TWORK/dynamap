@@ -304,12 +304,7 @@ public class DynamoExpressionBuilder {
                 valueMap = valueMap.withList(alias, values);
             }
         } else {
-            if (value instanceof Enum<?>) {
-                valueMap = valueMap.with(alias, objectMapper.convertValue(value, Object.class));
-            } else {
-                valueMap = valueMap.withMap(alias, objectMapper.convertValue(value, new TypeReference<Map<String, Object>>() {
-                }));
-            }
+            valueMap = valueMap.with(alias, objectMapper.convertValue(value, Object.class));
         }
         return alias;
     }
