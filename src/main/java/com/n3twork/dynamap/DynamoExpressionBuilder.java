@@ -209,9 +209,8 @@ public class DynamoExpressionBuilder {
     public DynamoExpressionBuilder addCheckAttributeSizeCondition(String parentField, String fieldName, Number value, ComparisonOperator op) {
         String nameAlias = condNames.next();
         String valueAlias = condVals.next();
-        nameMap.with(nameAlias, fieldName);
         valueMap.with(valueAlias, value);
-        conditions.add("size(" + joinFields(parentField, fieldName, nameAlias) + op.getValue() + valueAlias);
+        conditions.add("size(" + joinFields(parentField, fieldName) + ") " + op.getValue() + " " + valueAlias);
         return this;
     }
 
