@@ -16,8 +16,6 @@
 
 package com.n3twork.dynamap;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 public interface Updates<T extends DynamapPersisted> {
 
     DynamoExpressionBuilder getExpressionBuilder();

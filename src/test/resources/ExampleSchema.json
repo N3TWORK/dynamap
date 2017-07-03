@@ -104,8 +104,7 @@
               "name": "mapOfCustomType",
               "dynamoName": "mapOfBean",
               "type": "com.n3twork.dynamap.CustomType",
-              "multivalue": "Map",
-              "replace": true
+              "multivalue": "Map"
             },
             {
               "name": "noDeltaMapOfCustomType",
