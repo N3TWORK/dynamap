@@ -30,7 +30,7 @@ public class SchemaRegistry {
     private final Schema schema;
 
     private final Map<Class<? extends DynamapRecordBean>, List<Migration>> tableMigrations = new HashMap<>();
-    private final Map<String, String> classToTableDefinitions = new HashMap<>();
+    private final Map<String, TableDefinition> classToTableDefinitions = new HashMap<>();
 
     public SchemaRegistry(InputStream... schemaInput) {
         List<TableDefinition> tableDefinitions = new ArrayList<>();
@@ -69,18 +69,29 @@ public class SchemaRegistry {
     }
 
     public TableDefinition getTableDefinition(String tableName) {
-        return schema.getTableDefinitions().stream().filter(t -> t.getTableName().equals(tableName)).findFirst().get();
+        return schema.getTableDefinition(tableName);
     }
 
+
     public <T extends DynamapRecordBean> TableDefinition getTableDefinition(Class<T> clazz) {
-        return getTableDefinition(classToTableDefinitions.get(clazz.getCanonicalName()));
+        if (clazz.getCanonicalName().equals("java.lang.Object")) {
+            return null;
+        }
+        TableDefinition tableDefinition = classToTableDefinitions.get(clazz.getCanonicalName());
+        if (tableDefinition == null) {
+            tableDefinition = getTableDefinition((Class<T>) clazz.getSuperclass());
+            if (tableDefinition != null) {
+                classToTableDefinitions.put(clazz.getCanonicalName(), tableDefinition);
+            }
+        }
+        return tableDefinition;
     }
 
     private void buildTableDefinitionNames(List<TableDefinition> tableDefinitions) {
         for (TableDefinition tableDefinition : tableDefinitions) {
             for (Type type : tableDefinition.getTypes()) {
-                classToTableDefinitions.put(tableDefinition.getPackageName() + "." + type.getName(), tableDefinition.getTableName());
-                classToTableDefinitions.put(tableDefinition.getPackageName() + "." + type.getName() + "Bean", tableDefinition.getTableName());
+                classToTableDefinitions.put(tableDefinition.getPackageName() + "." + type.getName(), tableDefinition);
+                classToTableDefinitions.put(tableDefinition.getPackageName() + "." + type.getName() + "Bean", tableDefinition);
             }
         }
     }

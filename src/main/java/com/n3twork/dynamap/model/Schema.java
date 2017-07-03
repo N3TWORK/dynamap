@@ -45,4 +45,8 @@ public class Schema {
     public Collection<TableDefinition> getTableDefinitions() {
         return tableDefinitionsByName.values();
     }
+
+    public TableDefinition getTableDefinition(String tableName) {
+        return tableDefinitionsByName.get(tableName);
+    }
 }
