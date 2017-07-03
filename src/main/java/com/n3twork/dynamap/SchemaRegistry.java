@@ -19,10 +19,10 @@ package com.n3twork.dynamap;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.n3twork.dynamap.model.Schema;
 import com.n3twork.dynamap.model.TableDefinition;
+import com.n3twork.dynamap.model.Type;
 import org.apache.commons.io.IOUtils;
 
 import java.io.InputStream;
-import java.lang.reflect.Method;
 import java.util.*;
 
 public class SchemaRegistry {
@@ -30,7 +30,7 @@ public class SchemaRegistry {
     private final Schema schema;
 
     private final Map<Class<? extends DynamapRecordBean>, List<Migration>> tableMigrations = new HashMap<>();
-    private final Map<String, Method> getTableNameMethods = new HashMap<>();
+    private final Map<String, String> classToTableDefinitions = new HashMap<>();
 
     public SchemaRegistry(InputStream... schemaInput) {
         List<TableDefinition> tableDefinitions = new ArrayList<>();
@@ -38,6 +38,7 @@ public class SchemaRegistry {
             try {
                 Schema schema = new ObjectMapper().readValue(inputStream, Schema.class);
                 tableDefinitions.addAll(schema.getTableDefinitions());
+                buildTableDefinitionNames(tableDefinitions);
 
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -72,22 +73,16 @@ public class SchemaRegistry {
     }
 
     public <T extends DynamapRecordBean> TableDefinition getTableDefinition(Class<T> clazz) {
-        String tableName;
-        try {
-            Method getMethod = getTableNameMethods.get(clazz.getCanonicalName());
-            if (getMethod == null) {
-                Class bean = clazz;
-                while (!bean.getSuperclass().getName().equals("java.lang.Object")) {
-                    bean = bean.getSuperclass();
-                }
-                getMethod = bean.getMethod("getTableName");
-                getTableNameMethods.put(clazz.getCanonicalName(), getMethod);
+        return getTableDefinition(classToTableDefinitions.get(clazz.getCanonicalName()));
+    }
+
+    private void buildTableDefinitionNames(List<TableDefinition> tableDefinitions) {
+        for (TableDefinition tableDefinition : tableDefinitions) {
+            for (Type type : tableDefinition.getTypes()) {
+                classToTableDefinitions.put(tableDefinition.getPackageName() + "." + type.getName(), tableDefinition.getTableName());
+                classToTableDefinitions.put(tableDefinition.getPackageName() + "." + type.getName() + "Bean", tableDefinition.getTableName());
             }
-            tableName = (String) getMethod.invoke(clazz);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
-        return getTableDefinition(tableName);
     }
 
 

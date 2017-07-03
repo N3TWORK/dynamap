@@ -19,21 +19,18 @@ package com.n3twork.dynamap.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Schema {
 
     public static final String REVISION_FIELD = "_rv";
 
-    private final List<TableDefinition> tableDefinitions;
+    private final Map<String, TableDefinition> tableDefinitionsByName = new HashMap<>();
 
     public Schema(@JsonProperty("tables") List<TableDefinition> tableDefinitions) {
-
-        this.tableDefinitions = tableDefinitions;
-
         for (TableDefinition tableDefinition : tableDefinitions) {
+            tableDefinitionsByName.put(tableDefinition.getTableName(), tableDefinition);
             Set<String> generatedTypeNames = tableDefinition.getTypes().stream().map(Type::getName).collect(Collectors.toSet());
             for (Type type : tableDefinition.getTypes()) {
                 for (Field field : type.getFields()) {
@@ -45,7 +42,7 @@ public class Schema {
         }
     }
 
-    public List<TableDefinition> getTableDefinitions() {
-        return tableDefinitions;
+    public Collection<TableDefinition> getTableDefinitions() {
+        return tableDefinitionsByName.values();
     }
 }
