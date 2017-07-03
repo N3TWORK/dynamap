@@ -202,9 +202,9 @@ public class DynamapTest {
         String nestedId1 = UUID.randomUUID().toString();
         String exampleId2 = UUID.randomUUID().toString();
         String nestedId2 = UUID.randomUUID().toString();
-        dynamap.save(new ExampleDocumentBean().setExampleId(exampleId1).setAlias("alias")
+        dynamap.save(new ExampleDocumentBean().setExampleId(exampleId1).setSequence(1).setAlias("alias")
                 .setNestedObject(new NestedTypeBean().setId(nestedId1)), null);
-        dynamap.save(new ExampleDocumentBean().setExampleId(exampleId2).setAlias("alias")
+        dynamap.save(new ExampleDocumentBean().setExampleId(exampleId2).setSequence(1).setAlias("alias")
                 .setNestedObject(new NestedTypeBean().setId(nestedId2)), null);
 
 
@@ -218,7 +218,7 @@ public class DynamapTest {
                 new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId1).withRangeKeyValue(1),
                 new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId2).withRangeKeyValue(1)), rateLimiterPair, null);
 
-        Assert.assertEquals(2, exampleDocuments.size());
+        Assert.assertEquals(exampleDocuments.size(), 2);
     }
 
     @Test
