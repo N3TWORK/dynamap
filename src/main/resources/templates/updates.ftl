@@ -359,9 +359,9 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
                 expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.type}.class);
             <#else>
                 <#if field.isNumber()>
-                    expression.updateMap(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Deltas, ${field.name}Sets, ${field.name}Deletes);
+                    expression.updateMap(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Deltas, ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
                 <#else>
-                    expression.updateMap(parentDynamoFieldName, "${field.dynamoName}", null, ${field.name}Sets, ${field.name}Deletes);
+                    expression.updateMap(parentDynamoFieldName, "${field.dynamoName}", null, ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
                 </#if>
              </#if>
 

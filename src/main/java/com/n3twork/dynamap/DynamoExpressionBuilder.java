@@ -136,7 +136,10 @@ public class DynamoExpressionBuilder {
         return this;
     }
 
-    public <N extends Number, T extends Object> DynamoExpressionBuilder updateMap(String parentField, String fieldName, Map<String, N> deltas, Map<String, T> updates, Collection<String> deletes) {
+    public <N extends Number, T extends Object> DynamoExpressionBuilder updateMap(String parentField, String fieldName, Map<String, N> deltas, Map<String, T> updates, Collection<String> deletes, boolean clear) {
+        if (clear) {
+            setSection.add(String.format("%s=%s", joinFields(parentField, fieldName), processValueAlias(vals, Collections.emptyMap())));
+        }
         if (deltas != null) {
             processMapForAdd(parentField, fieldName, deltas);
         }
