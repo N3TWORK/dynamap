@@ -152,7 +152,7 @@ public class Dynamap {
     }
 
     public <T extends DynamapRecordBean> T getObject(GetObjectRequest<T> getObjectRequest, ReadWriteRateLimiterPair rateLimiters, Object migrationContext) {
-        Map<Class, List<Object>> results = batchGetObject(Arrays.asList(getObjectRequest), ImmutableMap.of(getObjectRequest.getResultClass(), rateLimiters), migrationContext);
+        Map<Class, List<Object>> results = batchGetObject(Arrays.asList(getObjectRequest), rateLimiters == null ? null : ImmutableMap.of(getObjectRequest.getResultClass(), rateLimiters), migrationContext);
         List<Object> resultList = results.values().iterator().next();
         if (resultList.size() > 0) {
             return (T) resultList.get(0);
