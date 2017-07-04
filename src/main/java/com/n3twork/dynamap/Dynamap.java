@@ -438,20 +438,31 @@ public class Dynamap {
         }
 
         T result;
-        int currentVersion = item.getInt(tableDefinition.getSchemaVersionField());
+        String schemaField = tableDefinition.getSchemaVersionField();
+        int currentVersion;
+        if (!item.hasAttribute(schemaField)) {
+            Field field = tableDefinition.getField(tableDefinition.getHashKey());
+            logger.warn("Schema version field does not exist for {} on item with hash key {}. Migrating item to current version", tableDefinition.getTableName(), item.get(field.getDynamoName()));
+            currentVersion = 0;
+        } else {
+            currentVersion = item.getInt(schemaField);
+        }
         try {
+            List<Migration> migrations = schemaRegistry.getMigrations(resultClass);
             if (currentVersion != tableDefinition.getVersion()) {
-                for (Migration migration : schemaRegistry.getMigrations(resultClass)) {
-                    if (migration.getVersion() > currentVersion) {
-                        migration.migrate(item, currentVersion, migrationContext);
+                if (migrations != null) {
+                    for (Migration migration : migrations) {
+                        if (migration.getVersion() > currentVersion) {
+                            migration.migrate(item, currentVersion, migrationContext);
+                        }
+                    }
+                    for (Migration migration : migrations) {
+                        if (migration.getVersion() > currentVersion) {
+                            migration.postMigration(item, currentVersion, migrationContext);
+                        }
                     }
                 }
-                for (Migration migration : schemaRegistry.getMigrations(resultClass)) {
-                    if (migration.getVersion() > currentVersion) {
-                        migration.postMigration(item, currentVersion, migrationContext);
-                    }
-                }
-                item = item.withInt(tableDefinition.getSchemaVersionField(), tableDefinition.getVersion());
+                item = item.withInt(schemaField, tableDefinition.getVersion());
                 result = objectMapper.convertValue(item.asMap(), resultClass);
                 if (writeBack) {
                     putObject(result, tableDefinition, true, false, writeRateLimiter);
