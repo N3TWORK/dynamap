@@ -375,7 +375,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
                     expression.incrementNumber(parentDynamoFieldName, "${field.dynamoName}", (Number) value);
                 }
             <#else>
-                expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", ${field.name}, ${field.type}.class);
+                expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.type}.class);
             </#if>
 
         <#elseif field.multiValue! == 'SET'>
@@ -384,7 +384,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
                     expression.setValue(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Sets);
                 }
             <#else>
-                expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", ${field.name}, ${field.type}.class);
+                expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.type}.class);
             </#if>
         <#else>
             <#if field.isNumber()>
