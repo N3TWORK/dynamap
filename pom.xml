@@ -7,7 +7,7 @@
     <groupId>com.n3twork</groupId>
     <artifactId>dynamap</artifactId>
     <packaging>jar</packaging>
-    <name>Persistence</name>
+    <name>Dynamap</name>
     <version>1.0-SNAPSHOT</version>
 
     <scm>
