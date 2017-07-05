@@ -13,7 +13,7 @@
     <scm>
         <url>https://github.com/N3TWORK/dynamap.git</url>
         <connection>scm:git:git://github.com:N3TWORK/dynamap.git</connection>
-        <developerConnection>scm:git:git@github.com:N3TWORK/github-maven-example.git</developerConnection>
+        <developerConnection>scm:git:git@github.com:N3TWORK/dynamap.git</developerConnection>
     </scm>
 
     <properties>
