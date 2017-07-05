@@ -29,16 +29,12 @@
     </repositories>
 
     <distributionManagement>
-        <site>
-            <id>maven.n3twork.com</id>
-            <url>s3://n3twork-maven/site</url>
-        </site>
         <repository>
-            <id>maven.n3twork.com</id>
+            <id>snapshot.maven.n3twork.com</id>
             <url>s3://n3twork-maven/release</url>
         </repository>
         <snapshotRepository>
-            <id>maven.n3twork.com</id>
+            <id>release.maven.n3twork.com</id>
             <url>s3://n3twork-maven/snapshot</url>
         </snapshotRepository>
     </distributionManagement>
