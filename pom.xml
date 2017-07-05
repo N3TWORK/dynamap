@@ -121,27 +121,6 @@
         </dependency>
     </dependencies>
 
-
-    <!--<profiles>-->
-    <!--<profile>-->
-    <!--<id>platform</id>-->
-    <!--<distributionManagement>-->
-    <!--<site>-->
-    <!--<id>maven.n3twork.com</id>-->
-    <!--<url>s3://n3twork-maven/site</url>-->
-    <!--</site>-->
-    <!--<repository>-->
-    <!--<id>maven.n3twork.com</id>-->
-    <!--<url>s3://n3twork-maven/release</url>-->
-    <!--</repository>-->
-    <!--<snapshotRepository>-->
-    <!--<id>maven.n3twork.com</id>-->
-    <!--<url>s3://n3twork-maven/snapshot</url>-->
-    <!--</snapshotRepository>-->
-    <!--</distributionManagement>-->
-    <!--</profile>-->
-    <!--</profiles>-->
-
     <build>
         <plugins>
             <plugin>
@@ -231,6 +210,11 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.5.3</version>
             </plugin>
         </plugins>
         <extensions>
