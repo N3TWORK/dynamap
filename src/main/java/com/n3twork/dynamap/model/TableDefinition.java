@@ -62,7 +62,7 @@ public class TableDefinition {
     @JsonIgnore
     public String getTableName(String prefix) {
         if (prefix != null) {
-            return prefix + "." + tableName;
+            return prefix + tableName;
         }
         return tableName;
     }
