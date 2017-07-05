@@ -93,7 +93,7 @@ public class Dynamap {
             if (tableDefinition.getGlobalSecondaryIndexes() != null) {
                 for (com.n3twork.dynamap.model.Index index : tableDefinition.getGlobalSecondaryIndexes()) {
                     GlobalSecondaryIndex gsi = new GlobalSecondaryIndex()
-                            .withIndexName(index.getIndexName(prefix))
+                            .withIndexName(index.getIndexName())
                             .withProvisionedThroughput(new ProvisionedThroughput()
                                     .withReadCapacityUnits(1L)
                                     .withWriteCapacityUnits(1L))
@@ -255,8 +255,8 @@ public class Dynamap {
         ItemCollection<QueryOutcome> items;
         if (queryRequest.getIndex() != null && tableDefinition.getGlobalSecondaryIndexes() != null) {
             com.n3twork.dynamap.model.Index indexDef = tableDefinition.getGlobalSecondaryIndexes().stream().filter(i -> i.getIndexName().equals(queryRequest.getIndex().getName())).findFirst().get();
-            String indexName = indexDef.getIndexName(prefix);
-            Index index = table.getIndex(indexDef.getIndexName(prefix));
+            String indexName = indexDef.getIndexName();
+            Index index = table.getIndex(indexDef.getIndexName());
             querySpec.withHashKey(tableDefinition.getField(indexDef.getHashKey()).getDynamoName(), queryRequest.getHashKeyValue());
             initAndAcquire(queryRequest.getReadRateLimiter(), table, indexName);
             items = index.query(querySpec);
