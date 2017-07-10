@@ -18,10 +18,12 @@ package com.n3twork.dynamap;
 
 import com.amazonaws.services.dynamodbv2.document.Table;
 import com.amazonaws.services.dynamodbv2.model.ConsumedCapacity;
+import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndexDescription;
 import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughputDescription;
 import com.google.common.util.concurrent.RateLimiter;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class DynamoRateLimiter {
@@ -72,8 +74,13 @@ public class DynamoRateLimiter {
             if (table.getDescription() != null) {
                 ProvisionedThroughputDescription provisionedThroughputDescription;
                 if (indexName != null) {
-                    provisionedThroughputDescription = table.getDescription().getGlobalSecondaryIndexes()
-                            .stream().filter(i -> i.getIndexName().equals(indexName)).findFirst().get().getProvisionedThroughput();
+                    Optional<GlobalSecondaryIndexDescription> indexDescription = table.getDescription().getGlobalSecondaryIndexes()
+                            .stream().filter(i -> i.getIndexName().equals(indexName)).findFirst();
+                    if (indexDescription.isPresent()) {
+                        provisionedThroughputDescription = indexDescription.get().getProvisionedThroughput();
+                    } else {
+                        throw new RuntimeException("Cannot find provisioned throughput description for " + indexName + " on table " + table.getTableName());
+                    }
                 } else {
                     provisionedThroughputDescription = table.getDescription().getProvisionedThroughput();
                 }
