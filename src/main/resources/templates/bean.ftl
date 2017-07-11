@@ -191,5 +191,8 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     public int getDynamapSchemaVersion() {
         return this._schemaVersion;
     }
+    public void setDynamapSchemaVersion(int schemaVersion) {
+        this._schemaVersion = schemaVersion;
+    }
     </#if>
 }
