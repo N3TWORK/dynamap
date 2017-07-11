@@ -57,7 +57,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
         <#list type.persistedFields as field>
         @JsonProperty(${field.name?upper_case}_FIELD) <#if field.generatedType>${field.type}Bean<#else><@field_type field=field /></#if> ${field.name}<#sep>,
         </#list><#if isRoot && optimisticLocking>,@JsonProperty(REVISION_FIELD) Integer _revision</#if>
-        <#if isRoot>,@JsonProperty(SCHEMA_VERSION_FIELD) Integer _schemaVersion</#if>) {
+            <#if isRoot>,@JsonProperty(SCHEMA_VERSION_FIELD) Integer _schemaVersion</#if>) {
 
     <#list type.fields as field>
         <#if field.isPersisted()>
@@ -84,12 +84,12 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
            </#if>
         </#if>
     </#list>
-    <#if isRoot && optimisticLocking>
-        this._revision = _revision == null ? 0 : _revision;
-    </#if>
-    <#if isRoot>
-        this._schemaVersion = _schemaVersion == null ? 0 : _schemaVersion;
-    </#if>
+        <#if isRoot && optimisticLocking>
+            this._revision = _revision == null ? 0 : _revision;
+        </#if>
+        <#if isRoot>
+            this._schemaVersion = _schemaVersion == null ? SCHEMA_VERSION : _schemaVersion;
+        </#if>
     }
 
     public ${beanName}(${type.name} bean) {
