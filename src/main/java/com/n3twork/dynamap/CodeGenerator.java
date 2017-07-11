@@ -105,6 +105,7 @@ public class CodeGenerator {
             model.put("tableDefinition", tableDefinition);
             model.put("package", tableDefinition.getPackageName());
             model.put("schemaVersion", tableDefinition.getVersion());
+            model.put("schemaVersionField", tableDefinition.getSchemaVersionField());
             model.put("type", type);
             model.put("beanName", beanName);
             model.put("updatesName", updatesName);

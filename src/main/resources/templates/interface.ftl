@@ -28,6 +28,7 @@ public interface ${type.name} extends DynamapPersisted {
 
 <#if isRoot>
     public static final Integer SCHEMA_VERSION = ${schemaVersion};
+    String SCHEMA_VERSION_FIELD = "${schemaVersionField}";
 </#if>
 <#if isRoot && optimisticLocking>
     String REVISION_FIELD = "${revisionFieldName}";
@@ -36,6 +37,9 @@ public interface ${type.name} extends DynamapPersisted {
     String ${field.name?upper_case}_FIELD = "${field.dynamoName}";
 </#list>
 
+<#if isRoot>
+    int getDynamapSchemaVersion();
+</#if>
 <#list type.fields as field>
     <#if field.multiValue! == 'MAP'>
     Set<String> get${field.name?cap_first}Ids();

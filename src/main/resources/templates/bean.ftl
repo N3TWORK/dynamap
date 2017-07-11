@@ -39,30 +39,25 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     </#if>
     private <@field_type field=field /> ${field.name};
     </#list>
+    <#if isRoot>
+    private int _schemaVersion;
+    </#if>
     <#if isRoot && optimisticLocking>
     @JsonProperty(REVISION_FIELD)
     private Integer _revision;
     </#if>
 
     public ${beanName}() {
-        this(<#list type.persistedFields as field>null<#sep>,</#list>);
+        this(<#list type.persistedFields as field>null<#sep>,</#list>
+        <#if isRoot && optimisticLocking>,null</#if><#if isRoot>,null</#if>);
     }
-
-<#if isRoot && optimisticLocking>
-    public ${beanName}(
-        <#list type.persistedFields as field>
-            @JsonProperty(${field.name?upper_case}_FIELD) <#if field.generatedType>${field.type}Bean<#else><@field_type field=field /></#if> ${field.name}<#sep>,
-        </#list>) {
-        this(<#list type.persistedFields as field>${field.name}<#sep>,</#list>, null);
-    }
-</#if>
 
     @JsonCreator
     public ${beanName}(
         <#list type.persistedFields as field>
         @JsonProperty(${field.name?upper_case}_FIELD) <#if field.generatedType>${field.type}Bean<#else><@field_type field=field /></#if> ${field.name}<#sep>,
-        </#list><#if isRoot && optimisticLocking>,
-        @JsonProperty(REVISION_FIELD) Integer _revision</#if>) {
+        </#list><#if isRoot && optimisticLocking>,@JsonProperty(REVISION_FIELD) Integer _revision</#if>
+        <#if isRoot>,@JsonProperty(SCHEMA_VERSION_FIELD) Integer _schemaVersion</#if>) {
 
     <#list type.fields as field>
         <#if field.isPersisted()>
@@ -92,6 +87,9 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     <#if isRoot && optimisticLocking>
         this._revision = _revision == null ? 0 : _revision;
     </#if>
+    <#if isRoot>
+        this._schemaVersion = _schemaVersion == null ? 0 : _schemaVersion;
+    </#if>
     }
 
     public ${beanName}(${type.name} bean) {
@@ -110,6 +108,9 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
      </#list>
     <#if isRoot && optimisticLocking>
         this._revision = bean.getRevision();
+    </#if>
+   <#if isRoot>
+        this._schemaVersion = bean.getDynamapSchemaVersion();
     </#if>
     }
 
@@ -182,6 +183,13 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     public ${beanName} setRevision(Integer value) {
         this._revision = value;
         return this;
+    }
+    </#if>
+
+    <#if isRoot>
+    @Override
+    public int getDynamapSchemaVersion() {
+        return this._schemaVersion;
     }
     </#if>
 }
