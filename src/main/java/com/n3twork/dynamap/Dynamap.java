@@ -161,6 +161,10 @@ public class Dynamap {
     }
 
     public Map<Class, List<Object>> batchGetObject(Collection<GetObjectRequest> getObjectRequests, Map<Class, ReadWriteRateLimiterPair> rateLimiters, Object migrationContext) {
+        return batchGetObject(getObjectRequests, rateLimiters, migrationContext, null);
+    }
+
+    public Map<Class, List<Object>> batchGetObject(Collection<GetObjectRequest> getObjectRequests, Map<Class, ReadWriteRateLimiterPair> rateLimiters, Object migrationContext, ProgressCallback progressCallback) {
         Map<String, ReadWriteRateLimiterPair> rateLimitersByTable = new HashMap<>();
         if (rateLimiters != null) {
             for (Class resultClass : rateLimiters.keySet()) {
@@ -170,6 +174,7 @@ public class Dynamap {
 
         List<List<GetObjectRequest>> partitions = Lists.partition(new ArrayList<>(getObjectRequests), MAX_BATCH_GET_SIZE);
         Map<Class, List<Object>> results = new HashMap<>();
+        int totalProgress = 0;
         for (List<GetObjectRequest> getObjectRequestBatch : partitions) {
 
             Map<String, GetItemInfo> queryInfos = new HashMap<>();
@@ -200,7 +205,8 @@ public class Dynamap {
                 getItemInfo.table = getTable(tableName);
             }
 
-            Multimap<String, Item> allItems = doBatchGetItem(queryInfos, rateLimitersByTable);
+            Multimap<String, Item> allItems = doBatchGetItem(queryInfos, rateLimitersByTable, totalProgress, progressCallback);
+            totalProgress += allItems.values().size();
             for (GetItemInfo getItemInfo : queryInfos.values()) {
 
                 Collection<Item> items = allItems.get(getItemInfo.tableDefinition.getTableName(prefix));
@@ -227,6 +233,10 @@ public class Dynamap {
     }
 
     public <T extends DynamapRecordBean> List<T> batchGetObjectSingleCollection(Collection<GetObjectRequest<T>> getObjectRequests, ReadWriteRateLimiterPair rateLimiters, Object migrationContext) {
+        return batchGetObjectSingleCollection(getObjectRequests, rateLimiters, migrationContext, null);
+    }
+
+    public <T extends DynamapRecordBean> List<T> batchGetObjectSingleCollection(Collection<GetObjectRequest<T>> getObjectRequests, ReadWriteRateLimiterPair rateLimiters, Object migrationContext, ProgressCallback progressCallback) {
         if (getObjectRequests.size() == 0) {
             return Collections.emptyList();
         }
@@ -237,11 +247,14 @@ public class Dynamap {
             throw new IllegalArgumentException("More than one ResultClass has been specified");
         }
         Map<Class, ReadWriteRateLimiterPair> rateLimiterMap = rateLimiters != null ? ImmutableMap.of(getObjectRequest.getResultClass(), rateLimiters) : null;
-        return (List<T>) batchGetObject((Collection) getObjectRequests, rateLimiterMap, migrationContext).get(getObjectRequest.getResultClass());
+        return (List<T>) batchGetObject((Collection) getObjectRequests, rateLimiterMap, migrationContext, progressCallback).get(getObjectRequest.getResultClass());
     }
 
-
     public <T extends DynamapRecordBean> List<T> query(QueryRequest<T> queryRequest, Object migrationContext) {
+        return query(queryRequest, migrationContext, null);
+    }
+
+    public <T extends DynamapRecordBean> List<T> query(QueryRequest<T> queryRequest, Object migrationContext, ProgressCallback progressCallback) {
         List<T> results = new ArrayList<>();
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(queryRequest.getResultClass());
         Table table = getTable(tableDefinition.getTableName(prefix));
@@ -267,9 +280,16 @@ public class Dynamap {
         }
 
         items.registerLowLevelResultListener(new LowLevelResultListener<QueryOutcome>() {
+
+            private int totalProgress = 0;
+
             @Override
             public void onLowLevelResult(QueryOutcome queryOutcome) {
                 DynamoRateLimiter dynamoRateLimiter = queryRequest.getReadRateLimiter();
+                totalProgress += queryOutcome.getQueryResult().getItems().size();
+                if (progressCallback != null) {
+                    progressCallback.reportProgress(totalProgress);
+                }
                 if (dynamoRateLimiter != null) {
                     dynamoRateLimiter.setConsumedCapacity(queryOutcome.getQueryResult().getConsumedCapacity());
                     dynamoRateLimiter.acquire();
@@ -357,7 +377,7 @@ public class Dynamap {
         public Table table;
     }
 
-    private Multimap<String, Item> doBatchGetItem(Map<String, GetItemInfo> queryInfos, Map<String, ReadWriteRateLimiterPair> rateLimiters) {
+    private Multimap<String, Item> doBatchGetItem(Map<String, GetItemInfo> queryInfos, Map<String, ReadWriteRateLimiterPair> rateLimiters, int totalProgress, ProgressCallback progressCallback) {
         Multimap<String, Item> results = ArrayListMultimap.create();
         try {
             TableKeysAndAttributes[] tableKeysAndAttributes = new TableKeysAndAttributes[queryInfos.size()];
@@ -393,6 +413,10 @@ public class Dynamap {
                 if (unprocessedKeyCount != 0) {
                     initAndAcquire(rateLimiters, false);
                     outcome = dynamoDB.batchGetItemUnprocessed(unprocessedKeys);
+                }
+                totalProgress = totalProgress + tableItems.values().size();
+                if (progressCallback != null) {
+                    progressCallback.reportProgress(totalProgress);
                 }
 
             } while (unprocessedKeyCount > 0);
