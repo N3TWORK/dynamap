@@ -416,7 +416,9 @@ public class Dynamap {
                 }
                 totalProgress = totalProgress + tableItems.values().size();
                 if (progressCallback != null) {
-                    progressCallback.reportProgress(totalProgress);
+                    if (!progressCallback.reportProgress(totalProgress)) {
+                        return results;
+                    }
                 }
 
             } while (unprocessedKeyCount > 0);
