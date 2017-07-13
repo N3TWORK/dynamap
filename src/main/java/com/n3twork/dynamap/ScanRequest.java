@@ -31,13 +31,13 @@ public class ScanRequest<T> {
         return this;
     }
 
-    public ScanRequest<T> withFilterExpression(Collection<String> fieldsToGet) {
-        this.fieldsToGet = fieldsToGet;
+    public ScanRequest<T> withFilterExpression(FilterExpression filterExpression) {
+        this.filterExpression = filterExpression;
         return this;
     }
 
-    public ScanRequest<T> withFieldsToGet(FilterExpression filterExpression) {
-        this.filterExpression = filterExpression;
+    public ScanRequest<T> withFieldsToGet(Collection<String> fieldsToGet) {
+        this.fieldsToGet = fieldsToGet;
         return this;
     }
 
