@@ -137,7 +137,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
           </#if>
         }
         <#if field.isNumber()>
-        ${field.type} value = MergeUtil.getLatestNumericValue(id, ${currentState}.get${field.name?cap_first}<@collection_item field=field />(id), ${field.name}Deltas, ${field.name}Sets, ${field.name}Clear);
+        ${field.type} value = MergeUtil.getLatestNumericValue(id, ${currentState}.get${field.name?cap_first}<@collection_item field=field />(id), ${field.name}Deltas, ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
         <#else>
         ${field.type} value = MergeUtil.getLatestValue(id, ${currentState}.get${field.name?cap_first}<@collection_item field=field />(id), ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
         </#if>

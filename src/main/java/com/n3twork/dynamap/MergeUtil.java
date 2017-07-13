@@ -95,13 +95,18 @@ public class MergeUtil {
         return orig;
     }
 
-    public static <K, V extends Number> V getLatestNumericValue(K key, V orig, Map<K, V> deltas, Map<K, V> setUpdates, boolean clear) {
+    public static <K, V extends Number> V getLatestNumericValue(K key, V orig, Map<K, V> deltas, Map<K, V> setUpdates, Set<K> deletes, boolean clear) {
         if (clear) {
             return null;
         }
         if (setUpdates != null) {
             if (setUpdates.get(key) != null) {
                 return setUpdates.get(key);
+            }
+        }
+        if (deletes != null) {
+            if (deletes.contains(key)) {
+                return null;
             }
         }
         if (deltas != null) {
