@@ -343,11 +343,13 @@ public class DynamapTest {
 
         dynamap.batchSave(docsToSave, limiterMap);
 
-        QueryRequest<ExampleDocumentBean> queryRequest = new QueryRequest<>(ExampleDocumentBean.class);
-        List<ExampleDocumentBean> savedExampleDocs = dynamap.scan(queryRequest, null);
+        ScanRequest<ExampleDocumentBean> scanRequest = new ScanRequest<>(ExampleDocumentBean.class);
+        ScanResult<ExampleDocumentBean> scanResult = dynamap.scan(scanRequest);
+        List<ExampleDocumentBean> savedExampleDocs = scanResult.getResults();
 
-        QueryRequest<DummyDocBean> queryRequest2 = new QueryRequest<>(DummyDocBean.class);
-        List<DummyDocBean> savedDummyDocs = dynamap.scan(queryRequest2, null);
+        ScanRequest<DummyDocBean> scanRequest2 = new ScanRequest<>(DummyDocBean.class);
+        ScanResult<DummyDocBean> scanResult2 = dynamap.scan(scanRequest2);
+        List<DummyDocBean> savedDummyDocs = scanResult2.getResults();
 
         Assert.assertEquals(savedExampleDocs.size(), EXAMPLE_DOCS_SIZE);
         Assert.assertEquals(savedDummyDocs.size(), DUMMY_DOCS_SIZE);

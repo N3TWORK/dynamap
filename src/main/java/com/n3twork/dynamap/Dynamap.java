@@ -305,24 +305,68 @@ public class Dynamap {
         return results;
     }
 
-    // TODO:
-    // Ultra basic scan implementation
-    // - Make a proper scan object (ScanRequest) and apply corresponding options
-    // - Do tests
-    public <T extends DynamapRecordBean> List<T> scan(QueryRequest<T> queryRequest, Object migrationContext) {
+    public <T extends DynamapRecordBean> ScanResult<T> scan(ScanRequest<T> scanRequest) {
         List<T> results = new ArrayList<>();
-        TableDefinition tableDefinition = schemaRegistry.getTableDefinition(queryRequest.getResultClass());
+        TableDefinition tableDefinition = schemaRegistry.getTableDefinition(scanRequest.getResultClass());
         Table table = getTable(tableDefinition.getTableName(prefix));
 
-        ScanSpec spec = new ScanSpec();
-
-        Iterator<Item> iterator = table.scan(spec).iterator();
-
-        while (iterator.hasNext()) {
-            results.add(buildObjectFromDynamoItem(iterator.next(), tableDefinition, queryRequest.getResultClass(), null, migrationContext, false));
+        ScanSpec scanspec = new ScanSpec();
+        if (scanRequest.getFilterExpression() != null) {
+            scanspec.withFilterExpression(scanRequest.getFilterExpression().getExpressionString())
+                    .withNameMap(scanRequest.getFilterExpression().getNames())
+                    .withValueMap(scanRequest.getFilterExpression().getValues());
+        }
+        if (scanRequest.getFieldsToGet() != null && scanRequest.getFieldsToGet().size() > 0) {
+            scanspec.withAttributesToGet(scanRequest.getFieldsToGet().toArray(new String[scanRequest.getFieldsToGet().size()]));
+        }
+        if (scanRequest.getStartExclusiveHashKey() != null) {
+            scanspec.withExclusiveStartKey(scanRequest.getStartExclusiveHashKey(), scanRequest.getStartExclusiveRangeKey());
+        }
+        if (scanRequest.getMaxResultSize() != null) {
+            scanspec.withMaxPageSize(scanRequest.getMaxResultSize());
         }
 
-        return results;
+        ItemCollection<ScanOutcome> scanItems;
+        if (scanRequest.getIndex() != null) {
+            scanItems = table.getIndex(scanRequest.getIndex().getName()).scan(scanspec);
+        } else {
+            scanItems = table.scan(scanspec);
+        }
+
+        scanItems.registerLowLevelResultListener(new LowLevelResultListener<ScanOutcome>() {
+            private int totalProgress = 0;
+            ProgressCallback progressCallback = scanRequest.getProgressCallback();
+
+            @Override
+            public void onLowLevelResult(ScanOutcome scanOutcome) {
+                DynamoRateLimiter dynamoRateLimiter = scanRequest.getReadRateLimiter();
+                totalProgress += scanOutcome.getScanResult().getItems().size();
+                if (progressCallback != null) {
+                    progressCallback.reportProgress(totalProgress);
+                }
+                if (dynamoRateLimiter != null) {
+                    dynamoRateLimiter.setConsumedCapacity(scanOutcome.getScanResult().getConsumedCapacity());
+                    dynamoRateLimiter.acquire();
+                }
+            }
+
+        });
+
+        Iterator<Item> iterator = scanItems.iterator();
+        while (iterator.hasNext()) {
+            results.add(buildObjectFromDynamoItem(iterator.next(), tableDefinition, scanRequest.getResultClass(), null, scanRequest.getMigrationContext(), false));
+        }
+
+        String lastHashKey = null;
+        Object lastRangeKey = null;
+        if (scanItems.getLastLowLevelResult().getScanResult().getLastEvaluatedKey() != null) {
+            Map<String, AttributeValue> lastEvaluated = scanItems.getLastLowLevelResult().getScanResult().getLastEvaluatedKey();
+            lastHashKey = lastEvaluated.get(tableDefinition.getHashKey()).getS();
+            if (tableDefinition.getRangeKey() != null) {
+                lastRangeKey = lastEvaluated.get(tableDefinition.getRangeKey());
+            }
+        }
+        return new ScanResult(lastHashKey, lastRangeKey, results, scanItems.getAccumulatedItemCount(), scanItems.getAccumulatedScannedCount());
     }
 
     public void save(DynamapRecordBean object, DynamoRateLimiter writeLimiter) {
