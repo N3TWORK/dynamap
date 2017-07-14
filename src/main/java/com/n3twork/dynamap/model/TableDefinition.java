@@ -108,4 +108,9 @@ public class TableDefinition {
         Type tableType = getTypes().stream().filter(t -> t.getName().equals(getType())).findFirst().get();
         return tableType.getFields().stream().filter(f -> f.getName().equals(fieldName)).findFirst().get();
     }
+
+    public Type getFieldType(String type) {
+        return getTypes().stream().filter(t -> t.getName().equals(type)).findFirst().get();
+
+    }
 }

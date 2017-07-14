@@ -589,6 +589,16 @@ public class Dynamap {
             } else if (field.isNumber()) {
                 item.withNumber(field.getDynamoName(), (Number) map.get(field.getDynamoName()));
             } else {
+                // if field is a nested dynamap object then remove any non persisted fields
+                Map<String, Object> objectToPersist = (Map<String, Object>) map.get(field.getDynamoName());
+                if (field.isGeneratedType()) {
+                    Type fieldType = tableDefinition.getFieldType(field.getType());
+                    for (Field fieldToCheck : fieldType.getFields()) {
+                        if (objectToPersist.containsKey(fieldToCheck.getDynamoName()) && !fieldToCheck.isPersist()) {
+                            objectToPersist.remove(fieldToCheck.getDynamoName());
+                        }
+                    }
+                }
                 item.with(field.getDynamoName(), map.get(field.getDynamoName()));
             }
         }

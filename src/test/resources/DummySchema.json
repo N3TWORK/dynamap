@@ -28,7 +28,7 @@
             },
             {
               "name": "notPersisted",
-              "persisted": false,
+              "persist": false,
               "type": "Integer"
             }
           ]

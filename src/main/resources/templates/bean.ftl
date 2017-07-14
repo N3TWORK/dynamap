@@ -34,7 +34,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<${type.name}></#if> {
 
     <#list type.fields as field>
-    <#if field.persisted>
+    <#if field.isSerialize()>
     @JsonProperty(${field.name?upper_case}_FIELD)
     </#if>
     private <@field_type field=field /> ${field.name};
@@ -48,19 +48,19 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     </#if>
 
     public ${beanName}() {
-        this(<#list type.persistedFields as field>null<#sep>,</#list>
+        this(<#list type.serializedFields as field>null<#sep>,</#list>
         <#if isRoot && optimisticLocking>,null</#if><#if isRoot>,null</#if>);
     }
 
     @JsonCreator
     public ${beanName}(
-        <#list type.persistedFields as field>
+        <#list type.serializedFields as field>
         @JsonProperty(${field.name?upper_case}_FIELD) <#if field.generatedType>${field.type}Bean<#else><@field_type field=field /></#if> ${field.name}<#sep>,
         </#list><#if isRoot && optimisticLocking>,@JsonProperty(REVISION_FIELD) Integer _revision</#if>
             <#if isRoot>,@JsonProperty(SCHEMA_VERSION_FIELD) Integer _schemaVersion</#if>) {
 
     <#list type.fields as field>
-        <#if field.isPersisted()>
+        <#if field.isPersist()>
             <#if field.multiValue??>
             <#if field.multiValue == 'MAP'>
             this.${field.name} = ${field.name} == null ? Collections.emptyMap() : ${field.name};
@@ -176,7 +176,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     </#if>
 
     <#list type.fields as field>
-    <#if !field.persisted>
+    <#if !field.isSerialize()>
     @JsonIgnore
     </#if>
     @Override

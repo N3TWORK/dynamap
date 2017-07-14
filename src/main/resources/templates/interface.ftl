@@ -33,8 +33,12 @@ public interface ${type.name} extends DynamapPersisted {
 <#if isRoot && optimisticLocking>
     String REVISION_FIELD = "${revisionFieldName}";
 </#if>
-<#list type.persistedFields as field>
+<#list type.fields as field>
+    <#if field.isPersist()>
     String ${field.name?upper_case}_FIELD = "${field.dynamoName}";
+    <#elseif field.isSerialize()>
+    String ${field.name?upper_case}_FIELD = "${field.name}";
+    </#if>
 </#list>
 
 <#if isRoot>

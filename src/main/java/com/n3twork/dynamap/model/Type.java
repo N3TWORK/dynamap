@@ -51,7 +51,12 @@ public class Type {
 
     @JsonIgnore
     public List<Field> getPersistedFields() {
-        return fields.stream().filter(f -> f.isPersisted()).collect(Collectors.toList());
+        return fields.stream().filter(f -> f.isPersist()).collect(Collectors.toList());
+    }
+
+    @JsonIgnore
+    public List<Field> getSerializedFields() {
+        return fields.stream().filter(f -> f.isSerialize()).collect(Collectors.toList());
     }
 
     public List<String> getHashCodeFields() {

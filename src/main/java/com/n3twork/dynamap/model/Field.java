@@ -44,7 +44,8 @@ public class Field {
     private final MultiValue multiValue;
     private final Boolean useDefaultForNulls;
     private final Boolean replace;
-    private final Boolean persisted;
+    private final Boolean persist;
+    private final Boolean serialize;
     private final Boolean deltas;
 
     private boolean generatedType;
@@ -52,7 +53,7 @@ public class Field {
     @JsonCreator
     public Field(@JsonProperty("name") String name, @JsonProperty("dynamoName") String dynamoName, @JsonProperty("type") String type,
                  @JsonProperty("default") String defaultValue, @JsonProperty("multivalue") MultiValue multiValue,
-                 @JsonProperty("useDefaultForNulls") Boolean useDefaultForNulls, @JsonProperty("replace") Boolean replace, @JsonProperty("persisted") Boolean persisted, @JsonProperty("deltas") Boolean deltas) {
+                 @JsonProperty("useDefaultForNulls") Boolean useDefaultForNulls, @JsonProperty("replace") Boolean replace, @JsonProperty("persist") Boolean persist, @JsonProperty("serialize") Boolean serialize, @JsonProperty("deltas") Boolean deltas) {
         this.name = name;
         this.dynamoName = dynamoName;
         this.type = type;
@@ -84,7 +85,8 @@ public class Field {
         this.multiValue = multiValue;
         this.useDefaultForNulls = useDefaultForNulls == null ? Boolean.FALSE : useDefaultForNulls;
         this.replace = replace == null ? Boolean.FALSE : replace;
-        this.persisted = persisted == null ? Boolean.TRUE : persisted;
+        this.persist = persist == null ? Boolean.TRUE : persist;
+        this.serialize = serialize == null ? Boolean.TRUE : serialize;
         this.deltas = deltas == null ? Boolean.TRUE : deltas;
     }
 
@@ -130,8 +132,12 @@ public class Field {
     }
 
 
-    public boolean isPersisted() {
-        return persisted;
+    public boolean isPersist() {
+        return persist;
+    }
+
+    public Boolean isSerialize() {
+        return persist || serialize;
     }
 
     public boolean useDeltas() {
