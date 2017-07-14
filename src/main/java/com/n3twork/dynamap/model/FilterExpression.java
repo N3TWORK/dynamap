@@ -6,7 +6,7 @@ import java.util.Map;
 public class FilterExpression {
 
     private String expressionString;
-    private Map<String, Object> attributeValues = new HashMap<>();
+    private Map<String, Object> values = new HashMap<>();
     private Map<String, String> names = new HashMap<>();
 
 
@@ -21,7 +21,7 @@ public class FilterExpression {
     }
 
     public FilterExpression withValues(Map<String, Object> values) {
-        this.attributeValues = attributeValues;
+        this.values = values;
         return this;
     }
 
@@ -30,7 +30,7 @@ public class FilterExpression {
     }
 
     public Map<String, Object> getValues() {
-        return getValues();
+        return values;
     }
 
     public Map<String, String> getNames() {
