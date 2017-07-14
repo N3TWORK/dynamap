@@ -20,6 +20,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
+import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.util.IOUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
@@ -284,7 +285,7 @@ public class DynamapTest {
         try {
             dynamap.save(savedDoc, null);
             Assert.fail();
-        } catch (RuntimeException ex) {
+        } catch (ConditionalCheckFailedException ex) {
             Assert.assertNotNull(ex);
             Assert.assertTrue(ex.getCause() instanceof com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException);
         }

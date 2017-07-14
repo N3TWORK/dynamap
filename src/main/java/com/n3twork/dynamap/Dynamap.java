@@ -597,53 +597,50 @@ public class Dynamap {
     }
 
     private <T extends DynamapRecordBean> void putObject(T object, TableDefinition tableDefinition, boolean overwrite, boolean disableOptimisticLocking, DynamoRateLimiter writeLimiter) {
+
+        Item item = buildDynamoItemFromObject(object, tableDefinition, disableOptimisticLocking);
+        PutItemSpec putItemSpec = new PutItemSpec()
+                .withItem(item)
+                .withReturnValues(ReturnValue.NONE);
+        String hashKeyFieldName = tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName();
+        ValueMap valueMap = new ValueMap();
+        NameMap nameMap = new NameMap();
+        List<String> conditionalExpressions = new ArrayList<>();
+        if (!overwrite) {
+            conditionalExpressions.add("attribute_not_exists(" + hashKeyFieldName + ")");
+        }
+
+        if (!disableOptimisticLocking && tableDefinition.isOptimisticLocking()) {
+            // value is incremented in buildDynamoItemFromObject, so here i must get the original value
+            int revision = item.getInt(Schema.REVISION_FIELD) - 1;
+            if (revision > 0) {
+                conditionalExpressions.add("#name0=:val0");
+                nameMap.with("#name0", Schema.REVISION_FIELD);
+                valueMap.withInt(":val0", revision);
+            }
+        }
+
+        if (conditionalExpressions.size() > 0) {
+            putItemSpec.withConditionExpression(String.join(" AND ", conditionalExpressions));
+            if (valueMap.size() > 0) {
+                putItemSpec.withNameMap(nameMap);
+                putItemSpec.withValueMap(valueMap);
+            }
+        }
+
+        Table table = getTable(tableDefinition.getTableName(prefix));
         try {
-            Item item = buildDynamoItemFromObject(object, tableDefinition, disableOptimisticLocking);
-            PutItemSpec putItemSpec = new PutItemSpec()
-                    .withItem(item)
-                    .withReturnValues(ReturnValue.NONE);
-            String hashKeyFieldName = tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName();
-            ValueMap valueMap = new ValueMap();
-            NameMap nameMap = new NameMap();
-            List<String> conditionalExpressions = new ArrayList<>();
-            if (!overwrite) {
-                conditionalExpressions.add("attribute_not_exists(" + hashKeyFieldName + ")");
+            if (writeLimiter != null) {
+                writeLimiter.init(table);
+                writeLimiter.acquire();
             }
-
-            if (!disableOptimisticLocking && tableDefinition.isOptimisticLocking()) {
-                // value is incremented in buildDynamoItemFromObject, so here i must get the original value
-                int revision = item.getInt(Schema.REVISION_FIELD) - 1;
-                if (revision > 0) {
-                    conditionalExpressions.add("#name0=:val0");
-                    nameMap.with("#name0", Schema.REVISION_FIELD);
-                    valueMap.withInt(":val0", revision);
-                }
+            PutItemOutcome outcome = table.putItem(putItemSpec);
+            if (writeLimiter != null) {
+                writeLimiter.setConsumedCapacity(outcome.getPutItemResult().getConsumedCapacity());
             }
-
-            if (conditionalExpressions.size() > 0) {
-                putItemSpec.withConditionExpression(String.join(" AND ", conditionalExpressions));
-                if (valueMap.size() > 0) {
-                    putItemSpec.withNameMap(nameMap);
-                    putItemSpec.withValueMap(valueMap);
-                }
-            }
-
-            Table table = getTable(tableDefinition.getTableName(prefix));
-            try {
-                if (writeLimiter != null) {
-                    writeLimiter.init(table);
-                    writeLimiter.acquire();
-                }
-                PutItemOutcome outcome = table.putItem(putItemSpec);
-                if (writeLimiter != null) {
-                    writeLimiter.setConsumedCapacity(outcome.getPutItemResult().getConsumedCapacity());
-                }
-            } catch (RuntimeException e) {
-                logger.error("Error putting item:" + putItemSpec.getItem().toJSON() + " Conditional expression: " + putItemSpec.getConditionExpression() + " Values: " + putItemSpec.getValueMap() + " Names: " + putItemSpec.getNameMap(), e);
-                throw e;
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (RuntimeException e) {
+            logger.error("Error putting item:" + putItemSpec.getItem().toJSON() + " Conditional expression: " + putItemSpec.getConditionExpression() + " Values: " + putItemSpec.getValueMap() + " Names: " + putItemSpec.getNameMap(), e);
+            throw e;
         }
     }
 
