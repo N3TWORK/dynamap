@@ -1,15 +1,15 @@
 package com.n3twork.dynamap;
 
-import com.n3twork.dynamap.model.FilterExpression;
-
-import java.util.Collection;
+import java.util.Map;
 
 public class ScanRequest<T> {
 
     private final Class<T> resultClass;
     private DynamapRecordBean.GlobalSecondaryIndexEnum index;
-    private Collection<String> fieldsToGet;
-    private FilterExpression filterExpression;
+    private String projectionExpression;
+    private String filterExpression;
+    private Map<String, Object> values;
+    private Map<String, String> names;
     private DynamoRateLimiter readRateLimiter;
     private String startExclusiveHashKey;
     private Object startExclusiveRangeKey;
@@ -26,18 +26,28 @@ public class ScanRequest<T> {
         return this;
     }
 
+    public ScanRequest<T> withNames(Map<String, String> names) {
+        this.names = names;
+        return this;
+    }
+
+    public ScanRequest<T> withValues(Map<String, Object> values) {
+        this.values = values;
+        return this;
+    }
+
+    public ScanRequest<T> withProjectionExpression(String projectionExpression) {
+        this.projectionExpression = projectionExpression;
+        return this;
+    }
+
     public ScanRequest<T> withReadRateLimiter(DynamoRateLimiter readRateLimiter) {
         this.readRateLimiter = readRateLimiter;
         return this;
     }
 
-    public ScanRequest<T> withFilterExpression(FilterExpression filterExpression) {
+    public ScanRequest<T> withFilterExpression(String filterExpression) {
         this.filterExpression = filterExpression;
-        return this;
-    }
-
-    public ScanRequest<T> withFieldsToGet(Collection<String> fieldsToGet) {
-        this.fieldsToGet = fieldsToGet;
         return this;
     }
 
@@ -66,11 +76,19 @@ public class ScanRequest<T> {
         return this;
     }
 
-    public Collection<String> getFieldsToGet() {
-        return fieldsToGet;
+    public String getProjectionExpression() {
+        return projectionExpression;
     }
 
-    public FilterExpression getFilterExpression() {
+    public Map<String, Object> getValues() {
+        return values;
+    }
+
+    public Map<String, String> getNames() {
+        return names;
+    }
+
+    public String getFilterExpression() {
         return filterExpression;
     }
 

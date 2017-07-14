@@ -311,13 +311,17 @@ public class Dynamap {
         Table table = getTable(tableDefinition.getTableName(prefix));
 
         ScanSpec scanspec = new ScanSpec();
-        if (scanRequest.getFilterExpression() != null) {
-            scanspec.withFilterExpression(scanRequest.getFilterExpression().getExpressionString())
-                    .withNameMap(scanRequest.getFilterExpression().getNames())
-                    .withValueMap(scanRequest.getFilterExpression().getValues());
+        if (scanRequest.getNames() != null) {
+            scanspec.withNameMap(scanRequest.getNames());
         }
-        if (scanRequest.getFieldsToGet() != null && scanRequest.getFieldsToGet().size() > 0) {
-            scanspec.withAttributesToGet(scanRequest.getFieldsToGet().toArray(new String[scanRequest.getFieldsToGet().size()]));
+        if (scanRequest.getValues() != null) {
+            scanspec.withValueMap(scanRequest.getValues());
+        }
+        if (scanRequest.getProjectionExpression() != null) {
+            scanspec.withProjectionExpression(scanRequest.getProjectionExpression());
+        }
+        if (scanRequest.getFilterExpression() != null) {
+            scanspec.withFilterExpression(scanRequest.getFilterExpression());
         }
         if (scanRequest.getStartExclusiveHashKey() != null) {
             scanspec.withExclusiveStartKey(scanRequest.getStartExclusiveHashKey(), scanRequest.getStartExclusiveRangeKey());

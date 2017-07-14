@@ -9,7 +9,6 @@ public class FilterExpression {
     private Map<String, Object> values = new HashMap<>();
     private Map<String, String> names = new HashMap<>();
 
-
     public FilterExpression withFilterExpression(String expression) {
         this.expressionString = expression;
         return this;
