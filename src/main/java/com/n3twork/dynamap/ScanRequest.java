@@ -16,6 +16,7 @@ public class ScanRequest<T> {
     private Object migrationContext;
     private Integer maxResultSize;
     private ProgressCallback progressCallback;
+    private boolean writeMigrationChange;
 
     public ScanRequest(Class<T> resultClass) {
         this.resultClass = resultClass;
@@ -76,6 +77,11 @@ public class ScanRequest<T> {
         return this;
     }
 
+    public ScanRequest<T> writeMigrationChange(boolean writeMigrationChange) {
+        this.writeMigrationChange = writeMigrationChange;
+        return this;
+    }
+
     public String getProjectionExpression() {
         return projectionExpression;
     }
@@ -122,5 +128,9 @@ public class ScanRequest<T> {
 
     public Integer getMaxResultSize() {
         return maxResultSize;
+    }
+
+    public boolean isWriteMigrationChange() {
+        return writeMigrationChange;
     }
 }

@@ -141,7 +141,7 @@ public class DynamapTest {
         // Query
         QueryRequest<ExampleDocumentBean> queryRequest = new QueryRequest<>(ExampleDocumentBean.class).withHashKeyValue("alias")
                 .withRangeKeyCondition(new RangeKeyCondition("seq").eq(1)).withIndex(ExampleDocumentBean.GlobalSecondaryIndex.exampleIndex);
-        List<ExampleDocumentBean> exampleDocuments = dynamap.query(queryRequest, null);
+        List<ExampleDocumentBean> exampleDocuments = dynamap.query(queryRequest);
         Assert.assertEquals(exampleDocuments.size(), 1);
         Assert.assertEquals(exampleDocuments.get(0).getNestedObject().getBio(), "test");
 
@@ -211,10 +211,13 @@ public class DynamapTest {
         ReadWriteRateLimiterPair rateLimiterPair = ReadWriteRateLimiterPair.of(new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.READ, 20),
                 new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.WRITE, 20));
 
+        BatchGetObjectRequest<ExampleDocumentBean> batchGetObjectRequest = new BatchGetObjectRequest()
+                .withGetObjectRequests(ImmutableList.of(
+                        new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId1).withRangeKeyValue(1),
+                        new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId2).withRangeKeyValue(1)))
+                .withRateLimiters(ExampleDocumentBean.class, rateLimiterPair);
 
-        exampleDocuments = dynamap.batchGetObjectSingleCollection(ImmutableList.of(
-                new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId1).withRangeKeyValue(1),
-                new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId2).withRangeKeyValue(1)), rateLimiterPair, null);
+        exampleDocuments = dynamap.batchGetObjectSingleCollection(batchGetObjectRequest);
 
         Assert.assertEquals(exampleDocuments.size(), 2);
     }

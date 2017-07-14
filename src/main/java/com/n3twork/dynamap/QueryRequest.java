@@ -17,6 +17,9 @@ public class QueryRequest<T> {
     private boolean consistentRead;
     private boolean scanIndexForward = true;
     private Integer limit;
+    private Object migrationContext;
+    private ProgressCallback progressCallback;
+    private boolean writeMigrationChange = false;
 
     public QueryRequest(Class<T> resultClass) {
         this.resultClass = resultClass;
@@ -62,6 +65,22 @@ public class QueryRequest<T> {
         return this;
     }
 
+    public QueryRequest<T> withMigrationContext(Object migrationContext) {
+        this.migrationContext = migrationContext;
+        return this;
+    }
+
+    public QueryRequest<T> withProgressCallback(ProgressCallback progressCallback) {
+        this.progressCallback = progressCallback;
+        return this;
+    }
+
+
+    public QueryRequest<T> writeMigrationChange(boolean writeMigrationChange) {
+        this.writeMigrationChange = writeMigrationChange;
+        return this;
+    }
+
 
     public DynamoRateLimiter getReadRateLimiter() {
         return readRateLimiter;
@@ -97,5 +116,17 @@ public class QueryRequest<T> {
 
     public Integer getLimit() {
         return limit;
+    }
+
+    public Object getMigrationContext() {
+        return migrationContext;
+    }
+
+    public ProgressCallback getProgressCallback() {
+        return progressCallback;
+    }
+
+    public boolean isWriteMigrationChange() {
+        return writeMigrationChange;
     }
 }
