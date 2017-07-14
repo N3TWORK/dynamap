@@ -330,6 +330,13 @@ public class Dynamap {
             scanspec.withMaxPageSize(scanRequest.getMaxResultSize());
         }
 
+        if (scanRequest.getReadRateLimiter() != null) {
+            if (scanRequest.getReadRateLimiter() != null) {
+                scanRequest.getReadRateLimiter().init(table, scanRequest.getIndex() == null ? null : scanRequest.getIndex().getName());
+                scanRequest.getReadRateLimiter().acquire();
+            }
+        }
+
         ItemCollection<ScanOutcome> scanItems;
         if (scanRequest.getIndex() != null) {
             scanItems = table.getIndex(scanRequest.getIndex().getName()).scan(scanspec);
