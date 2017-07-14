@@ -287,7 +287,6 @@ public class DynamapTest {
             Assert.fail();
         } catch (ConditionalCheckFailedException ex) {
             Assert.assertNotNull(ex);
-            Assert.assertTrue(ex.getCause() instanceof com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException);
         }
 
         savedDoc = dynamap.getObject(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID), null);
