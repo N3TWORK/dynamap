@@ -149,6 +149,32 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     }
     </#if>
 
+    <#if type.hashCodeFields??>
+    @Override
+    public int hashCode() {
+        int result = 0;
+        <#list type.hashCodeFields as field>
+        result = 31 * result + (${field} == null ? 0 : ${field}.hashCode());
+        </#list>
+        return result;
+    }
+    </#if>
+
+    <#if type.equalsFields??>
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ${type.name} that = (${type.name}) o;
+
+        <#list type.equalsFields as field>
+        if (!${field}.equals(that.get${field?cap_first}())) return false;
+        </#list>
+        return true;
+    }
+    </#if>
+
     <#list type.fields as field>
     <#if !field.persisted>
     @JsonIgnore

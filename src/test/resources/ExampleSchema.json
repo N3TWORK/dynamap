@@ -22,6 +22,14 @@
       "types": [
         {
           "name": "ExampleDocument",
+          "hashCodeFields": [
+            "exampleId",
+            "sequence"
+          ],
+          "equalsFields": [
+            "exampleId",
+            "sequence"
+          ],
           "fields": [
             {
               "name": "exampleId",

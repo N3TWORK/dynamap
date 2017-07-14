@@ -18,20 +18,27 @@ package com.n3twork.dynamap.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class Type {
 
     private final String name;
     private final List<Field> fields;
+    private final List<String> hashCodeFields;
+    private final List<String> equalsFields;
 
     @JsonCreator
-    public Type(@JsonProperty("name") String name, @JsonProperty("fields") List<Field> fields) {
+    public Type(@JsonProperty("Name") String name, @JsonProperty("fields") List<Field> fields,
+                @JsonProperty("hashCodeFields") List<String> hashCodeFields, @JsonProperty("equalsFields") List<String> equalsFields) {
         this.name = name;
         this.fields = fields;
+        this.hashCodeFields = hashCodeFields;
+        this.equalsFields = equalsFields;
     }
 
     public String getName() {
@@ -47,4 +54,11 @@ public class Type {
         return fields.stream().filter(f -> f.isPersisted()).collect(Collectors.toList());
     }
 
+    public List<String> getHashCodeFields() {
+        return hashCodeFields;
+    }
+
+    public List<String> getEqualsFields() {
+        return equalsFields;
+    }
 }

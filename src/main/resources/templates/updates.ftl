@@ -216,6 +216,35 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     }
 </#if>
 
+    <#if type.hashCodeFields??>
+    @Override
+    public int hashCode() {
+        int result = 0;
+        <#list type.hashCodeFields as field>
+        result = 31 * result + (get${field?cap_first}() == null ? 0 : get${field?cap_first}().hashCode());
+        </#list>
+        return result;
+    }
+    </#if>
+
+    <#if type.equalsFields??>
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ${type.name} that = (${type.name}) o;
+
+        <#list type.equalsFields as field>
+        if (!get${field?cap_first}().equals(that.get${field?cap_first}())) return false;
+        </#list>
+        return true;
+    }
+    </#if>
+
+
+
+
     /////// Mutator methods ///////////////////////
 
 <#list type.fields as field>
