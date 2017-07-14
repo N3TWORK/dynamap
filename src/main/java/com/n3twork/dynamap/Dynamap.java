@@ -225,7 +225,7 @@ public class Dynamap {
                     }
                     resultsForClass.add(buildObjectFromDynamoItem(item, getItemInfo.tableDefinition,
                             getItemInfo.getObjectRequest.getResultClass(), writeLimiter,
-                            migrationContext, true));
+                            migrationContext, true, false));
                 }
             }
         }
@@ -299,7 +299,7 @@ public class Dynamap {
         Iterator<Item> iterator = items.iterator();
 
         while (iterator.hasNext()) {
-            results.add(buildObjectFromDynamoItem(iterator.next(), tableDefinition, queryRequest.getResultClass(), null, migrationContext, false));
+            results.add(buildObjectFromDynamoItem(iterator.next(), tableDefinition, queryRequest.getResultClass(), null, migrationContext, false, false));
         }
 
         return results;
@@ -365,7 +365,7 @@ public class Dynamap {
 
         Iterator<Item> iterator = scanItems.iterator();
         while (iterator.hasNext()) {
-            results.add(buildObjectFromDynamoItem(iterator.next(), tableDefinition, scanRequest.getResultClass(), null, scanRequest.getMigrationContext(), false));
+            results.add(buildObjectFromDynamoItem(iterator.next(), tableDefinition, scanRequest.getResultClass(), null, scanRequest.getMigrationContext(), false, scanRequest.getProjectionExpression() != null));
         }
 
         String lastHashKey = null;
@@ -513,24 +513,25 @@ public class Dynamap {
         }
     }
 
-    private <T extends DynamapRecordBean> T buildObjectFromDynamoItem(Item item, TableDefinition tableDefinition, Class<T> resultClass, DynamoRateLimiter writeRateLimiter, Object migrationContext, boolean writeBack) {
+    private <T extends DynamapRecordBean> T buildObjectFromDynamoItem(Item item, TableDefinition tableDefinition, Class<T> resultClass, DynamoRateLimiter writeRateLimiter, Object migrationContext, boolean writeBack, boolean skipMigration) {
         if (item == null) {
             return null;
         }
 
         T result;
         String schemaField = tableDefinition.getSchemaVersionField();
-        int currentVersion;
-        if (!item.hasAttribute(schemaField)) {
-            Field field = tableDefinition.getField(tableDefinition.getHashKey());
-            logger.warn("Schema version field does not exist for {} on item with hash key {}. Migrating item to current version", tableDefinition.getTableName(), item.get(field.getDynamoName()));
-            currentVersion = 0;
-        } else {
-            currentVersion = item.getInt(schemaField);
+        int currentVersion = 0;
+        if (!skipMigration) {
+            if (!item.hasAttribute(schemaField)) {
+                Field field = tableDefinition.getField(tableDefinition.getHashKey());
+                logger.warn("Schema version field does not exist for {} on item with hash key {}. Migrating item to current version", tableDefinition.getTableName(), item.get(field.getDynamoName()));
+            } else {
+                currentVersion = item.getInt(schemaField);
+            }
         }
         try {
             List<Migration> migrations = schemaRegistry.getMigrations(resultClass);
-            if (currentVersion != tableDefinition.getVersion()) {
+            if (!skipMigration && currentVersion != tableDefinition.getVersion()) {
                 if (migrations != null) {
                     for (Migration migration : migrations) {
                         if (migration.getVersion() > currentVersion) {
