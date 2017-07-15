@@ -521,7 +521,7 @@ public class Dynamap {
         T result;
         String schemaField = tableDefinition.getSchemaVersionField();
         int currentVersion = 0;
-        if (!skipMigration) {
+        if (tableDefinition.isEnableMigrations() && !skipMigration) {
             if (!item.hasAttribute(schemaField)) {
                 Field field = tableDefinition.getField(tableDefinition.getHashKey());
                 logger.warn("Schema version field does not exist for {} on item with hash key {}. Migrating item to current version", tableDefinition.getTableName(), item.get(field.getDynamoName()));
@@ -530,8 +530,8 @@ public class Dynamap {
             }
         }
         try {
-            List<Migration> migrations = schemaRegistry.getMigrations(resultClass);
-            if (!skipMigration && currentVersion != tableDefinition.getVersion()) {
+            if (tableDefinition.isEnableMigrations() && !skipMigration && currentVersion != tableDefinition.getVersion()) {
+                List<Migration> migrations = schemaRegistry.getMigrations(resultClass);
                 if (migrations != null) {
                     for (Migration migration : migrations) {
                         if (migration.getVersion() > currentVersion) {

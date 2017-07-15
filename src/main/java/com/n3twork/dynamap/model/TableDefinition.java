@@ -38,11 +38,12 @@ public class TableDefinition {
     private final List<Index> globalSecondaryIndexes;
     private final boolean optimisticLocking;
     private final String schemaVersionField;
+    private final boolean enableMigrations;
 
     @JsonCreator
     public TableDefinition(@JsonProperty("table") String tableName, @JsonProperty("package") String packageName, @JsonProperty("type") String type, @JsonProperty("hashKey") String hashKey, @JsonProperty("rangeKey") String rangeKey,
                            @JsonProperty("version") int version, @JsonProperty("fields") List<Field> fields, @JsonProperty("types") List<Type> types, @JsonProperty("globalSecondaryIndexes") List<Index> globalSecondaryIndexes, @JsonProperty("optimisticLocking") boolean optimisticLocking,
-                           @JsonProperty("schemaVersionField") String schemaVersionField) {
+                           @JsonProperty("schemaVersionField") String schemaVersionField, @JsonProperty("enableMigrations") Boolean enableMigrations) {
         this.tableName = tableName;
         this.packageName = packageName;
         this.type = type;
@@ -53,6 +54,7 @@ public class TableDefinition {
         this.globalSecondaryIndexes = globalSecondaryIndexes;
         this.optimisticLocking = optimisticLocking;
         this.schemaVersionField = schemaVersionField == null ? DEFAULT_SCHEMA_VERSION_FIELD : schemaVersionField;
+        this.enableMigrations = enableMigrations == null ? Boolean.TRUE : enableMigrations;
     }
 
     public String getTableName() {
@@ -102,6 +104,10 @@ public class TableDefinition {
 
     public String getSchemaVersionField() {
         return schemaVersionField;
+    }
+
+    public boolean isEnableMigrations() {
+        return enableMigrations;
     }
 
     public Field getField(String fieldName) {
