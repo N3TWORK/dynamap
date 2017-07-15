@@ -713,7 +713,15 @@ public class Dynamap {
         } else {
             deleteItemSpec.withPrimaryKey(hashField.getDynamoName(), deleteRequest.getHashKeyValue());
         }
-
+        if (deleteRequest.getConditionExpression() != null) {
+            deleteItemSpec.withConditionExpression(deleteRequest.getConditionExpression());
+            if (deleteRequest.getNames() != null) {
+                deleteItemSpec.withNameMap(deleteRequest.getNames());
+            }
+            if (deleteRequest.getValues() != null) {
+                deleteItemSpec.withValueMap(deleteRequest.getValues());
+            }
+        }
         table.deleteItem(deleteItemSpec);
     }
 

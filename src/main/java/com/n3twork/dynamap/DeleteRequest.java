@@ -16,10 +16,15 @@
 
 package com.n3twork.dynamap;
 
+import java.util.Map;
+
 public class DeleteRequest<T extends DynamapRecordBean> {
     private String hashKeyValue;
     private Object rangeKeyValue;
     private final Class<T> resultClass;
+    private String conditionExpression;
+    private Map<String, Object> values;
+    private Map<String, String> names;
 
     public DeleteRequest(Class<T> resultClass) {
         this.resultClass = resultClass;
@@ -36,6 +41,21 @@ public class DeleteRequest<T extends DynamapRecordBean> {
         return this;
     }
 
+    public DeleteRequest<T> withConditionExpression(String conditionExpression) {
+        this.conditionExpression = conditionExpression;
+        return this;
+    }
+
+
+    public DeleteRequest<T> withNames(Map<String, String> names) {
+        this.names = names;
+        return this;
+    }
+
+    public DeleteRequest<T> withValues(Map<String, Object> values) {
+        this.values = values;
+        return this;
+    }
 
     public String getHashKeyValue() {
         return hashKeyValue;
@@ -47,5 +67,17 @@ public class DeleteRequest<T extends DynamapRecordBean> {
 
     public Class<T> getResultClass() {
         return resultClass;
+    }
+
+    public String getConditionExpression() {
+        return conditionExpression;
+    }
+
+    public Map<String, Object> getValues() {
+        return values;
+    }
+
+    public Map<String, String> getNames() {
+        return names;
     }
 }
