@@ -215,7 +215,7 @@ public class DynamapTest {
                 .withGetObjectRequests(ImmutableList.of(
                         new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId1).withRangeKeyValue(1),
                         new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId2).withRangeKeyValue(1)))
-                .withRateLimiters(ExampleDocumentBean.class, rateLimiterPair);
+                .withRateLimiters(rateLimiterPair);
 
         exampleDocuments = dynamap.batchGetObjectSingleCollection(batchGetObjectRequest);
 

@@ -8,6 +8,7 @@ public class BatchGetObjectRequest<T extends DynamapRecordBean> {
 
     private Collection<GetObjectRequest<T>> getObjectRequests;
     private Map<Class, ReadWriteRateLimiterPair> rateLimiters = new HashMap<>();
+    private ReadWriteRateLimiterPair readWriteRateLimiterPair;
     private Object migrationContext;
     private ProgressCallback progressCallback;
     private boolean writeMigrationChange = true;
@@ -22,8 +23,8 @@ public class BatchGetObjectRequest<T extends DynamapRecordBean> {
         return this;
     }
 
-    public BatchGetObjectRequest<T> withRateLimiters(Class<T> clazz, ReadWriteRateLimiterPair rateLimiters) {
-        this.rateLimiters.put(clazz, rateLimiters);
+    public BatchGetObjectRequest<T> withRateLimiters(ReadWriteRateLimiterPair rateLimiters) {
+        this.readWriteRateLimiterPair = rateLimiters;
         return this;
     }
 
@@ -48,6 +49,10 @@ public class BatchGetObjectRequest<T extends DynamapRecordBean> {
 
     public Map<Class, ReadWriteRateLimiterPair> getRateLimiters() {
         return rateLimiters;
+    }
+
+    public ReadWriteRateLimiterPair getReadWriteRateLimiterPair() {
+        return readWriteRateLimiterPair;
     }
 
     public Object getMigrationContext() {

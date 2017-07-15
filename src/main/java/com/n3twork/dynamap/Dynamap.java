@@ -248,6 +248,9 @@ public class Dynamap {
         if (getObjectRequests.stream().anyMatch(r -> !r.getResultClass().getCanonicalName().equals(resultClass))) {
             throw new IllegalArgumentException("More than one ResultClass has been specified");
         }
+        if (batchGetObjectRequest.getReadWriteRateLimiterPair() != null) {
+            batchGetObjectRequest.withRateLimiters(ImmutableMap.of(getObjectRequest.getResultClass(), batchGetObjectRequest.getReadWriteRateLimiterPair()));
+        }
         return (List<T>) (Object) batchGetObject(batchGetObjectRequest).get(getObjectRequest.getResultClass());
     }
 
