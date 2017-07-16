@@ -87,7 +87,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
         <#if isRoot && optimisticLocking>
             this._revision = _revision == null ? 0 : _revision;
         </#if>
-        <#if isRoot>
+        <#if tableDefinition.isEnableMigrations() && isRoot>
             this._schemaVersion = _schemaVersion == null ? SCHEMA_VERSION : _schemaVersion;
         </#if>
     }
@@ -109,7 +109,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     <#if isRoot && optimisticLocking>
         this._revision = bean.getRevision();
     </#if>
-   <#if isRoot>
+   <#if tableDefinition.isEnableMigrations() && isRoot>
         this._schemaVersion = bean.getDynamapSchemaVersion();
     </#if>
     }

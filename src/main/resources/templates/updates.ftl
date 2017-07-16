@@ -209,7 +209,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         return this._revision == null ? ${currentState}.getRevision() : this._revision;
     }
 </#if>
-<#if isRoot>
+<#if tableDefinition.isEnableMigrations() && isRoot>
     @Override
     public int getDynamapSchemaVersion() {
         return ${currentState}.getDynamapSchemaVersion();

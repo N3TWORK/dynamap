@@ -41,7 +41,7 @@ public interface ${type.name} extends DynamapPersisted {
     </#if>
 </#list>
 
-<#if isRoot>
+<#if tableDefinition.isEnableMigrations() && isRoot>
     int getDynamapSchemaVersion();
 </#if>
 <#list type.fields as field>
