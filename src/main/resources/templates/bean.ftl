@@ -49,7 +49,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
 
     public ${beanName}() {
         this(<#list type.serializedFields as field>null<#sep>,</#list>
-        <#if isRoot && optimisticLocking>,null</#if><#if isRoot>,null</#if>);
+        <#if isRoot && optimisticLocking>,null</#if><#if tableDefinition.isEnableMigrations() && isRoot>,null</#if>);
     }
 
     @JsonCreator
@@ -57,7 +57,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
         <#list type.serializedFields as field>
         @JsonProperty(${field.name?upper_case}_FIELD) <#if field.generatedType>${field.type}Bean<#else><@field_type field=field /></#if> ${field.name}<#sep>,
         </#list><#if isRoot && optimisticLocking>,@JsonProperty(REVISION_FIELD) Integer _revision</#if>
-            <#if isRoot>,@JsonProperty(SCHEMA_VERSION_FIELD) Integer _schemaVersion</#if>) {
+            <#if tableDefinition.isEnableMigrations() && isRoot>,@JsonProperty(SCHEMA_VERSION_FIELD) Integer _schemaVersion</#if>) {
 
     <#list type.fields as field>
         <#if field.isPersist()>
@@ -212,7 +212,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     }
     </#if>
 
-    <#if isRoot>
+    <#if tableDefinition.isEnableMigrations() && isRoot>
     @Override
     public int getDynamapSchemaVersion() {
         return this._schemaVersion;

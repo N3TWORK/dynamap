@@ -309,15 +309,15 @@ public class DynamapTest {
 
     @Test
     public void testBatchSaveWithRateLimiter() {
-        Map<String, DynamoRateLimiter> limiterMap = new HashMap<>();
-        limiterMap.put(ExampleDocumentBean.getTableName(), new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.WRITE, 100));
-        limiterMap.put(DummyDocBean.getTableName(), new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.WRITE, 100));
+        Map<Class, DynamoRateLimiter> limiterMap = new HashMap<>();
+        limiterMap.put(ExampleDocumentBean.class, new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.WRITE, 100));
+        limiterMap.put(DummyDocBean.class, new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.WRITE, 100));
 
         //TODO: need to do a better test the verifies correct limiter behavior
         batchSave(limiterMap);
     }
 
-    private void batchSave(Map<String, DynamoRateLimiter> limiterMap) {
+    private void batchSave(Map<Class, DynamoRateLimiter> limiterMap) {
         final int EXAMPLE_DOCS_SIZE = 22;
         final int DUMMY_DOCS_SIZE = 23;
         List<DynamapRecordBean> docsToSave = new ArrayList<>();

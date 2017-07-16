@@ -725,24 +725,58 @@ public class Dynamap {
         table.deleteItem(deleteItemSpec);
     }
 
-    public <T extends DynamapRecordBean> void batchSave(List<T> objects, Map<String, DynamoRateLimiter> writeLimiterMap) {
-        final List<List<T>> objectsBatch = Lists.partition(objects, MAX_BATCH_SIZE);
-        for (List<T> batch : objectsBatch) {
-            logger.debug("Sending batch to save of size: {}", batch.size());
-            doBatchWriteItem(batch, writeLimiterMap);
+    public void batchDelete(BatchDeleteRequest batchDeleteRequest) {
+
+        List<List<DeleteRequest>> partitions = Lists.partition(batchDeleteRequest.getDeleteRequests(), MAX_BATCH_SIZE);
+        for (List<DeleteRequest> deleteRequests : partitions) {
+
+            Map<String, TableWriteItems> tableWriteItems = new HashMap<>();
+            for (DeleteRequest deleteRequest : deleteRequests) {
+                TableDefinition tableDefinition = schemaRegistry.getTableDefinition(deleteRequest.getResultClass());
+
+                String tableName = tableDefinition.getTableName(prefix);
+                TableWriteItems writeItems = tableWriteItems.get(tableName);
+                if (writeItems == null) {
+                    writeItems = new TableWriteItems(tableName);
+                    tableWriteItems.put(tableName, writeItems);
+                }
+                if (tableDefinition.getRangeKey() != null) {
+                    writeItems.addHashAndRangePrimaryKeysToDelete(tableDefinition.getHashKey(), tableDefinition.getRangeKey(),
+                            deleteRequest.getHashKeyValue(), deleteRequest.getRangeKeyValue());
+                }
+            }
+            doBatchWriteItem(batchDeleteRequest.getRateLimiters(), tableWriteItems);
         }
     }
 
-    public <T extends DynamapRecordBean> void doBatchWriteItem(List<T> objects, Map<String, DynamoRateLimiter> writeLimiterMap) {
-        Map<String, TableWriteItems> tableWriteItems = new HashMap<>();
 
-        for (DynamapRecordBean object : objects) {
-            TableDefinition tableDefinition = schemaRegistry.getTableDefinition(object.getClass());
-            Item item = buildDynamoItemFromObject(object, tableDefinition);
+    public <T extends DynamapRecordBean> void batchSave(List<T> objects, Map<Class, DynamoRateLimiter> writeLimiterMap) {
+        final List<List<T>> objectsBatch = Lists.partition(objects, MAX_BATCH_SIZE);
+        for (List<T> batch : objectsBatch) {
+            logger.debug("Sending batch to save of size: {}", batch.size());
+            Map<String, TableWriteItems> tableWriteItems = new HashMap<>();
 
-            String tableName = tableDefinition.getTableName(prefix);
-            TableWriteItems writeItems = tableWriteItems.getOrDefault(tableName, new TableWriteItems(tableName));
-            tableWriteItems.put(tableName, writeItems.addItemToPut(item));
+            for (DynamapRecordBean object : batch) {
+                TableDefinition tableDefinition = schemaRegistry.getTableDefinition(object.getClass());
+                Item item = buildDynamoItemFromObject(object, tableDefinition);
+
+                String tableName = tableDefinition.getTableName(prefix);
+                TableWriteItems writeItems = tableWriteItems.getOrDefault(tableName, new TableWriteItems(tableName));
+                tableWriteItems.put(tableName, writeItems.addItemToPut(item));
+            }
+
+            doBatchWriteItem(writeLimiterMap, tableWriteItems);
+        }
+    }
+
+    private void doBatchWriteItem(Map<Class, DynamoRateLimiter> writeLimiterMap, Map<String, TableWriteItems> tableWriteItems) {
+
+        Map<String, DynamoRateLimiter> writeLimiterMapByTable = null;
+        if (writeLimiterMap != null) {
+            writeLimiterMapByTable = new HashMap<>();
+            for (Map.Entry<Class, DynamoRateLimiter> entry : writeLimiterMap.entrySet()) {
+                writeLimiterMapByTable.put(schemaRegistry.getTableDefinition(entry.getKey()).getTableName(prefix), entry.getValue());
+            }
         }
 
         BatchWriteItemSpec batchWriteItemSpec = new BatchWriteItemSpec()
@@ -751,10 +785,10 @@ public class Dynamap {
         BatchWriteItemOutcome outcome = dynamoDB.batchWriteItem(batchWriteItemSpec);
 
         while (outcome.getUnprocessedItems().size() > 0) {
-            if (writeLimiterMap != null && outcome.getBatchWriteItemResult().getConsumedCapacity() != null) {
+            if (writeLimiterMapByTable != null && outcome.getBatchWriteItemResult().getConsumedCapacity() != null) {
                 // need better testing
                 for (ConsumedCapacity consumedCapacity : outcome.getBatchWriteItemResult().getConsumedCapacity()) {
-                    DynamoRateLimiter rateLimiter = writeLimiterMap.get(consumedCapacity.getTableName());
+                    DynamoRateLimiter rateLimiter = writeLimiterMapByTable.get(consumedCapacity.getTableName());
                     rateLimiter.setConsumedCapacity(consumedCapacity);
                     logger.debug("Set rate limiter capacity {}", consumedCapacity.getCapacityUnits());
                     Table table = getTable(consumedCapacity.getTableName());
