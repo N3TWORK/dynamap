@@ -570,6 +570,9 @@ public class Dynamap {
 
         Type type = tableDefinition.getTypes().stream().filter(t -> t.getName().equals(tableDefinition.getType())).findFirst().get();
         for (Field field : type.getPersistedFields()) {
+            if (!map.containsKey(field.getDynamoName()) || map.get(field.getDynamoName()) == null) {
+                continue;
+            }
             if (field.getMultiValue() != null) {
                 if (field.getMultiValue().equals(Field.MultiValue.MAP)) {
                     item.withMap(field.getDynamoName(), (Map) map.get(field.getDynamoName()));
