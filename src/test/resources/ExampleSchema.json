@@ -62,6 +62,12 @@
               "name": "alias",
               "dynamoName": "alias",
               "type": "String"
+            },
+            {
+              "name": "someList",
+              "dynamoName": "someList",
+              "type": "String",
+              "multiValue": "List"
             }
           ]
         },

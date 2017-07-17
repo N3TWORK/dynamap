@@ -573,37 +573,17 @@ public class Dynamap {
             if (!map.containsKey(field.getDynamoName()) || map.get(field.getDynamoName()) == null) {
                 continue;
             }
-            if (field.getMultiValue() != null) {
-                if (field.getMultiValue().equals(Field.MultiValue.MAP)) {
-                    item.withMap(field.getDynamoName(), (Map) map.get(field.getDynamoName()));
-                } else if (field.getMultiValue().equals(Field.MultiValue.SET)) {
-                    if (field.getType().equals("String")) {
-                        item.withStringSet(field.getDynamoName(), (String) map.get(field.getDynamoName()));
-                    } else if (field.isNumber()) {
-                        item.withNumberSet(field.getDynamoName(), (Number) map.get(field.getDynamoName()));
-                    } else {
-                        throw new RuntimeException("Invalid type for Set: " + field.getName() + ":" + field.getType());
-                    }
-                } else if (field.getMultiValue().equals(Field.MultiValue.LIST)) {
-                    item.withList(field.getDynamoName(), map.get(field.getDynamoName()));
-                }
-            } else if (field.getType().equals("String")) {
-                item.withString(field.getDynamoName(), (String) map.get(field.getDynamoName()));
-            } else if (field.isNumber()) {
-                item.withNumber(field.getDynamoName(), (Number) map.get(field.getDynamoName()));
-            } else {
-                // if field is a nested dynamap object then remove any non persisted fields
-                if (field.isGeneratedType()) {
-                    Map<String, Object> objectToPersist = (Map<String, Object>) map.get(field.getDynamoName());
-                    Type fieldType = tableDefinition.getFieldType(field.getType());
-                    for (Field fieldToCheck : fieldType.getFields()) {
-                        if (objectToPersist.containsKey(fieldToCheck.getDynamoName()) && !fieldToCheck.isPersist()) {
-                            objectToPersist.remove(fieldToCheck.getDynamoName());
-                        }
+            // if field is a nested dynamap object then remove any non persisted fields
+            if (field.isGeneratedType()) {
+                Map<String, Object> objectToPersist = (Map<String, Object>) map.get(field.getDynamoName());
+                Type fieldType = tableDefinition.getFieldType(field.getType());
+                for (Field fieldToCheck : fieldType.getFields()) {
+                    if (objectToPersist.containsKey(fieldToCheck.getDynamoName()) && !fieldToCheck.isPersist()) {
+                        objectToPersist.remove(fieldToCheck.getDynamoName());
                     }
                 }
-                item.with(field.getDynamoName(), map.get(field.getDynamoName()));
             }
+            item.with(field.getDynamoName(), map.get(field.getDynamoName()));
         }
 
         String hashKeyFieldName = tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName();

@@ -64,7 +64,8 @@ public class DynamapTest {
 
         NestedTypeBean nestedObject = new NestedTypeBean().setId(nestedId1);
 
-        ExampleDocumentBean doc = new ExampleDocumentBean().setExampleId(exampleId1).setSequence(1).setNestedObject(nestedObject).setAlias("alias");
+        ExampleDocumentBean doc = new ExampleDocumentBean().setExampleId(exampleId1).setSequence(1)
+                .setSomeList(Arrays.asList("test1", "test2")).setNestedObject(nestedObject).setAlias("alias");
         dynamap.save(doc, null);
 
         ExampleDocumentBean doc2 = new ExampleDocumentBean().setExampleId(exampleId1).setSequence(2).setNestedObject(nestedObject).setAlias("alias");
