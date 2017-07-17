@@ -64,16 +64,6 @@ public class Field {
                 this.defaultValue = "Collections.emptyList()";
             } else if (type.equals("Set")) {
                 this.defaultValue = "Collections.emptySet()";
-            } else if (type.equals("Integer")) {
-                this.defaultValue = "0";
-            } else if (type.equals("Long")) {
-                this.defaultValue = "0L";
-            } else if (type.equals("Float") || type.equals("Double")) {
-                this.defaultValue = "0.0";
-            } else if (type.equals("Boolean")) {
-                this.defaultValue = "Boolean.FALSE";
-            } else if (type.equals("String")) {
-                this.defaultValue = "\" \"";
             } else {
                 this.defaultValue = "null";
             }

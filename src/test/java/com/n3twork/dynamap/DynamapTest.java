@@ -62,7 +62,7 @@ public class DynamapTest {
         String exampleId1 = UUID.randomUUID().toString();
         String nestedId1 = UUID.randomUUID().toString();
 
-        NestedTypeBean nestedObject = new NestedTypeBean().setId(nestedId1);
+        NestedTypeBean nestedObject = new NestedTypeBean().setId(nestedId1).setBio("biography");
 
         ExampleDocumentBean doc = new ExampleDocumentBean().setExampleId(exampleId1).setSequence(1)
                 .setSomeList(Arrays.asList("test1", "test2")).setNestedObject(nestedObject).setAlias("alias");
@@ -107,11 +107,11 @@ public class DynamapTest {
 
         // Update nested object
         NestedTypeUpdates nestedTypeUpdates = new NestedTypeUpdates(nestedObject, exampleId1, 1);
-        nestedTypeUpdates.setBio("test nested");
+        nestedTypeUpdates.setBio(null);
         dynamap.update(nestedTypeUpdates, rateLimiterPair.getWriteLimiter());
 
         exampleDocumentBean = dynamap.getObject(getObjectRequest, rateLimiterPair, null);
-        Assert.assertEquals(exampleDocumentBean.getNestedObject().getBio(), "test nested");
+        Assert.assertNull(exampleDocumentBean.getNestedObject().getBio());
 
 
         // Update parent and nested object

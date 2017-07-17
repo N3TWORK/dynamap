@@ -82,8 +82,7 @@
             {
               "name": "bio",
               "dynamoName": "bio",
-              "type": "String",
-              "default": "empty"
+              "type": "String"
             },
             {
               "name": "integerField",

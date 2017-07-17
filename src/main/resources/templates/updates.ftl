@@ -49,7 +49,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     <#if field.isGeneratedType()>
     protected ${field.type}Updates ${field.name}Updates;
     </#if>
-
+    protected boolean ${field.name}Modified = false;
     <#if field.multiValue??>
     protected boolean ${field.name}Clear = false;
     <#if field.multiValue == 'LIST'>
@@ -324,6 +324,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     public ${updatesName} set${field.name?cap_first}(${field.type} value) {
         this.${field.name} = value;
         pendingUpdates = true;
+        ${field.name}Modified = true;
         return this;
     }
     <#if field.isNumber()>
@@ -430,8 +431,13 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
                 expression.incrementNumber(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Delta);
             }
             <#else>
-            if (${field.name} != null) {
-                expression.setValue(parentDynamoFieldName, "${field.dynamoName}", ${field.name});
+            if (${field.name}Modified == true) {
+                if (${field.name} != null) {
+                    expression.setValue(parentDynamoFieldName, "${field.dynamoName}", ${field.name});
+                }
+                else {
+                    expression.removeField(parentDynamoFieldName, "${field.dynamoName}");
+                }
             }
             <#if field.isGeneratedType()>
             else if (${field.name}Updates != null) {
