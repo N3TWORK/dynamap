@@ -57,7 +57,11 @@ public class Field {
         this.name = name;
         this.dynamoName = dynamoName;
         this.type = type;
+        this.useDefaultForNulls = useDefaultForNulls == null ? Boolean.FALSE : useDefaultForNulls;
         if (defaultValue == null) {
+            if (this.useDefaultForNulls) {
+                throw new RuntimeException("Invalid field definition for :" + name + ". Must specify a default value if useDefaultForNulls is set");
+            }
             if (type.equals("Map")) {
                 this.defaultValue = "Collections.emptyMap()";
             } else if (type.equals("List")) {
@@ -73,7 +77,6 @@ public class Field {
             this.defaultValue = defaultValue;
         }
         this.multiValue = multiValue;
-        this.useDefaultForNulls = useDefaultForNulls == null ? Boolean.FALSE : useDefaultForNulls;
         this.replace = replace == null ? Boolean.FALSE : replace;
         this.persist = persist == null ? Boolean.TRUE : persist;
         this.serialize = serialize == null ? Boolean.TRUE : serialize;
