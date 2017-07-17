@@ -39,3 +39,21 @@
         </#if>
     </#compress>
 </#macro>
+
+<#macro defaultNumber field>
+    <#compress>
+        <#if field.defaultValue == 'null'>
+            <#if field.type == 'Integer'>
+            0
+            <#elseif field.type == 'Long'>
+            0L
+            <#elseif field.type == 'Float'>
+            0.0
+            <#elseif field.type == 'Double'>
+            0.0
+            </#if>
+        <#else>
+        ${field.defaultValue}
+        </#if>
+    </#compress>
+</#macro>

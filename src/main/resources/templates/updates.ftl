@@ -261,12 +261,12 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     <#if field.useDeltas()>
         <#if field.isNumber()>
     public ${updatesName} increment${field.name?cap_first}Amount(String id, ${field.type} amount) {
-        ${field.name}Deltas.put(id, ${field.name}Deltas.getOrDefault(id, ${field.defaultValue}) + amount);
+        ${field.name}Deltas.put(id, ${field.name}Deltas.getOrDefault(id, <@defaultNumber field />) + amount);
         pendingUpdates = true;
         return this;
     }
     public ${updatesName} decrement${field.name?cap_first}Amount(String id, ${field.type} amount) {
-        ${field.name}Deltas.put(id, ${field.name}Deltas.getOrDefault(id, ${field.defaultValue}) - amount);
+        ${field.name}Deltas.put(id, ${field.name}Deltas.getOrDefault(id, <@defaultNumber field />) - amount);
         pendingUpdates = true;
         return this;
     }
