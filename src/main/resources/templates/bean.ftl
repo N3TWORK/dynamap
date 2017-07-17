@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<${type.name}></#if> {
@@ -36,6 +37,9 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     <#list type.fields as field>
     <#if field.isSerialize()>
     @JsonProperty(${field.name?upper_case}_FIELD)
+    </#if>
+    <#if field.isGeneratedType()>
+    @JsonDeserialize(as=<@field_type field=field />Bean.class)
     </#if>
     private <@field_type field=field /> ${field.name};
     </#list>

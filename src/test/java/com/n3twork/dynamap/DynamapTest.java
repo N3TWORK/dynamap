@@ -364,4 +364,23 @@ public class DynamapTest {
         Assert.assertTrue(savedExampleDocsIds.containsAll(exampleDocsIds) && exampleDocsIds.containsAll(savedExampleDocsIds));
         Assert.assertTrue(savedDummyDocsIds.containsAll(dummyDocsIds) && dummyDocsIds.containsAll(savedDummyDocsIds));
     }
+
+    @Test
+    public void testBeanSubclass() {
+        String exampleId1 = UUID.randomUUID().toString();
+        String nestedId1 = UUID.randomUUID().toString();
+
+        NestedTypeBean nestedObject = new NestedTypeBean().setId(nestedId1).setBio("biography");
+
+        ExampleDocumentBean doc = new ExampleDocumentBean().setExampleId(exampleId1).setSequence(1)
+                .setSomeList(Arrays.asList("test1", "test2")).setNestedObject(nestedObject).setAlias("alias");
+        dynamap.save(doc, null);
+
+        GetObjectRequest<ExampleDocumentBeanSubclass> getObjectRequest = new GetObjectRequest<>(ExampleDocumentBeanSubclass.class).withHashKeyValue(exampleId1).withRangeKeyValue(1);
+        ExampleDocumentBeanSubclass exampleDocumentBean = dynamap.getObject(getObjectRequest, null);
+
+        Assert.assertNotNull(exampleDocumentBean.getExampleId(), exampleId1);
+        nestedObject = new NestedTypeBean(exampleDocumentBean.getNestedObject());
+        Assert.assertEquals(nestedObject.getId(), nestedId1);
+    }
 }
