@@ -561,7 +561,10 @@ public class Dynamap {
     private <T extends DynamapRecordBean> Item buildDynamoItemFromObject(T object, TableDefinition tableDefinition, boolean disableOptimisticLocking) {
         Map<String, Object> map = objectMapper.convertValue(object, new TypeReference<Map<String, Object>>() {
         });
-        Item item = new Item().withInt(tableDefinition.getSchemaVersionField(), tableDefinition.getVersion());
+        Item item = new Item();
+        if (tableDefinition.isEnableMigrations()) {
+            item.withInt(tableDefinition.getSchemaVersionField(), tableDefinition.getVersion());
+        }
 
         if (!disableOptimisticLocking && tableDefinition.isOptimisticLocking()) {
             int revision = (int) map.getOrDefault(Schema.REVISION_FIELD, 0);
