@@ -329,12 +329,12 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     }
     <#if field.isNumber()>
     public ${updatesName} increment${field.name?cap_first}(${field.type} amount) {
-        ${field.name}Delta = (${field.name}Delta == null ? ${field.defaultValue} : ${field.name}Delta) + amount;
+        ${field.name}Delta = (${field.name}Delta == null ? <@defaultNumber field /> : ${field.name}Delta) + amount;
         pendingUpdates = true;
         return this;
     }
     public ${updatesName} decrement${field.name?cap_first}(${field.type} amount) {
-        ${field.name}Delta = (${field.name}Delta == null ? ${field.defaultValue} : ${field.name}Delta) - amount;
+        ${field.name}Delta = (${field.name}Delta == null ? <@defaultNumber field /> : ${field.name}Delta) - amount;
         pendingUpdates = true;
         return this;
     }
