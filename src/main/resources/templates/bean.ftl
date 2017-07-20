@@ -44,6 +44,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     private <@field_type field=field /> ${field.name};
     </#list>
     <#if isRoot>
+    @JsonProperty(SCHEMA_VERSION_FIELD)
     private int _schemaVersion;
     </#if>
     <#if isRoot && optimisticLocking>
