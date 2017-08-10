@@ -16,7 +16,7 @@ Benefits:
 * Significantly reduces the amount of code you have to write and makes your code easy to read and comprehend
 * Provides a mechanism for schema migrations
 * Provides a mechanism for rate limiting reads and writes
-* Additional custom generated types and can be defined and nested in the top level document
+* Additional custom generated types can be defined and nested in the top level document
 
 
 ## Overview
