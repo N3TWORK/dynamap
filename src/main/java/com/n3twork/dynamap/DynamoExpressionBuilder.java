@@ -171,11 +171,11 @@ public class DynamoExpressionBuilder {
 
     //////// Conditional Expression ////
 
-    public DynamoExpressionBuilder addCheckFieldValueCondition(String parentField, String fieldName, Object value) {
-        return addCheckFieldValueCondition(parentField, fieldName, value, false);
+    public DynamoExpressionBuilder addCheckFieldValueCondition(String parentField, String fieldName, Object value, ComparisonOperator op) {
+        return addCheckFieldValueCondition(parentField, fieldName, value, op, false);
     }
 
-    public DynamoExpressionBuilder addCheckFieldValueCondition(String parentField, String fieldName, Object value, boolean useNameMap) {
+    public DynamoExpressionBuilder addCheckFieldValueCondition(String parentField, String fieldName, Object value, ComparisonOperator op, boolean useNameMap) {
         String attributeName;
         if (useNameMap) {
             String nameAlias = condNames.next();
@@ -185,7 +185,7 @@ public class DynamoExpressionBuilder {
             attributeName = joinFields(parentField, fieldName);
         }
 
-        conditions.add(String.format("%s=%s", attributeName, processValueAlias(condVals, value)));
+        conditions.add(String.format("%s " + op.getValue() + " %s", attributeName, processValueAlias(condVals, value)));
         return this;
     }
 

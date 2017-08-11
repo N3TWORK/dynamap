@@ -452,10 +452,10 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     </#list>
 
     // Conditional expression
-    expression.addCheckFieldValueCondition(null, "${schemaVersionFieldName}", ${rootType}.SCHEMA_VERSION, true);
+    expression.addCheckFieldValueCondition(null, "${schemaVersionFieldName}", ${rootType}.SCHEMA_VERSION, DynamoExpressionBuilder.ComparisonOperator.EQUALS, true);
     <#if isRoot && optimisticLocking>
             if (!disableOptimisticLocking) {
-                expression.addCheckFieldValueCondition(null, "${revisionFieldName}", ${currentState}.getRevision(), true);
+                expression.addCheckFieldValueCondition(null, "${revisionFieldName}", ${currentState}.getRevision(), DynamoExpressionBuilder.ComparisonOperator.EQUALS, true);
             }
     </#if>
 
