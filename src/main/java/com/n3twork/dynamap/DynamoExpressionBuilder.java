@@ -172,20 +172,9 @@ public class DynamoExpressionBuilder {
     //////// Conditional Expression ////
 
     public DynamoExpressionBuilder addCheckFieldValueCondition(String parentField, String fieldName, Object value, ComparisonOperator op) {
-        return addCheckFieldValueCondition(parentField, fieldName, value, op, false);
-    }
-
-    public DynamoExpressionBuilder addCheckFieldValueCondition(String parentField, String fieldName, Object value, ComparisonOperator op, boolean useNameMap) {
-        String attributeName;
-        if (useNameMap) {
-            String nameAlias = condNames.next();
-            nameMap = nameMap.with(nameAlias, joinFields(parentField, fieldName));
-            attributeName = nameAlias;
-        } else {
-            attributeName = joinFields(parentField, fieldName);
-        }
-
-        conditions.add(String.format("%s " + op.getValue() + " %s", attributeName, processValueAlias(condVals, value)));
+        String nameAlias = condNames.next();
+        nameMap = nameMap.with(nameAlias, joinFields(parentField, fieldName));
+        conditions.add(String.format("%s " + op.getValue() + " %s", nameAlias, processValueAlias(condVals, value)));
         return this;
     }
 
