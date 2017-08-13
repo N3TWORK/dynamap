@@ -24,6 +24,7 @@ import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.util.IOUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.n3twork.dynamap.test.*;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -270,6 +271,39 @@ public class DynamapTest {
 
     }
 
+    @Test
+    public void testConditionalChecks() {
+
+        String exampleId1 = UUID.randomUUID().toString();
+        String nestedId1 = UUID.randomUUID().toString();
+
+        NestedTypeBean nestedObject = new NestedTypeBean().setId(nestedId1).setMapOfLong(ImmutableMap.of("dollars", 1L, "francs", 1L));
+
+        ExampleDocumentBean doc = new ExampleDocumentBean().setExampleId(exampleId1).setSequence(1)
+                .setSomeList(Arrays.asList("test1", "test2")).setNestedObject(nestedObject).setAlias("alias");
+        dynamap.save(doc, null);
+
+        // add 1 to dollars and a check to ensure it is less than 2
+        NestedTypeUpdates nestedTypeUpdates = new NestedTypeUpdates(new NestedTypeBean(), exampleId1, 1);
+        nestedTypeUpdates.incrementMapOfLongAmount("dollars", 1L);
+        nestedTypeUpdates.getExpressionBuilder().addCheckMapValuesCondition(ExampleDocumentBean.NESTEDOBJECT_FIELD, NestedTypeBean.MAPOFLONG_FIELD,
+                ImmutableMap.of("dollars", 2L), DynamoExpressionBuilder.ComparisonOperator.LESS_THAN);
+        dynamap.update(nestedTypeUpdates, null);
+        // increment again and check that conditional exception is thrown
+        nestedTypeUpdates = new NestedTypeUpdates(new NestedTypeBean(), exampleId1, 1);
+        nestedTypeUpdates.incrementMapOfLongAmount("dollars", 1L);
+        nestedTypeUpdates.getExpressionBuilder().addCheckMapValuesCondition(ExampleDocumentBean.NESTEDOBJECT_FIELD, NestedTypeBean.MAPOFLONG_FIELD,
+                ImmutableMap.of("dollars", 2L), DynamoExpressionBuilder.ComparisonOperator.LESS_THAN);
+        boolean errorThrown = false;
+        try {
+            dynamap.update(nestedTypeUpdates, null);
+        } catch (ConditionalCheckFailedException e) {
+            errorThrown = true;
+        }
+        Assert.assertTrue(errorThrown);
+
+
+    }
 
     @Test
     public void testOptimisticLockingWithSave() {

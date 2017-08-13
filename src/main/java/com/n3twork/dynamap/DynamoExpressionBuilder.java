@@ -178,13 +178,13 @@ public class DynamoExpressionBuilder {
         return this;
     }
 
-    public <T> DynamoExpressionBuilder addCheckMapValuesCondition(String parentField, String fieldName, Map<String, T> map) {
+    public <T> DynamoExpressionBuilder addCheckMapValuesCondition(String parentField, String fieldName, Map<String, T> map, ComparisonOperator op) {
         for (Map.Entry<String, T> entry : map.entrySet()) {
             String nameAlias = condNames.next();
             String valueAlias = condVals.next();
             nameMap.with(nameAlias, entry.getKey());
             valueMap.with(valueAlias, entry.getValue());
-            conditions.add(joinFields(parentField, fieldName, nameAlias) + " = " + valueAlias);
+            conditions.add(joinFields(parentField, fieldName, nameAlias) + " " + op.getValue() + " " + valueAlias);
         }
         return this;
     }

@@ -416,10 +416,13 @@ public class Dynamap {
             Class beanClass = Class.forName(tableDefinition.getPackageName() + "." + tableDefinition.getType() + "Bean");
             return (T) objectMapper.convertValue(updateItemOutcome.getItem().asMap(), beanClass);
 
-        } catch (Exception e) {
+        } catch (ClassNotFoundException e) {
+            logger.error("Cannot find bean class " + tableDefinition.getPackageName() + "." + tableDefinition.getType() + "Bean");
+            throw new RuntimeException(e);
+        } catch (RuntimeException e) {
             String keyComponents = updateItemSpec.getKeyComponents().stream().map(Object::toString).collect(Collectors.joining(","));
             logger.error("Error updating item: Key: " + keyComponents + " Update expression:" + updateItemSpec.getUpdateExpression() + " Conditional expression: " + updateItemSpec.getConditionExpression() + " Values: " + updateItemSpec.getValueMap() + " Names: " + updateItemSpec.getNameMap(), e);
-            throw new RuntimeException(e);
+            throw e;
         }
 
 
