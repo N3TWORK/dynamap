@@ -383,7 +383,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         String parentDynamoFieldName = <#if isRoot>null;<#else>"${parentFieldName}";</#if>
 <#if isRoot && optimisticLocking>
         if (!disableOptimisticLocking) {
-            expression.incrementNumber(parentDynamoFieldName, "${revisionFieldName}", 1, true);
+            expression.incrementNumber(parentDynamoFieldName, "${revisionFieldName}", 1);
         }
 </#if>
 

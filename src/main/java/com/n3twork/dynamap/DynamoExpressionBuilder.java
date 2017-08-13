@@ -35,10 +35,8 @@ public class DynamoExpressionBuilder {
     private final List<String> addSection = new ArrayList<>();
     private final List<String> setSection = new ArrayList<>();
     private final List<String> removeSection = new ArrayList<>();
-    private final Alias parentNames;
     private final Alias names;
     private final Alias vals;
-    private final Alias condNames;
     private final Alias condVals;
     private final List<String> conditions = new ArrayList<>();
 
@@ -62,7 +60,6 @@ public class DynamoExpressionBuilder {
 
     public DynamoExpressionBuilder(int prefixNumber) {
         String prefix = "t" + prefixNumber;
-        parentNames = new Alias("#" + prefix + "doc");
         names = new Alias("#" + prefix + "a");
         vals = new Alias(":" + prefix + "v");
         condNames = new Alias("#" + prefix + "condAttr");
@@ -97,27 +94,15 @@ public class DynamoExpressionBuilder {
         return valueMap;
     }
 
-    public DynamoExpressionBuilder incrementNumber(String parentField, String fieldName, Number amount) {
-        return incrementNumber(parentField, fieldName, amount, false);
-    }
 
-    public DynamoExpressionBuilder incrementNumber(String parentField, String fieldName, Number amount, boolean useNameMap) {
+    public DynamoExpressionBuilder incrementNumber(String parentField, String fieldName, Number amount) {
         String alias = vals.next();
         if (amount instanceof Integer) {
             valueMap = valueMap.withInt(alias, (Integer) amount);
         } else if (amount instanceof Long) {
             valueMap = valueMap.withLong(alias, (Long) amount);
         }
-
-        String attributeName;
-        if (useNameMap) {
-            String nameAlias = names.next();
-            nameMap = nameMap.with(nameAlias, joinFields(parentField, fieldName));
-            attributeName = nameAlias;
-        } else {
-            attributeName = joinFields(parentField, fieldName);
-        }
-        addSection.add(String.format("%s %s", attributeName, alias));
+        addSection.add(String.format("%s %s", joinFields(parentField, fieldName), alias));
         return this;
     }
 
@@ -172,34 +157,27 @@ public class DynamoExpressionBuilder {
     //////// Conditional Expression ////
 
     public DynamoExpressionBuilder addCheckFieldValueCondition(String parentField, String fieldName, Object value, ComparisonOperator op) {
-        String nameAlias = condNames.next();
-        nameMap = nameMap.with(nameAlias, joinFields(parentField, fieldName));
-        conditions.add(String.format("%s " + op.getValue() + " %s", nameAlias, processValueAlias(condVals, value)));
+        conditions.add(String.format("%s " + op.getValue() + " %s", joinFields(parentField, fieldName), processValueAlias(condVals, value)));
         return this;
     }
 
     public <T> DynamoExpressionBuilder addCheckMapValuesCondition(String parentField, String fieldName, Map<String, T> map, ComparisonOperator op) {
         for (Map.Entry<String, T> entry : map.entrySet()) {
-            String nameAlias = condNames.next();
             String valueAlias = condVals.next();
-            nameMap.with(nameAlias, entry.getKey());
             valueMap.with(valueAlias, entry.getValue());
-            conditions.add(joinFields(parentField, fieldName, nameAlias) + " " + op.getValue() + " " + valueAlias);
+            conditions.add(joinFields(parentField, fieldName, entry.getKey()) + " " + op.getValue() + " " + valueAlias);
         }
         return this;
     }
 
     public DynamoExpressionBuilder addCheckAttributeInMapNotExistsCondition(String parentField, String fieldName, Collection<String> attributes) {
         for (String id : attributes) {
-            String alias = condNames.next();
-            nameMap.with(alias, id);
-            conditions.add(String.format("attribute_not_exists(%s)", joinFields(parentField, fieldName, alias)));
+            conditions.add(String.format("attribute_not_exists(%s)", joinFields(parentField, fieldName, id)));
         }
         return this;
     }
 
     public DynamoExpressionBuilder addCheckAttributeSizeCondition(String parentField, String fieldName, Number value, ComparisonOperator op) {
-        String nameAlias = condNames.next();
         String valueAlias = condVals.next();
         valueMap.with(valueAlias, value);
         conditions.add("size(" + joinFields(parentField, fieldName) + ") " + op.getValue() + " " + valueAlias);
@@ -218,25 +196,19 @@ public class DynamoExpressionBuilder {
 
     private <N extends Number> void processMapForAdd(String parentField, String fieldName, Map<String, N> deltas) {
         for (Map.Entry<String, N> entry : deltas.entrySet()) {
-            String idAlias = names.next();
-            nameMap = nameMap.with(idAlias, entry.getKey());
-            addSection.add(String.format("%s %s", joinFields(parentField, fieldName, idAlias), processValueAlias(vals, entry.getValue())));
+            addSection.add(String.format("%s %s", joinFields(parentField, fieldName, entry.getKey()), processValueAlias(vals, entry.getValue())));
         }
     }
 
     private <T extends Object> void processMapForUpdates(String parentField, String fieldName, Map<String, T> updates) {
         for (Map.Entry<String, T> entry : updates.entrySet()) {
-            String idAlias = names.next();
-            nameMap = nameMap.with(idAlias, entry.getKey());
-            setSection.add(String.format("%s=%s", joinFields(parentField, fieldName, idAlias), processValueAlias(vals, entry.getValue())));
+            setSection.add(String.format("%s=%s", joinFields(parentField, fieldName, entry.getKey()), processValueAlias(vals, entry.getValue())));
         }
     }
 
     private void processDeletes(String parentField, String fieldName, Collection<String> deletes) {
         for (String id : deletes) {
-            String idAlias = names.next();
-            nameMap = nameMap.with(idAlias, id);
-            removeSection.add(String.format("%s", joinFields(parentField, fieldName, idAlias)));
+            removeSection.add(String.format("%s", joinFields(parentField, fieldName, id)));
         }
     }
 
@@ -302,20 +274,25 @@ public class DynamoExpressionBuilder {
     }
 
     private String joinFields(String... fields) {
-        if (fields[0] != null) {
-            // get alias for root field
-            String alias = nameMap.get(fields[0]);
-            if (alias == null) {
-                alias = parentNames.next();
-                nameMap = nameMap.with(alias, fields[0]);
-            }
-            fields[0] = alias;
-        } else {
+        // if the parent field is null, then shift all fields down a position
+        if (fields[0] == null) {
+            fields[0] = fields[1];
             if (fields.length == 3) {
                 fields = new String[]{fields[1], fields[2]};
             } else {
                 fields = new String[]{fields[1]};
             }
+        }
+        for (int index = 0; index < fields.length; index++) {
+            if (fields[index] != null) {
+                String alias = nameMap.get(fields[index]);
+                if (alias == null) {
+                    alias = names.next();
+                    nameMap = nameMap.with(alias, fields[index]);
+                }
+                fields[index] = alias;
+            }
+
         }
         return Joiner.on(".").join(fields);
     }
