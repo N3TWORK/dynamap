@@ -62,7 +62,6 @@ public class DynamoExpressionBuilder {
         String prefix = "t" + prefixNumber;
         names = new Alias("#" + prefix + "a");
         vals = new Alias(":" + prefix + "v");
-        condNames = new Alias("#" + prefix + "condAttr");
         condVals = new Alias(":" + prefix + "condVal");
     }
 
