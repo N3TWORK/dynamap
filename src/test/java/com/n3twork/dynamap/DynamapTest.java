@@ -255,9 +255,8 @@ public class DynamapTest {
         try {
             dynamap.update(docUpdates2, null);
             Assert.fail();
-        } catch (RuntimeException ex) {
+        } catch (ConditionalCheckFailedException ex) {
             Assert.assertNotNull(ex);
-            Assert.assertTrue(ex.getCause() instanceof com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException);
         }
 
         // optimist locking disabled
