@@ -60,6 +60,6 @@
 
 <#macro persisted_modified field>
         <#if field.isPersist()>
-            persistedModified = true;
+        persistedModified = true;
         </#if>
 </#macro>
