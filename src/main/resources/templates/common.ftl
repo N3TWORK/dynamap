@@ -59,9 +59,7 @@
 </#macro>
 
 <#macro persisted_modified field>
-    <#compress>
-        <#if !field.isPersist()>
+        <#if field.isPersist()>
             persistedModified = true;
         </#if>
-    </#compress>
 </#macro>
