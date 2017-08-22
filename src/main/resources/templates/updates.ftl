@@ -42,7 +42,8 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
 <#if isRoot && optimisticLocking>
     protected final Integer _revision;
 </#if>
-    protected boolean pendingUpdates = false;
+    protected boolean persistedModified = false;
+    protected boolean modified = false;
 
 <#list type.fields as field>
     protected <@field_type field=field /> ${field.name};
@@ -252,7 +253,8 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     <#if field.useDeltas()>
     public ${updatesName} clear${field.name?cap_first}() {
         ${field.name}Clear = true;
-        pendingUpdates = true;
+        modified = true;
+        <@persisted_modified field/>
         return this;
     }
     </#if>
@@ -262,30 +264,34 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         <#if field.isNumber()>
     public ${updatesName} increment${field.name?cap_first}Amount(String id, ${field.type} amount) {
         ${field.name}Deltas.put(id, ${field.name}Deltas.getOrDefault(id, <@defaultNumber field />) + amount);
-        pendingUpdates = true;
+        modified = true;
+        <@persisted_modified field/>
         return this;
     }
     public ${updatesName} decrement${field.name?cap_first}Amount(String id, ${field.type} amount) {
         ${field.name}Deltas.put(id, ${field.name}Deltas.getOrDefault(id, <@defaultNumber field />) - amount);
-        pendingUpdates = true;
+        modified = true;
+        <@persisted_modified field/>
         return this;
     }
         </#if>
     public ${updatesName} set${field.name?cap_first}<@collection_item field=field />(String id, ${field.type} value) {
         ${field.name}Sets.put(id, value);
-        pendingUpdates = true;
+        modified = true;
+        <@persisted_modified field/>
         return this;
     }
     public ${updatesName} delete${field.name?cap_first}<@collection_item field=field />(String id) {
         ${field.name}Deletes.add(id);
-        pendingUpdates = true;
+        modified = true;
+        <@persisted_modified field/>
         return this;
     }
 
     <#else>
        public ${updatesName} set${field.name?cap_first}(Map<String,${field.type}> value) {
                 this.${field.name} = value;
-                pendingUpdates = true;
+                modified = true;
                 return this;
         }
     </#if>
@@ -293,49 +299,57 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     <#elseif field.multiValue! == 'LIST'>
     public ${updatesName} add${field.name?cap_first}<@collection_item field=field />(${field.type} value) {
         ${field.name}Adds.add(value);
-        pendingUpdates = true;
+        modified = true;
+        <@persisted_modified field/>
         return this;
     }
     public ${updatesName} set${field.name?cap_first}(List<${field.type}> list) {
         this.${field.name} = list;
-        pendingUpdates = true;
+        modified = true;
+        <@persisted_modified field/>
         return this;
     }
     <#elseif field.multiValue! == 'SET'>
     <#if field.useDeltas()>
     public ${updatesName} set${field.name?cap_first}<@collection_item field=field />(${field.type} value) {
         ${field.name}Sets.add(value);
-        pendingUpdates = true;
+        modified = true;
+        <@persisted_modified field/>
         return this;
     }
     public ${updatesName} delete${field.name?cap_first}<@collection_item field=field />(${field.type} value) {
         ${field.name}Deletes.remove(value);
-        pendingUpdates = true;
+        modified = true;
+        <@persisted_modified field/>
         return this;
     }
     <#else>
     public ${updatesName} set${field.name?cap_first}(Set<${field.type}> value) {
         this.${field.name} = value;
-        pendingUpdates = true;
+        modified = true;
+        <@persisted_modified field/>
         return this;
     }
     </#if>
     <#else>
     public ${updatesName} set${field.name?cap_first}(${field.type} value) {
         this.${field.name} = value;
-        pendingUpdates = true;
+        modified = true;
+        <@persisted_modified field/>
         ${field.name}Modified = true;
         return this;
     }
     <#if field.isNumber()>
     public ${updatesName} increment${field.name?cap_first}(${field.type} amount) {
         ${field.name}Delta = (${field.name}Delta == null ? <@defaultNumber field /> : ${field.name}Delta) + amount;
-        pendingUpdates = true;
+        modified = true;
+        <@persisted_modified field/>
         return this;
     }
     public ${updatesName} decrement${field.name?cap_first}(${field.type} amount) {
         ${field.name}Delta = (${field.name}Delta == null ? <@defaultNumber field /> : ${field.name}Delta) - amount;
-        pendingUpdates = true;
+        modified = true;
+        <@persisted_modified field/>
         return this;
     }
     </#if>
@@ -354,7 +368,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
             throw new IllegalStateException("Nested property: ${field.name}, should not be set when passing its Updates object");
         }
         this.${field.name}Updates = value;
-        pendingUpdates = true;
+        modified = true;
         return this;
     }
     </#if>
@@ -368,8 +382,13 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     }
 
     @Override
-    public boolean pendingUpdates() {
-        return pendingUpdates;
+    public boolean isPersistedModified() {
+        return persistedModified;
+    }
+
+   @Override
+    public boolean isModified() {
+        return modified;
     }
 
     @Override

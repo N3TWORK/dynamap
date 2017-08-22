@@ -28,6 +28,16 @@ public interface Updates<T extends DynamapPersisted> {
 
     Object getRangeKeyValue();
 
-    boolean pendingUpdates();
+    /**
+     *
+     * @return true if any of the persisted fields have been modified
+     */
+    boolean isPersistedModified();
+
+    /**
+     *
+     * @return true if any of the fields, including non-persisted fields, have been modified
+     */
+    boolean isModified();
 
 }
