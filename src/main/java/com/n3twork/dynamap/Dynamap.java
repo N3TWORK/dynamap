@@ -419,14 +419,13 @@ public class Dynamap {
         } catch (ClassNotFoundException e) {
             logger.error("Cannot find bean class " + tableDefinition.getPackageName() + "." + tableDefinition.getType() + "Bean");
             throw new RuntimeException(e);
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
             String keyComponents = updateItemSpec.getKeyComponents().stream().map(Object::toString).collect(Collectors.joining(","));
-            logger.error("Error updating item: Key: " + keyComponents + " Update expression:" + updateItemSpec.getUpdateExpression() + " Conditional expression: " + updateItemSpec.getConditionExpression() + " Values: " + updateItemSpec.getValueMap() + " Names: " + updateItemSpec.getNameMap(), e);
+            logger.error("Error updating item: Key: " + keyComponents + " Update expression:" + updateItemSpec.getUpdateExpression() + " Conditional expression: " + updateItemSpec.getConditionExpression() + " Values: " + updateItemSpec.getValueMap() + " Names: " + updateItemSpec.getNameMap());
             throw e;
         }
-
-
     }
+
 
     private static class GetItemInfo {
         public TableKeysAndAttributes keysAndAttributes;
@@ -437,54 +436,51 @@ public class Dynamap {
 
     private Multimap<String, Item> doBatchGetItem(Map<String, GetItemInfo> queryInfos, Map<String, ReadWriteRateLimiterPair> rateLimiters, int totalProgress, ProgressCallback progressCallback) {
         Multimap<String, Item> results = ArrayListMultimap.create();
-        try {
-            TableKeysAndAttributes[] tableKeysAndAttributes = new TableKeysAndAttributes[queryInfos.size()];
-            int index = 0;
-            for (GetItemInfo getItemInfo : queryInfos.values()) {
-                tableKeysAndAttributes[index++] = getItemInfo.keysAndAttributes;
+        TableKeysAndAttributes[] tableKeysAndAttributes = new TableKeysAndAttributes[queryInfos.size()];
+        int index = 0;
+        for (GetItemInfo getItemInfo : queryInfos.values()) {
+            tableKeysAndAttributes[index++] = getItemInfo.keysAndAttributes;
+        }
+
+        BatchGetItemOutcome outcome = dynamoDB.batchGetItem(ReturnConsumedCapacity.TOTAL, tableKeysAndAttributes);
+
+        int unprocessedKeyCount;
+        //todo: need to add exponential backoff for unprocessed items and a termination condition
+        do {
+
+            if (outcome.getBatchGetItemResult().getConsumedCapacity() != null) {
+                for (ConsumedCapacity consumedCapacity : outcome.getBatchGetItemResult().getConsumedCapacity()) {
+                    setConsumedUnits(rateLimiters, consumedCapacity, false);
+                }
             }
 
-            BatchGetItemOutcome outcome = dynamoDB.batchGetItem(ReturnConsumedCapacity.TOTAL, tableKeysAndAttributes);
-
-            int unprocessedKeyCount;
-            //todo: need to add exponential backoff for unprocessed items and a termination condition
-            do {
-
-                if (outcome.getBatchGetItemResult().getConsumedCapacity() != null) {
-                    for (ConsumedCapacity consumedCapacity : outcome.getBatchGetItemResult().getConsumedCapacity()) {
-                        setConsumedUnits(rateLimiters, consumedCapacity, false);
-                    }
+            Map<String, List<Item>> tableItems = outcome.getTableItems();
+            for (String tableName : tableItems.keySet()) {
+                List<Item> items = tableItems.get(tableName);
+                for (Item item : items) {
+                    results.put(tableName, item);
                 }
+            }
+            // Check for unprocessed keys which could happen if it exceeds provisioned
+            // throughput or reach the limit on response size.
+            Map<String, KeysAndAttributes> unprocessedKeys = outcome.getUnprocessedKeys();
 
-                Map<String, List<Item>> tableItems = outcome.getTableItems();
-                for (String tableName : tableItems.keySet()) {
-                    List<Item> items = tableItems.get(tableName);
-                    for (Item item : items) {
-                        results.put(tableName, item);
-                    }
+            unprocessedKeyCount = outcome.getUnprocessedKeys().size();
+            if (unprocessedKeyCount != 0) {
+                initAndAcquire(rateLimiters, false);
+                outcome = dynamoDB.batchGetItemUnprocessed(unprocessedKeys);
+            }
+            totalProgress = totalProgress + tableItems.values().size();
+            if (progressCallback != null) {
+                if (!progressCallback.reportProgress(totalProgress)) {
+                    return results;
                 }
-                // Check for unprocessed keys which could happen if it exceeds provisioned
-                // throughput or reach the limit on response size.
-                Map<String, KeysAndAttributes> unprocessedKeys = outcome.getUnprocessedKeys();
+            }
 
-                unprocessedKeyCount = outcome.getUnprocessedKeys().size();
-                if (unprocessedKeyCount != 0) {
-                    initAndAcquire(rateLimiters, false);
-                    outcome = dynamoDB.batchGetItemUnprocessed(unprocessedKeys);
-                }
-                totalProgress = totalProgress + tableItems.values().size();
-                if (progressCallback != null) {
-                    if (!progressCallback.reportProgress(totalProgress)) {
-                        return results;
-                    }
-                }
+        } while (unprocessedKeyCount > 0);
 
-            } while (unprocessedKeyCount > 0);
+        return results;
 
-            return results;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private void setConsumedUnits(Map<String, ReadWriteRateLimiterPair> rateLimiters, ConsumedCapacity consumedCapacity, boolean write) {
@@ -532,32 +528,30 @@ public class Dynamap {
                 currentVersion = item.getInt(schemaField);
             }
         }
-        try {
-            if (tableDefinition.isEnableMigrations() && !skipMigration && currentVersion != tableDefinition.getVersion()) {
-                List<Migration> migrations = schemaRegistry.getMigrations(resultClass);
-                if (migrations != null) {
-                    for (Migration migration : migrations) {
-                        if (migration.getVersion() > currentVersion) {
-                            migration.migrate(item, currentVersion, migrationContext);
-                        }
-                    }
-                    for (Migration migration : migrations) {
-                        if (migration.getVersion() > currentVersion) {
-                            migration.postMigration(item, currentVersion, migrationContext);
-                        }
+
+        if (tableDefinition.isEnableMigrations() && !skipMigration && currentVersion != tableDefinition.getVersion()) {
+            List<Migration> migrations = schemaRegistry.getMigrations(resultClass);
+            if (migrations != null) {
+                for (Migration migration : migrations) {
+                    if (migration.getVersion() > currentVersion) {
+                        migration.migrate(item, currentVersion, migrationContext);
                     }
                 }
-                item = item.withInt(schemaField, tableDefinition.getVersion());
-                result = objectMapper.convertValue(item.asMap(), resultClass);
-                if (writeBack) {
-                    putObject(result, tableDefinition, true, false, writeRateLimiter);
+                for (Migration migration : migrations) {
+                    if (migration.getVersion() > currentVersion) {
+                        migration.postMigration(item, currentVersion, migrationContext);
+                    }
                 }
-            } else {
-                result = objectMapper.convertValue(item.asMap(), resultClass);
             }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            item = item.withInt(schemaField, tableDefinition.getVersion());
+            result = objectMapper.convertValue(item.asMap(), resultClass);
+            if (writeBack) {
+                putObject(result, tableDefinition, true, false, writeRateLimiter);
+            }
+        } else {
+            result = objectMapper.convertValue(item.asMap(), resultClass);
         }
+
         return result;
     }
 
@@ -649,8 +643,8 @@ public class Dynamap {
             if (writeLimiter != null) {
                 writeLimiter.setConsumedCapacity(outcome.getPutItemResult().getConsumedCapacity());
             }
-        } catch (RuntimeException e) {
-            logger.error("Error putting item:" + putItemSpec.getItem().toJSON() + " Conditional expression: " + putItemSpec.getConditionExpression() + " Values: " + putItemSpec.getValueMap() + " Names: " + putItemSpec.getNameMap(), e);
+        } catch (Exception e) {
+            logger.error("Error putting item:" + putItemSpec.getItem().toJSON() + " Conditional expression: " + putItemSpec.getConditionExpression() + " Values: " + putItemSpec.getValueMap() + " Names: " + putItemSpec.getNameMap());
             throw e;
         }
     }
