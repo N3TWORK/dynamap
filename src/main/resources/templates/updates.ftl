@@ -138,7 +138,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
           </#if>
         }
         <#if field.isNumber()>
-        ${field.type} value = MergeUtil.getLatestNumericValue(id, ${currentState}.get${field.name?cap_first}<@collection_item field=field />(id), ${field.name}Deltas, ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
+        ${field.type} value = MergeUtil.getLatestNumericValue(${field.type}.class, id, ${currentState}.get${field.name?cap_first}<@collection_item field=field />(id), ${field.name}Deltas, ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
         <#else>
         ${field.type} value = MergeUtil.getLatestValue(id, ${currentState}.get${field.name?cap_first}<@collection_item field=field />(id), ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
         </#if>
@@ -196,7 +196,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     @Override
     public ${field.type} get${field.name?cap_first}() {
         <#if field.isNumber()>
-        return MergeUtil.getLatestNumericValue(${currentState}.get${field.name?cap_first}(), ${field.name}Delta, ${field.name});
+        return MergeUtil.getLatestNumericValue(${field.type}.class, ${currentState}.get${field.name?cap_first}(), ${field.name}Delta, ${field.name});
         <#else>
         return this.${field.name} == null ? ${currentState}.get${field.name?cap_first}() : this.${field.name};
         </#if>

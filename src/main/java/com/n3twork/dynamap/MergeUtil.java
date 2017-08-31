@@ -75,19 +75,19 @@ public class MergeUtil {
         return values;
     }
 
-    public static <V extends Number> V getLatestNumericValue(V orig, V delta, V update) {
+    public static <V extends Number> V getLatestNumericValue(Class type, V orig, V delta, V update) {
         if (update != null) {
             return update;
         }
         if (delta != null) {
-            if (orig instanceof Integer) {
-                return (V) Integer.valueOf(orig.intValue() + delta.intValue());
-            } else if (orig instanceof Long) {
-                return (V) Long.valueOf(orig.longValue() + delta.longValue());
-            } else if (orig instanceof Float) {
-                return (V) Float.valueOf(orig.floatValue() + delta.floatValue());
-            } else if (orig instanceof Double) {
-                return (V) Double.valueOf(orig.doubleValue() + delta.doubleValue());
+            if (type == Integer.class) {
+                return (V) Integer.valueOf((orig == null ? 0 : orig.intValue()) + delta.intValue());
+            } else if (type == Long.class) {
+                return (V) Long.valueOf((orig == null ? 0L : orig.longValue()) + delta.longValue());
+            } else if (type == Float.class) {
+                return (V) Float.valueOf((orig == null ? 0 : orig.floatValue()) + delta.floatValue());
+            } else if (type == Double.class) {
+                return (V) Double.valueOf((orig == null ? 0.0 : orig.doubleValue()) + delta.doubleValue());
             } else {
                 throw new RuntimeException("Unsupported type" + orig.getClass().getName());
             }
@@ -95,7 +95,7 @@ public class MergeUtil {
         return orig;
     }
 
-    public static <K, V extends Number> V getLatestNumericValue(K key, V orig, Map<K, V> deltas, Map<K, V> setUpdates, Set<K> deletes, boolean clear) {
+    public static <K, V extends Number> V getLatestNumericValue(Class type, K key, V orig, Map<K, V> deltas, Map<K, V> setUpdates, Set<K> deletes, boolean clear) {
         if (clear) {
             return null;
         }
@@ -111,14 +111,14 @@ public class MergeUtil {
         }
         if (deltas != null) {
             if (deltas.get(key) != null) {
-                if (orig instanceof Integer) {
-                    return (V) Integer.valueOf(orig.intValue() + deltas.get(key).intValue());
-                } else if (orig instanceof Long) {
-                    return (V) Long.valueOf(orig.longValue() + deltas.get(key).longValue());
-                } else if (orig instanceof Float) {
-                    return (V) Float.valueOf(orig.floatValue() + deltas.get(key).floatValue());
-                } else if (orig instanceof Double) {
-                    return (V) Double.valueOf(orig.doubleValue() + deltas.get(key).doubleValue());
+                if (type == Integer.class) {
+                    return (V) Integer.valueOf((orig == null ? 0 : orig.intValue()) + deltas.get(key).intValue());
+                } else if (type == Long.class) {
+                    return (V) Long.valueOf((orig == null ? 0L : orig.longValue()) + deltas.get(key).longValue());
+                } else if (type == Float.class) {
+                    return (V) Float.valueOf((orig == null ? 0 : orig.floatValue()) + deltas.get(key).floatValue());
+                } else if (type == Double.class) {
+                    return (V) Double.valueOf((orig == null ? 0.0 : orig.doubleValue()) + deltas.get(key).doubleValue());
                 } else {
                     throw new RuntimeException("Unsupported type" + orig.getClass().getName());
                 }
