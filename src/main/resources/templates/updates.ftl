@@ -281,6 +281,15 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         <@persisted_modified field/>
         return this;
     }
+    public ${updatesName} set${field.name?cap_first}<@collection_item field=field />(String id, ${field.type} value, boolean override) {
+        ${field.name}Sets.put(id, value);
+        if (override) {
+            ${field.name}Deletes.remove(id);
+        }
+        modified = true;
+        <@persisted_modified field/>
+        return this;
+    }
     public ${updatesName} delete${field.name?cap_first}<@collection_item field=field />(String id) {
         ${field.name}Deletes.add(id);
         modified = true;
