@@ -421,7 +421,7 @@ public class Dynamap {
             throw new RuntimeException(e);
         } catch (Exception e) {
             String keyComponents = updateItemSpec.getKeyComponents().stream().map(Object::toString).collect(Collectors.joining(","));
-            logger.error("Error updating item: Key: " + keyComponents + " Update expression:" + updateItemSpec.getUpdateExpression() + " Conditional expression: " + updateItemSpec.getConditionExpression() + " Values: " + updateItemSpec.getValueMap() + " Names: " + updateItemSpec.getNameMap());
+            logger.debug("Error updating item: Key: " + keyComponents + " Update expression:" + updateItemSpec.getUpdateExpression() + " Conditional expression: " + updateItemSpec.getConditionExpression() + " Values: " + updateItemSpec.getValueMap() + " Names: " + updateItemSpec.getNameMap());
             throw e;
         }
     }
@@ -644,9 +644,13 @@ public class Dynamap {
                 writeLimiter.setConsumedCapacity(outcome.getPutItemResult().getConsumedCapacity());
             }
         } catch (Exception e) {
-            logger.error("Error putting item:" + putItemSpec.getItem().toJSON() + " Conditional expression: " + putItemSpec.getConditionExpression() + " Values: " + putItemSpec.getValueMap() + " Names: " + putItemSpec.getNameMap());
+            logger.debug(getPutErrorMessage(putItemSpec));
             throw e;
         }
+    }
+
+    private String getPutErrorMessage(PutItemSpec putItemSpec) {
+        return "Error putting item:" + putItemSpec.getItem().toJSON() + " Conditional expression: " + putItemSpec.getConditionExpression() + " Values: " + putItemSpec.getValueMap() + " Names: " + putItemSpec.getNameMap();
     }
 
     private boolean hasAttributeDefinition(Collection<AttributeDefinition> attributeDefinitions, String name) {
