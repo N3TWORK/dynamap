@@ -63,12 +63,21 @@ public class TableDefinition {
 
     @JsonIgnore
     public String getTableName(String prefix) {
-        if (prefix != null) {
-            return prefix + tableName;
-        }
-        return tableName;
+        return getTableName(prefix, null);
     }
 
+    @JsonIgnore
+    public String getTableName(String prefix, String suffix) {
+        String fullTableName = "";
+        if (prefix != null) {
+            fullTableName = prefix + tableName;
+        }
+        if (suffix != null) {
+            fullTableName += suffix;
+        }
+
+        return fullTableName;
+    }
 
     public String getPackageName() {
         return packageName;
