@@ -365,6 +365,41 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     </#if>
 </#list>
 
+    /////////// Expose Modifications /////////////
+
+<#list type.fields as field>
+    <#if field.multiValue??>
+        <#if field.multiValue == 'LIST'>
+        public <@field_type field=field /> ${field.name}Adds() {
+            return ${field.name}Adds;
+        }
+        </#if>
+        <#if field.multiValue == 'SET'>
+        public <@field_type field=field /> ${field.name}Deletes() {
+            return ${field.name}Deletes;
+        }
+        public <@field_type field=field /> ${field.name}Sets() {
+            return ${field.name}Sets;
+        }
+        </#if>
+        <#if field.multiValue == 'MAP'>
+        public Set<String> ${field.name}Deletes() {
+            return ${field.name}Deletes;
+        }
+        public <@field_type field=field /> ${field.name}Sets() {
+            return ${field.name}Sets;
+        }
+        </#if>
+        <#if field.multiValue == 'MAP' && field.isNumber()>
+        public <@field_type field=field /> ${field.name}Deltas() {
+            return ${field.name}Deltas;
+        }
+        </#if>
+    </#if>
+</#list>
+
+
+
     //////////////// Nested Updates ////////////////
     <#list type.fields as field>
     <#if field.isGeneratedType()>
