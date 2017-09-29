@@ -17,6 +17,7 @@ public class ScanRequest<T> {
     private Integer maxResultSize;
     private ProgressCallback progressCallback;
     private boolean writeMigrationChange;
+    private String suffix;
 
     public ScanRequest(Class<T> resultClass) {
         this.resultClass = resultClass;
@@ -82,6 +83,11 @@ public class ScanRequest<T> {
         return this;
     }
 
+    public ScanRequest<T> withSuffix(String suffix) {
+        this.suffix = suffix;
+        return this;
+    }
+
     public String getProjectionExpression() {
         return projectionExpression;
     }
@@ -132,5 +138,9 @@ public class ScanRequest<T> {
 
     public boolean isWriteMigrationChange() {
         return writeMigrationChange;
+    }
+
+    public String getSuffix() {
+        return suffix;
     }
 }

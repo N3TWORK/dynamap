@@ -49,6 +49,7 @@ public class Dynamap {
     private final Map<String, Table> tableCache = new HashMap<>();
     private String prefix;
     private ObjectMapper objectMapper;
+    private Map<String, CreateTableRequest> createTableRequests = new HashMap<>();
 
     private static final int MAX_BATCH_SIZE = 25;
     private static final int MAX_BATCH_GET_SIZE = 100;
@@ -130,6 +131,8 @@ public class Dynamap {
                             .withReadCapacityUnits(1L)
                             .withWriteCapacityUnits(1L));
 
+            createTableRequests.put(tableDefinition.getTableName(), request);
+
             if (globalSecondaryIndexes.size() > 0) {
                 request = request.withGlobalSecondaryIndexes(globalSecondaryIndexes);
             }
@@ -140,6 +143,17 @@ public class Dynamap {
 
         }
 
+    }
+
+    // Used for tests, allows to easily create a table with suffix using the schema an existing table
+    public boolean createTableFromExisting(String baseTableName, String newTableName, boolean deleteIfExists) {
+        CreateTableRequest createTableRequest = createTableRequests.get(baseTableName);
+        String fullNewTableName = prefix + newTableName;
+        createTableRequest.withTableName(fullNewTableName);
+        if (deleteIfExists) {
+            TableUtils.deleteTableIfExists(amazonDynamoDB, new DeleteTableRequest().withTableName(fullNewTableName));
+        }
+        return TableUtils.createTableIfNotExists(amazonDynamoDB, createTableRequest);
     }
 
     public <T extends DynamapRecordBean> T getObject(GetObjectRequest<T> getObjectRequest, Object migrationContext) {
@@ -185,7 +199,7 @@ public class Dynamap {
 
             for (GetObjectRequest getObjectRequest : getObjectRequestBatch) {
                 TableDefinition tableDefinition = schemaRegistry.getTableDefinition(getObjectRequest.getResultClass());
-                String tableName = tableDefinition.getTableName(prefix);
+                String tableName = tableDefinition.getTableName(prefix, getObjectRequest.getSuffix());
                 TableKeysAndAttributes keysAndAttributes;
                 if (queryInfos.get(tableName) != null) {
                     keysAndAttributes = queryInfos.get(tableName).keysAndAttributes;
@@ -213,7 +227,7 @@ public class Dynamap {
             totalProgress += allItems.values().size();
             for (GetItemInfo getItemInfo : queryInfos.values()) {
 
-                Collection<Item> items = allItems.get(getItemInfo.tableDefinition.getTableName(prefix));
+                Collection<Item> items = allItems.get(getItemInfo.tableDefinition.getTableName(prefix, getItemInfo.getObjectRequest.getSuffix()));
                 List<Object> resultsForClass = results.get(getItemInfo.getObjectRequest.getResultClass());
                 if (resultsForClass == null) {
                     resultsForClass = new ArrayList<>();
@@ -229,7 +243,7 @@ public class Dynamap {
                     }
                     resultsForClass.add(((Object) buildObjectFromDynamoItem(item, getItemInfo.tableDefinition,
                             getItemInfo.getObjectRequest.getResultClass(), writeLimiter,
-                            batchGetObjectRequest.getMigrationContext(), batchGetObjectRequest.isWriteMigrationChange(), false)));
+                            batchGetObjectRequest.getMigrationContext(), batchGetObjectRequest.isWriteMigrationChange(), false, getItemInfo.getObjectRequest.getSuffix())));
                 }
             }
         }
@@ -257,7 +271,7 @@ public class Dynamap {
     public <T extends DynamapRecordBean> List<T> query(QueryRequest<T> queryRequest) {
         List<T> results = new ArrayList<>();
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(queryRequest.getResultClass());
-        Table table = getTable(tableDefinition.getTableName(prefix));
+        Table table = getTable(tableDefinition.getTableName(prefix, queryRequest.getSuffix()));
         QuerySpec querySpec = new QuerySpec().withHashKey(tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName(), queryRequest.getHashKeyValue())
                 .withRangeKeyCondition(queryRequest.getRangeKeyCondition())
                 .withConsistentRead(queryRequest.isConsistentRead())
@@ -299,7 +313,7 @@ public class Dynamap {
         Iterator<Item> iterator = items.iterator();
 
         while (iterator.hasNext()) {
-            results.add(buildObjectFromDynamoItem(iterator.next(), tableDefinition, queryRequest.getResultClass(), null, queryRequest.getMigrationContext(), queryRequest.isWriteMigrationChange(), false));
+            results.add(buildObjectFromDynamoItem(iterator.next(), tableDefinition, queryRequest.getResultClass(), null, queryRequest.getMigrationContext(), queryRequest.isWriteMigrationChange(), false, queryRequest.getSuffix()));
         }
 
         return results;
@@ -308,7 +322,7 @@ public class Dynamap {
     public <T extends DynamapRecordBean> ScanResult<T> scan(ScanRequest<T> scanRequest) {
         List<T> results = new ArrayList<>();
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(scanRequest.getResultClass());
-        Table table = getTable(tableDefinition.getTableName(prefix));
+        Table table = getTable(tableDefinition.getTableName(prefix, scanRequest.getSuffix()));
 
         ScanSpec scanspec = new ScanSpec();
         if (scanRequest.getNames() != null) {
@@ -365,7 +379,7 @@ public class Dynamap {
 
         Iterator<Item> iterator = scanItems.iterator();
         while (iterator.hasNext()) {
-            results.add(buildObjectFromDynamoItem(iterator.next(), tableDefinition, scanRequest.getResultClass(), null, scanRequest.getMigrationContext(), scanRequest.isWriteMigrationChange(), scanRequest.getProjectionExpression() != null));
+            results.add(buildObjectFromDynamoItem(iterator.next(), tableDefinition, scanRequest.getResultClass(), null, scanRequest.getMigrationContext(), scanRequest.isWriteMigrationChange(), scanRequest.getProjectionExpression() != null, scanRequest.getSuffix()));
         }
 
         String lastHashKey = null;
@@ -390,14 +404,22 @@ public class Dynamap {
     }
 
     public void save(DynamapRecordBean object, boolean overwrite, boolean disableOptimisticLocking, DynamoRateLimiter writeLimiter) {
+        save(object, overwrite, disableOptimisticLocking, writeLimiter, null);
+    }
+
+    public void save(DynamapRecordBean object, boolean overwrite, boolean disableOptimisticLocking, DynamoRateLimiter writeLimiter, String suffix) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(object.getClass());
-        putObject(object, tableDefinition, overwrite, disableOptimisticLocking, writeLimiter);
+        putObject(object, tableDefinition, overwrite, disableOptimisticLocking, writeLimiter, suffix);
     }
 
     public <T extends DynamapPersisted> T update(Updates<T> updates, DynamoRateLimiter writeLimiter) {
+        return update(updates, writeLimiter, null);
+    }
+
+    public <T extends DynamapPersisted> T update(Updates<T> updates, DynamoRateLimiter writeLimiter, String suffix) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(updates.getTableName());
         UpdateItemSpec updateItemSpec = getUpdateItemSpec(updates, tableDefinition);
-        Table table = getTable(tableDefinition.getTableName(prefix));
+        Table table = getTable(tableDefinition.getTableName(prefix, suffix));
 
         logger.debug("About to submit DynamoDB Update: Update expression: {}, Conditional expression: {}, Values {}, Names: {}", updateItemSpec.getUpdateExpression(), updateItemSpec.getConditionExpression(), updateItemSpec.getValueMap(), updateItemSpec.getNameMap());
         try {
@@ -513,6 +535,10 @@ public class Dynamap {
     }
 
     private <T extends DynamapRecordBean> T buildObjectFromDynamoItem(Item item, TableDefinition tableDefinition, Class<T> resultClass, DynamoRateLimiter writeRateLimiter, Object migrationContext, boolean writeBack, boolean skipMigration) {
+        return buildObjectFromDynamoItem(item, tableDefinition, resultClass, writeRateLimiter, migrationContext, writeBack, skipMigration, null);
+    }
+
+    private <T extends DynamapRecordBean> T buildObjectFromDynamoItem(Item item, TableDefinition tableDefinition, Class<T> resultClass, DynamoRateLimiter writeRateLimiter, Object migrationContext, boolean writeBack, boolean skipMigration, String suffix) {
         if (item == null) {
             return null;
         }
@@ -546,7 +572,7 @@ public class Dynamap {
             item = item.withInt(schemaField, tableDefinition.getVersion());
             result = objectMapper.convertValue(item.asMap(), resultClass);
             if (writeBack) {
-                putObject(result, tableDefinition, true, false, writeRateLimiter);
+                putObject(result, tableDefinition, true, false, writeRateLimiter, suffix);
             }
         } else {
             result = objectMapper.convertValue(item.asMap(), resultClass);
@@ -601,7 +627,7 @@ public class Dynamap {
         return buildDynamoItemFromObject(object, tableDefinition, false);
     }
 
-    private <T extends DynamapRecordBean> void putObject(T object, TableDefinition tableDefinition, boolean overwrite, boolean disableOptimisticLocking, DynamoRateLimiter writeLimiter) {
+    private <T extends DynamapRecordBean> void putObject(T object, TableDefinition tableDefinition, boolean overwrite, boolean disableOptimisticLocking, DynamoRateLimiter writeLimiter, String suffix) {
 
         Item item = buildDynamoItemFromObject(object, tableDefinition, disableOptimisticLocking);
         PutItemSpec putItemSpec = new PutItemSpec()
@@ -633,7 +659,7 @@ public class Dynamap {
             }
         }
 
-        Table table = getTable(tableDefinition.getTableName(prefix));
+        Table table = getTable(tableDefinition.getTableName(prefix, suffix));
         try {
             if (writeLimiter != null) {
                 writeLimiter.init(table);
@@ -690,7 +716,7 @@ public class Dynamap {
 
     public void delete(DeleteRequest deleteRequest) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(deleteRequest.getResultClass());
-        Table table = getTable(tableDefinition.getTableName(prefix));
+        Table table = getTable(tableDefinition.getTableName(prefix, deleteRequest.getSuffix()));
 
         DeleteItemSpec deleteItemSpec = new DeleteItemSpec();
         Field hashField = tableDefinition.getField(tableDefinition.getHashKey());
@@ -721,7 +747,7 @@ public class Dynamap {
             for (DeleteRequest deleteRequest : deleteRequests) {
                 TableDefinition tableDefinition = schemaRegistry.getTableDefinition(deleteRequest.getResultClass());
 
-                String tableName = tableDefinition.getTableName(prefix);
+                String tableName = tableDefinition.getTableName(prefix, deleteRequest.getSuffix());
                 TableWriteItems writeItems = tableWriteItems.get(tableName);
                 if (writeItems == null) {
                     writeItems = new TableWriteItems(tableName);
@@ -738,6 +764,10 @@ public class Dynamap {
 
 
     public <T extends DynamapRecordBean> void batchSave(List<T> objects, Map<Class, DynamoRateLimiter> writeLimiterMap) {
+        batchSave(objects, writeLimiterMap, null);
+    }
+
+    public <T extends DynamapRecordBean> void batchSave(List<T> objects, Map<Class, DynamoRateLimiter> writeLimiterMap, String suffix) {
         final List<List<T>> objectsBatch = Lists.partition(objects, MAX_BATCH_SIZE);
         for (List<T> batch : objectsBatch) {
             logger.debug("Sending batch to save of size: {}", batch.size());
@@ -747,7 +777,7 @@ public class Dynamap {
                 TableDefinition tableDefinition = schemaRegistry.getTableDefinition(object.getClass());
                 Item item = buildDynamoItemFromObject(object, tableDefinition);
 
-                String tableName = tableDefinition.getTableName(prefix);
+                String tableName = tableDefinition.getTableName(prefix, suffix);
                 TableWriteItems writeItems = tableWriteItems.getOrDefault(tableName, new TableWriteItems(tableName));
                 tableWriteItems.put(tableName, writeItems.addItemToPut(item));
             }
@@ -800,5 +830,4 @@ public class Dynamap {
         }
         return table;
     }
-
 }

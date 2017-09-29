@@ -25,6 +25,7 @@ public class DeleteRequest<T extends DynamapRecordBean> {
     private String conditionExpression;
     private Map<String, Object> values;
     private Map<String, String> names;
+    private String suffix;
 
     public DeleteRequest(Class<T> resultClass) {
         this.resultClass = resultClass;
@@ -57,6 +58,11 @@ public class DeleteRequest<T extends DynamapRecordBean> {
         return this;
     }
 
+    public DeleteRequest<T> withSuffix(String suffix) {
+        this.suffix = suffix;
+        return this;
+    }
+
     public String getHashKeyValue() {
         return hashKeyValue;
     }
@@ -79,5 +85,9 @@ public class DeleteRequest<T extends DynamapRecordBean> {
 
     public Map<String, String> getNames() {
         return names;
+    }
+
+    public String getSuffix() {
+        return suffix;
     }
 }

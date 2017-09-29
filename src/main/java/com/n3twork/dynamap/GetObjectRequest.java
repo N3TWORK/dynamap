@@ -22,6 +22,7 @@ public class GetObjectRequest<T extends DynamapRecordBean> {
     private Object rangeKeyValue;
     private boolean consistentRead;
     private final Class<T> resultClass;
+    private String suffix;
 
     public GetObjectRequest(Class<T> resultClass) {
         this.resultClass = resultClass;
@@ -42,6 +43,11 @@ public class GetObjectRequest<T extends DynamapRecordBean> {
         return this;
     }
 
+    public GetObjectRequest<T> withSuffix(String suffix) {
+        this.suffix = suffix;
+        return this;
+    }
+
     public String getHashKeyValue() {
         return hashKeyValue;
     }
@@ -56,5 +62,9 @@ public class GetObjectRequest<T extends DynamapRecordBean> {
 
     public Class<T> getResultClass() {
         return resultClass;
+    }
+
+    public String getSuffix() {
+        return suffix;
     }
 }

@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.n3twork.dynamap.test.*;
+import org.apache.commons.lang3.RandomUtils;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
@@ -34,6 +35,7 @@ import org.testng.annotations.Test;
 import java.io.ByteArrayInputStream;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class DynamapTest {
 
@@ -415,5 +417,78 @@ public class DynamapTest {
         Assert.assertNotNull(exampleDocumentBean.getExampleId(), exampleId1);
         nestedObject = new NestedTypeBean(exampleDocumentBean.getNestedObject());
         Assert.assertEquals(nestedObject.getId(), nestedId1);
+    }
+
+    @Test
+    public void testMultipleSuffix() {
+        final int MAX = 10;
+        IntStream.range(0, MAX).forEach(i ->  dynamap.createTableFromExisting(DummyDocBean.getTableName(), DummyDocBean.getTableName() + "-"  + i, true));
+
+        // save and get
+        IntStream.range(0, MAX).forEach(i -> {
+            String suffix = "-" + i;
+            DummyDocBean doc = new DummyDocBean().setId(Integer.toString(i)).setName("test"+i).setWeight(RandomUtils.nextInt(0,100));
+            dynamap.save(doc, true, false, null, suffix);
+            doc = new DummyDocBean().setId(Integer.toString(i+1000)).setName("test"+i).setWeight(RandomUtils.nextInt(0,100));
+            dynamap.save(doc, true, false, null, suffix);
+            DummyDocBean savedDoc = dynamap.getObject(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(Integer.toString(i)).withSuffix(suffix), null);
+            Assert.assertEquals(savedDoc.getId(), Integer.toString(i));
+        });
+
+        // batch get
+        List<GetObjectRequest<DummyDocBean>> getObjectRequests = IntStream.range(0, MAX).mapToObj(i -> {
+            String suffix = "-" + i;
+            return new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(Integer.toString(i + 1000)).withSuffix(suffix);
+        }).collect(Collectors.toList());
+
+        BatchGetObjectRequest<DummyDocBean> batchRequest = new BatchGetObjectRequest().withGetObjectRequests(getObjectRequests);
+        List<DummyDocBean> dummyDocBeans = dynamap.batchGetObjectSingleCollection(batchRequest);
+        Assert.assertEquals(dummyDocBeans.size(), MAX);
+
+        // updates
+        DummyDocBean dummyDocBean = dummyDocBeans.get(0);
+        String docId = dummyDocBean.getId();
+
+        DummyDocUpdates docUpdates = new DummyDocUpdates(dummyDocBean, dummyDocBean.getHashKeyValue());
+        String updatedName = "updated name";
+        docUpdates.setName(updatedName);
+        // deduct table suffix by the id
+        String suffix = "-" + (Integer.valueOf(docId) % 10);
+        dynamap.update(docUpdates, null, suffix);
+
+        DummyDocBean updatedDoc = dynamap.getObject(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(docId).withSuffix(suffix), null);
+        Assert.assertEquals(updatedDoc.getId(), docId);
+
+        //batch save
+        List<DynamapRecordBean> docsToSave = new ArrayList<>();
+        final int DUMMY_DOCS_SIZE = 9;
+        List<String> dummyDocsIds = new ArrayList<>();
+        for (int i = 0; i < DUMMY_DOCS_SIZE; i++) {
+            String id = UUID.randomUUID().toString();
+            DummyDocBean doc = new DummyDocBean().setId(id).setName("name" + i).setWeight(i);
+
+            dummyDocsIds.add(id);
+            docsToSave.add(doc);
+        }
+
+        String suffix2 = "-10";
+        dynamap.createTableFromExisting(DummyDocBean.getTableName(), DummyDocBean.getTableName() + suffix2, true);
+        dynamap.batchSave(docsToSave, null, suffix2);
+
+        // scan
+        ScanRequest<DummyDocBean> scanRequest = new ScanRequest<>(DummyDocBean.class).withSuffix(suffix2);
+        ScanResult<DummyDocBean> scanResult= dynamap.scan(scanRequest);
+        List<DummyDocBean> savedDummyDocs = scanResult.getResults();
+        List<String> savedDummyDocsIds = savedDummyDocs.stream().map(DummyDocBean::getId).collect(Collectors.toList());
+        Assert.assertEquals(savedDummyDocs.size(), DUMMY_DOCS_SIZE);
+        Assert.assertTrue(savedDummyDocsIds.containsAll(dummyDocsIds) && dummyDocsIds.containsAll(savedDummyDocsIds));
+
+        // delete
+        DummyDocBean doc = dynamap.getObject(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(docId).withSuffix(suffix), null);
+        Assert.assertNotNull(doc);
+        DeleteRequest<DummyDocBean> deleteRequest = new DeleteRequest<>(DummyDocBean.class).withHashKeyValue(docId).withSuffix(suffix);
+        dynamap.delete(deleteRequest);
+        doc = dynamap.getObject(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(docId).withSuffix(suffix), null);
+        Assert.assertNull(doc);
     }
 }

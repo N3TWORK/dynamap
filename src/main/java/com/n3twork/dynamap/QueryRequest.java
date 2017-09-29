@@ -20,6 +20,7 @@ public class QueryRequest<T> {
     private Object migrationContext;
     private ProgressCallback progressCallback;
     private boolean writeMigrationChange = false;
+    private String suffix;
 
     public QueryRequest(Class<T> resultClass) {
         this.resultClass = resultClass;
@@ -81,6 +82,10 @@ public class QueryRequest<T> {
         return this;
     }
 
+    public QueryRequest<T> withSuffix(String suffix) {
+        this.suffix = suffix;
+        return this;
+    }
 
     public DynamoRateLimiter getReadRateLimiter() {
         return readRateLimiter;
@@ -128,5 +133,9 @@ public class QueryRequest<T> {
 
     public boolean isWriteMigrationChange() {
         return writeMigrationChange;
+    }
+
+    public String getSuffix() {
+        return suffix;
     }
 }
