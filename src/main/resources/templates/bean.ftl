@@ -140,11 +140,13 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     </#if>
 
     <#if isRoot>
+    @JsonIgnore
     @Override
     public String getHashKeyValue() {
         return ${tableDefinition.hashKey};
     }
 
+    @JsonIgnore
     public Object getRangeKeyValue() {
         <#if tableDefinition.rangeKey??>
         return ${tableDefinition.rangeKey};
@@ -218,6 +220,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     </#if>
 
     <#if tableDefinition.isEnableMigrations() && isRoot>
+    @JsonIgnore
     @Override
     public int getDynamapSchemaVersion() {
         return this._schemaVersion;
