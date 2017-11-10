@@ -2,6 +2,7 @@
   "tables": [
     {
       "table": "Example",
+      "description": "Example Schema",
       "package": "com.n3twork.dynamap.test",
       "type": "ExampleDocument",
       "version": 1,
@@ -22,6 +23,7 @@
       "types": [
         {
           "name": "ExampleDocument",
+          "description": "Top level document",
           "hashCodeFields": [
             "exampleId",
             "sequence"
@@ -33,6 +35,7 @@
           "fields": [
             {
               "name": "exampleId",
+              "description": "example id",
               "dynamoName": "id",
               "type": "String"
             },

@@ -38,6 +38,7 @@ public class Field {
     }
 
     private final String name;
+    private final String description;
     private final String dynamoName;
     private final String type;
     private final String defaultValue;
@@ -51,10 +52,11 @@ public class Field {
     private boolean generatedType;
 
     @JsonCreator
-    public Field(@JsonProperty("name") String name, @JsonProperty("dynamoName") String dynamoName, @JsonProperty("type") String type,
+    public Field(@JsonProperty("name") String name, @JsonProperty("description") String description, @JsonProperty("dynamoName") String dynamoName, @JsonProperty("type") String type,
                  @JsonProperty("default") String defaultValue, @JsonProperty("multivalue") MultiValue multiValue,
                  @JsonProperty("useDefaultForNulls") Boolean useDefaultForNulls, @JsonProperty("replace") Boolean replace, @JsonProperty("persist") Boolean persist, @JsonProperty("serialize") Boolean serialize, @JsonProperty("deltas") Boolean deltas) {
         this.name = name;
+        this.description = description;
         this.dynamoName = dynamoName;
         this.type = type;
         this.useDefaultForNulls = useDefaultForNulls == null ? Boolean.FALSE : useDefaultForNulls;
@@ -85,6 +87,10 @@ public class Field {
 
     public String getName() {
         return name;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
     public String getDynamoName() {

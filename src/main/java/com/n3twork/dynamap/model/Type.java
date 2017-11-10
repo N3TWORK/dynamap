@@ -28,14 +28,16 @@ import java.util.stream.Collectors;
 public class Type {
 
     private final String name;
+    private final String description;
     private final List<Field> fields;
     private final List<String> hashCodeFields;
     private final List<String> equalsFields;
 
     @JsonCreator
-    public Type(@JsonProperty("Name") String name, @JsonProperty("fields") List<Field> fields,
+    public Type(@JsonProperty("Name") String name, @JsonProperty("description") String description, @JsonProperty("fields") List<Field> fields,
                 @JsonProperty("hashCodeFields") List<String> hashCodeFields, @JsonProperty("equalsFields") List<String> equalsFields) {
         this.name = name;
+        this.description = description;
         this.fields = fields;
         this.hashCodeFields = hashCodeFields;
         this.equalsFields = equalsFields;
@@ -43,6 +45,10 @@ public class Type {
 
     public String getName() {
         return name;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
     public List<Field> getFields() {
