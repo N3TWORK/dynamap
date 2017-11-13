@@ -748,6 +748,7 @@ public class Dynamap {
             Map<String, TableWriteItems> tableWriteItems = new HashMap<>();
             for (DeleteRequest deleteRequest : deleteRequests) {
                 TableDefinition tableDefinition = schemaRegistry.getTableDefinition(deleteRequest.getResultClass());
+                Field hashField = tableDefinition.getField(tableDefinition.getHashKey());
 
                 String tableName = tableDefinition.getTableName(prefix, deleteRequest.getSuffix());
                 TableWriteItems writeItems = tableWriteItems.get(tableName);
@@ -755,9 +756,13 @@ public class Dynamap {
                     writeItems = new TableWriteItems(tableName);
                     tableWriteItems.put(tableName, writeItems);
                 }
+
                 if (tableDefinition.getRangeKey() != null) {
-                    writeItems.addHashAndRangePrimaryKeysToDelete(tableDefinition.getHashKey(), tableDefinition.getRangeKey(),
+                    Field rangeField = tableDefinition.getField(tableDefinition.getRangeKey());
+                    writeItems.addHashAndRangePrimaryKeysToDelete(hashField.getDynamoName(), rangeField.getDynamoName(),
                             deleteRequest.getHashKeyValue(), deleteRequest.getRangeKeyValue());
+                } else {
+                    writeItems.addHashOnlyPrimaryKeysToDelete(hashField.getDynamoName(), deleteRequest.getHashKeyValue());
                 }
             }
             doBatchWriteItem(batchDeleteRequest.getRateLimiters(), tableWriteItems);
