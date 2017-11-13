@@ -516,13 +516,15 @@ public class Dynamap {
     }
 
     private void initAndAcquire(Map<String, ReadWriteRateLimiterPair> rateLimiters, boolean write) {
-        for (String tableName : rateLimiters.keySet()) {
-            Table table = getTable(tableName);
-            for (ReadWriteRateLimiterPair dynamoRateLimiters : rateLimiters.values()) {
-                DynamoRateLimiter rateLimiter = write ? dynamoRateLimiters.getWriteLimiter() : dynamoRateLimiters.getReadLimiter();
-                if (rateLimiter != null) {
-                    rateLimiter.init(table);
-                    rateLimiter.acquire();
+        if (rateLimiters != null) {
+            for (String tableName : rateLimiters.keySet()) {
+                Table table = getTable(tableName);
+                for (ReadWriteRateLimiterPair dynamoRateLimiters : rateLimiters.values()) {
+                    DynamoRateLimiter rateLimiter = write ? dynamoRateLimiters.getWriteLimiter() : dynamoRateLimiters.getReadLimiter();
+                    if (rateLimiter != null) {
+                        rateLimiter.init(table);
+                        rateLimiter.acquire();
+                    }
                 }
             }
         }
