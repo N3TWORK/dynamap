@@ -176,6 +176,13 @@ public class DynamoExpressionBuilder {
         return this;
     }
 
+    public DynamoExpressionBuilder addCheckAttributeInMapExistsCondition(String parentField, String fieldName, Collection<String> attributes) {
+        for (String id : attributes) {
+            conditions.add(String.format("attribute_exists(%s)", joinFields(parentField, fieldName, id)));
+        }
+        return this;
+    }
+
     public DynamoExpressionBuilder addCheckAttributeSizeCondition(String parentField, String fieldName, Number value, ComparisonOperator op) {
         String valueAlias = condVals.next();
         valueMap.with(valueAlias, value);
