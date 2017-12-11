@@ -1,0 +1,40 @@
+{
+  "tables": [
+    {
+      "table": "DummyTable2",
+      "package": "com.n3twork.dynamap.test",
+      "type": "DummyDoc2",
+      "version": 1,
+      "hashKey": "id",
+      "rangeKey": "name",
+      "localSecondaryIndexes": [
+        {
+          "index": "weightIndex",
+          "hashKey": "id",
+          "rangeKey": "weight"
+        }],
+      "types": [
+        {
+          "name": "DummyDoc2",
+          "fields": [
+            {
+              "name": "id",
+              "dynamoName": "fdId",
+              "type": "String"
+            },
+            {
+              "name": "name",
+              "dynamoName": "pstRfId",
+              "type": "String"
+            },
+            {
+              "name": "weight",
+              "dynamoName": "wght",
+              "type": "Integer"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

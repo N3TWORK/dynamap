@@ -37,13 +37,14 @@ public class TableDefinition {
     private final int version;
     private final List<Type> types;
     private final List<Index> globalSecondaryIndexes;
+    private final List<Index> localSecondaryIndexes;
     private final boolean optimisticLocking;
     private final String schemaVersionField;
     private final boolean enableMigrations;
 
     @JsonCreator
     public TableDefinition(@JsonProperty("table") String tableName, @JsonProperty("description") String description, @JsonProperty("package") String packageName, @JsonProperty("type") String type, @JsonProperty("hashKey") String hashKey, @JsonProperty("rangeKey") String rangeKey,
-                           @JsonProperty("version") int version, @JsonProperty("fields") List<Field> fields, @JsonProperty("types") List<Type> types, @JsonProperty("globalSecondaryIndexes") List<Index> globalSecondaryIndexes, @JsonProperty("optimisticLocking") boolean optimisticLocking,
+                           @JsonProperty("version") int version, @JsonProperty("fields") List<Field> fields, @JsonProperty("types") List<Type> types, @JsonProperty("globalSecondaryIndexes") List<Index> globalSecondaryIndexes, @JsonProperty("localSecondaryIndexes") List<Index> localSecondaryIndexes, @JsonProperty("optimisticLocking") boolean optimisticLocking,
                            @JsonProperty("schemaVersionField") String schemaVersionField, @JsonProperty("enableMigrations") Boolean enableMigrations) {
         this.tableName = tableName;
         this.description = description;
@@ -54,6 +55,7 @@ public class TableDefinition {
         this.version = version;
         this.types = types;
         this.globalSecondaryIndexes = globalSecondaryIndexes;
+        this.localSecondaryIndexes = localSecondaryIndexes;
         this.optimisticLocking = optimisticLocking;
         this.schemaVersionField = schemaVersionField == null ? DEFAULT_SCHEMA_VERSION_FIELD : schemaVersionField;
         this.enableMigrations = enableMigrations == null ? Boolean.TRUE : enableMigrations;
@@ -111,6 +113,10 @@ public class TableDefinition {
 
     public List<Index> getGlobalSecondaryIndexes() {
         return globalSecondaryIndexes;
+    }
+
+    public List<Index> getLocalSecondaryIndexes() {
+        return localSecondaryIndexes;
     }
 
     public boolean isOptimisticLocking() {

@@ -5,7 +5,7 @@ import java.util.Map;
 public class ScanRequest<T> {
 
     private final Class<T> resultClass;
-    private DynamapRecordBean.GlobalSecondaryIndexEnum index;
+    private DynamapRecordBean.SecondaryIndexEnum index;
     private String projectionExpression;
     private String filterExpression;
     private Map<String, Object> values;
@@ -23,7 +23,7 @@ public class ScanRequest<T> {
         this.resultClass = resultClass;
     }
 
-    public ScanRequest<T> withIndex(DynamapRecordBean.GlobalSecondaryIndexEnum index) {
+    public ScanRequest<T> withIndex(DynamapRecordBean.SecondaryIndexEnum index) {
         this.index = index;
         return this;
     }
@@ -128,7 +128,7 @@ public class ScanRequest<T> {
         return resultClass;
     }
 
-    public DynamapRecordBean.GlobalSecondaryIndexEnum getIndex() {
+    public DynamapRecordBean.SecondaryIndexEnum getIndex() {
         return index;
     }
 

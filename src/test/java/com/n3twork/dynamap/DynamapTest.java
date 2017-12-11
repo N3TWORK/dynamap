@@ -53,7 +53,9 @@ public class DynamapTest {
 
     @BeforeMethod
     public void setup() {
-        schemaRegistry = new SchemaRegistry(getClass().getResourceAsStream("/ExampleSchema.json"), getClass().getResourceAsStream("/DummySchema.json"));
+        schemaRegistry = new SchemaRegistry(getClass().getResourceAsStream("/ExampleSchema.json"),
+                getClass().getResourceAsStream("/DummySchema.json"),
+                getClass().getResourceAsStream("/DummyLocalIndexSchema.json"));
         // Create tables
         dynamap = new Dynamap(ddb, schemaRegistry).withPrefix("test").withObjectMapper(objectMapper);
         dynamap.createTables(true);
@@ -490,5 +492,30 @@ public class DynamapTest {
         dynamap.delete(deleteRequest);
         doc = dynamap.getObject(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(docId).withSuffix(suffix), null);
         Assert.assertNull(doc);
+    }
+
+    @Test
+    public void testLocalSecondaryIndex() {
+        final int DUMMY_DOCS_SIZE = 13;
+        List<DynamapRecordBean> docsToSave = new ArrayList<>();
+        List<String> dummyDocsIds = new ArrayList<>();
+
+        String id = "123";
+        for (int i = 0; i < DUMMY_DOCS_SIZE; i++) {
+            DummyDoc2Bean doc = new DummyDoc2Bean().setId(id).setName("name" + i).setWeight(i);
+            dummyDocsIds.add(id);
+            docsToSave.add(doc);
+        }
+
+        dynamap.batchSave(docsToSave, null);
+
+        QueryRequest<DummyDoc2Bean> queryRequest = new QueryRequest<>(DummyDoc2Bean.class)
+                .withHashKeyValue(id)
+                .withRangeKeyCondition(new RangeKeyCondition(DummyDocBean.WEIGHT_FIELD).eq(0))
+                .withIndex(DummyDoc2Bean.LocalSecondaryIndex.weightIndex);
+
+        List<DummyDoc2Bean> docs = dynamap.query(queryRequest);
+        Assert.assertEquals(docs.size(), 1);
+
     }
 }

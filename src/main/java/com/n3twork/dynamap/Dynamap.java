@@ -81,6 +81,7 @@ public class Dynamap {
             ArrayList<AttributeDefinition> attributeDefinitions = new ArrayList<>();
             ArrayList<KeySchemaElement> keySchema = new ArrayList<>();
             List<GlobalSecondaryIndex> globalSecondaryIndexes = new ArrayList<>();
+            List<LocalSecondaryIndex> localSecondaryIndexes = new ArrayList<>();
 
             Field hashField = tableDefinition.getField(tableDefinition.getHashKey());
             attributeDefinitions.add(new AttributeDefinition().withAttributeName(hashField.getDynamoName()).withAttributeType("S"));
@@ -99,7 +100,7 @@ public class Dynamap {
                                     .withReadCapacityUnits(1L)
                                     .withWriteCapacityUnits(1L))
                             .withProjection(new Projection().withProjectionType(ProjectionType.ALL));
-                    ArrayList<KeySchemaElement> indexKeySchema = new ArrayList<KeySchemaElement>();
+                    ArrayList<KeySchemaElement> indexKeySchema = new ArrayList<>();
                     Field field = tableDefinition.getField(index.getHashKey());
                     indexKeySchema.add(new KeySchemaElement()
                             .withAttributeName(field.getDynamoName())
@@ -123,6 +124,34 @@ public class Dynamap {
                 }
             }
 
+            if (tableDefinition.getLocalSecondaryIndexes() != null) {
+                for (com.n3twork.dynamap.model.Index index : tableDefinition.getLocalSecondaryIndexes()) {
+                    LocalSecondaryIndex lsi = new LocalSecondaryIndex()
+                            .withIndexName(index.getIndexName())
+                            .withProjection(new Projection().withProjectionType(ProjectionType.ALL));
+                    ArrayList<KeySchemaElement> indexKeySchema = new ArrayList<>();
+                    Field field = tableDefinition.getField(index.getHashKey());
+                    indexKeySchema.add(new KeySchemaElement()
+                            .withAttributeName(field.getDynamoName())
+                            .withKeyType(KeyType.HASH));
+                    if (!hasAttributeDefinition(attributeDefinitions, field.getDynamoName())) {
+                        attributeDefinitions.add(new AttributeDefinition().withAttributeName(field.getDynamoName()).withAttributeType(field.getType().equals("String") ? "S" : "N"));
+                    }
+
+                    Field rangeField = tableDefinition.getField(index.getRangeKey());
+                    indexKeySchema.add(new KeySchemaElement()
+                            .withAttributeName(rangeField.getDynamoName())
+                            .withKeyType(KeyType.RANGE));
+
+                    if (!hasAttributeDefinition(attributeDefinitions, rangeField.getDynamoName())) {
+                        attributeDefinitions.add(new AttributeDefinition().withAttributeName(rangeField.getDynamoName()).withAttributeType(rangeField.getType().equals("String") ? "S" : "N"));
+                    }
+
+                    lsi.setKeySchema(indexKeySchema);
+                    localSecondaryIndexes.add(lsi);
+                }
+            }
+
             CreateTableRequest request = new CreateTableRequest()
                     .withTableName(tableDefinition.getTableName(prefix))
                     .withKeySchema(keySchema)
@@ -136,6 +165,11 @@ public class Dynamap {
             if (globalSecondaryIndexes.size() > 0) {
                 request = request.withGlobalSecondaryIndexes(globalSecondaryIndexes);
             }
+
+            if (localSecondaryIndexes.size() > 0) {
+                request = request.withLocalSecondaryIndexes(localSecondaryIndexes);
+            }
+
             if (deleteIfExists) {
                 TableUtils.deleteTableIfExists(amazonDynamoDB, new DeleteTableRequest().withTableName(tableDefinition.getTableName(prefix)));
             }
@@ -280,8 +314,14 @@ public class Dynamap {
                 .withMaxResultSize(queryRequest.getLimit());
 
         ItemCollection<QueryOutcome> items;
-        if (queryRequest.getIndex() != null && tableDefinition.getGlobalSecondaryIndexes() != null) {
-            com.n3twork.dynamap.model.Index indexDef = tableDefinition.getGlobalSecondaryIndexes().stream().filter(i -> i.getIndexName().equals(queryRequest.getIndex().getName())).findFirst().get();
+        if (queryRequest.getIndex() != null) {
+            com.n3twork.dynamap.model.Index indexDef =  null;
+            if (tableDefinition.getGlobalSecondaryIndexes() != null) {
+                indexDef = tableDefinition.getGlobalSecondaryIndexes().stream().filter(i -> i.getIndexName().equals(queryRequest.getIndex().getName())).findFirst().get();
+            }
+            else if (tableDefinition.getLocalSecondaryIndexes() != null) {
+                indexDef = tableDefinition.getLocalSecondaryIndexes().stream().filter(i -> i.getIndexName().equals(queryRequest.getIndex().getName())).findFirst().get();
+            }
             String indexName = indexDef.getIndexName();
             Index index = table.getIndex(indexDef.getIndexName());
             querySpec.withHashKey(tableDefinition.getField(indexDef.getHashKey()).getDynamoName(), queryRequest.getHashKeyValue());

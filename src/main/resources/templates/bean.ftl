@@ -124,12 +124,28 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     }
 
     <#if tableDefinition.globalSecondaryIndexes??>
-    public enum GlobalSecondaryIndex implements DynamapRecordBean.GlobalSecondaryIndexEnum {
+    public enum GlobalSecondaryIndex implements DynamapRecordBean.SecondaryIndexEnum {
         <#list tableDefinition.globalSecondaryIndexes as index>${index.indexName}("${index.indexName}")<#sep>, </#sep></#list>;
 
         private final String name;
 
         GlobalSecondaryIndex(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+    }
+    </#if>
+
+    <#if tableDefinition.localSecondaryIndexes??>
+    public enum LocalSecondaryIndex implements DynamapRecordBean.SecondaryIndexEnum {
+        <#list tableDefinition.localSecondaryIndexes as index>${index.indexName}("${index.indexName}")<#sep>, </#sep></#list>;
+
+        private final String name;
+
+        LocalSecondaryIndex(String name) {
             this.name = name;
         }
 
