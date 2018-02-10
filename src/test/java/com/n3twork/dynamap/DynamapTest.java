@@ -201,6 +201,40 @@ public class DynamapTest {
     }
 
     @Test
+    public void testIncrementAndSetMapOfLong() {
+        String exampleId1 = UUID.randomUUID().toString();
+        Map<String, Long> mapOfLong = new HashMap<>();
+        mapOfLong.put("a", 1L);
+
+        ExampleDocumentBean doc = new ExampleDocumentBean().setExampleId(exampleId1).setSequence(1).setMapOfLong(mapOfLong);
+        dynamap.save(doc, null);
+
+        doc = dynamap.getObject(new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId1).withRangeKeyValue(1), null);
+        ExampleDocumentUpdates exampleDocumentUpdates = new ExampleDocumentUpdates(doc, exampleId1, 1);
+        Assert.assertEquals(exampleDocumentUpdates.getMapOfLongValue("a").longValue(), 1);
+        exampleDocumentUpdates.incrementMapOfLongAmount("a", 1L);
+        Assert.assertEquals(exampleDocumentUpdates.getMapOfLongValue("a").longValue(), 2);
+        dynamap.update(exampleDocumentUpdates, null);
+        doc = dynamap.getObject(new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId1).withRangeKeyValue(1), null);
+        Assert.assertEquals(exampleDocumentUpdates.getMapOfLongValue("a").longValue(), 2);
+
+        exampleDocumentUpdates = new ExampleDocumentUpdates(doc, exampleId1, 1);
+        exampleDocumentUpdates.setMapOfLongValue("a", 1L);
+        Assert.assertEquals(exampleDocumentUpdates.getMapOfLongValue("a").longValue(), 1);
+        dynamap.update(exampleDocumentUpdates, null);
+        doc = dynamap.getObject(new GetObjectRequest<>(ExampleDocumentBean.class).withHashKeyValue(exampleId1).withRangeKeyValue(1), null);
+        Assert.assertEquals(doc.getMapOfLongValue("a").longValue(), 1);
+
+        // Set value then increment - only the set value is considered. Once set value is used, deltas are ignored.
+        exampleDocumentUpdates = new ExampleDocumentUpdates(doc, exampleId1, 1);
+        exampleDocumentUpdates.setMapOfLongValue("a", 10L);
+        exampleDocumentUpdates.incrementMapOfLongAmount("a", 1L);
+        Assert.assertEquals(exampleDocumentUpdates.getMapOfLongValue("a").longValue(), 10L);
+
+    }
+
+
+    @Test
     public void testBatchGetItem() {
         String exampleId1 = UUID.randomUUID().toString();
         String nestedId1 = UUID.randomUUID().toString();
@@ -424,14 +458,14 @@ public class DynamapTest {
     @Test
     public void testMultipleSuffix() {
         final int MAX = 10;
-        IntStream.range(0, MAX).forEach(i ->  dynamap.createTableFromExisting(DummyDocBean.getTableName(), DummyDocBean.getTableName() + "-"  + i, true));
+        IntStream.range(0, MAX).forEach(i -> dynamap.createTableFromExisting(DummyDocBean.getTableName(), DummyDocBean.getTableName() + "-" + i, true));
 
         // save and get
         IntStream.range(0, MAX).forEach(i -> {
             String suffix = "-" + i;
-            DummyDocBean doc = new DummyDocBean().setId(Integer.toString(i)).setName("test"+i).setWeight(RandomUtils.nextInt(0,100));
+            DummyDocBean doc = new DummyDocBean().setId(Integer.toString(i)).setName("test" + i).setWeight(RandomUtils.nextInt(0, 100));
             dynamap.save(doc, true, false, null, suffix);
-            doc = new DummyDocBean().setId(Integer.toString(i+1000)).setName("test"+i).setWeight(RandomUtils.nextInt(0,100));
+            doc = new DummyDocBean().setId(Integer.toString(i + 1000)).setName("test" + i).setWeight(RandomUtils.nextInt(0, 100));
             dynamap.save(doc, true, false, null, suffix);
             DummyDocBean savedDoc = dynamap.getObject(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(Integer.toString(i)).withSuffix(suffix), null);
             Assert.assertEquals(savedDoc.getId(), Integer.toString(i));
@@ -479,7 +513,7 @@ public class DynamapTest {
 
         // scan
         ScanRequest<DummyDocBean> scanRequest = new ScanRequest<>(DummyDocBean.class).withSuffix(suffix2);
-        ScanResult<DummyDocBean> scanResult= dynamap.scan(scanRequest);
+        ScanResult<DummyDocBean> scanResult = dynamap.scan(scanRequest);
         List<DummyDocBean> savedDummyDocs = scanResult.getResults();
         List<String> savedDummyDocsIds = savedDummyDocs.stream().map(DummyDocBean::getId).collect(Collectors.toList());
         Assert.assertEquals(savedDummyDocs.size(), DUMMY_DOCS_SIZE);
