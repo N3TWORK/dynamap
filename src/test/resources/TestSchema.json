@@ -1,41 +1,41 @@
 {
   "tables": [
     {
-      "table": "Example",
-      "description": "Example Schema",
+      "table": "Test",
+      "description": "Test Schema",
       "package": "com.n3twork.dynamap.test",
-      "type": "ExampleDocument",
+      "type": "TestDocument",
       "version": 1,
-      "hashKey": "exampleId",
+      "hashKey": "testId",
       "rangeKey": "sequence",
       "globalSecondaryIndexes": [
         {
-          "index": "exampleIndex",
+          "index": "testIndex",
           "hashKey": "alias",
           "rangeKey": "sequence"
         },
         {
-          "index": "exampleIndex2",
+          "index": "testIndex2",
           "hashKey": "alias",
           "rangeKey": "sequence"
         }
       ],
       "types": [
         {
-          "name": "ExampleDocument",
+          "name": "TestDocument",
           "description": "Top level document",
           "hashCodeFields": [
-            "exampleId",
+            "testId",
             "sequence"
           ],
           "equalsFields": [
-            "exampleId",
+            "testId",
             "sequence"
           ],
           "fields": [
             {
-              "name": "exampleId",
-              "description": "example id",
+              "name": "testId",
+              "description": "Test id",
               "dynamoName": "id",
               "type": "String"
             },
