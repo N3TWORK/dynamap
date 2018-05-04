@@ -73,7 +73,7 @@ public class DynamapTest {
         Assert.assertEquals(testDocumentBean.getTestId(), doc.getTestId());
         Assert.assertEquals(testDocumentBean.getNestedObject().getId(), nested.getId());
         // Get Not Exists
-        Assert.assertNull(dynamap.getObject(new GetObjectRequest<>(TestDocumentBean.class).withHashKeyValue("blah").withRangeKeyValue(1), null, null));
+        Assert.assertNull(dynamap.getObject(new GetObjectRequest<>(TestDocumentBean.class).withHashKeyValue("blah").withRangeKeyValue(1), null));
 
     }
 
@@ -234,7 +234,7 @@ public class DynamapTest {
             Assert.assertNotNull(ex);
         }
     }
-    
+
     @Test
     public void testIncrementAndSetMapOfLong() {
         String testId1 = UUID.randomUUID().toString();
