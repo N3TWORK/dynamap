@@ -433,29 +433,43 @@ public class Dynamap {
         return new ScanResult(lastHashKey, lastRangeKey, results, scanItems.getAccumulatedItemCount(), scanItems.getAccumulatedScannedCount());
     }
 
+    public void save(SaveParams saveParams) {
+        TableDefinition tableDefinition = schemaRegistry.getTableDefinition(saveParams.getDynamapRecordBean().getClass());
+        putObject(saveParams.getDynamapRecordBean(), tableDefinition, !saveParams.isDisableOverwrite(),
+                saveParams.isDisableOptimisticLocking(), saveParams.getWriteLimiter(), saveParams.getSuffix());
+    }
+
+    @Deprecated
     public void save(DynamapRecordBean object, DynamoRateLimiter writeLimiter) {
-        save(object, true, false, writeLimiter);
-
+        SaveParams saveParams = new SaveParams(object).withWriteLimiter(writeLimiter);
+        save(saveParams);
     }
 
+    @Deprecated
     public void save(DynamapRecordBean object, boolean overwrite, DynamoRateLimiter writeLimiter) {
-        save(object, overwrite, false, writeLimiter);
+        SaveParams saveParams = new SaveParams(object).withDisableOverwrite(!overwrite).withWriteLimiter(writeLimiter);
+        save(saveParams);
     }
 
+    @Deprecated
     public void save(DynamapRecordBean object, boolean overwrite, boolean disableOptimisticLocking, DynamoRateLimiter writeLimiter) {
-        save(object, overwrite, disableOptimisticLocking, writeLimiter, null);
+        SaveParams saveParams = new SaveParams(object).withDisableOverwrite(!overwrite)
+                .withDisableOptimisticLocking(disableOptimisticLocking).withWriteLimiter(writeLimiter);
+        save(saveParams);
     }
 
+    @Deprecated
     public void save(DynamapRecordBean object, boolean overwrite, boolean disableOptimisticLocking, DynamoRateLimiter writeLimiter, String suffix) {
-        TableDefinition tableDefinition = schemaRegistry.getTableDefinition(object.getClass());
-        putObject(object, tableDefinition, overwrite, disableOptimisticLocking, writeLimiter, suffix);
+        SaveParams saveParams = new SaveParams(object).withDisableOverwrite(!overwrite)
+                .withDisableOptimisticLocking(disableOptimisticLocking).withWriteLimiter(writeLimiter).withSuffix(suffix);
+        save(saveParams);
     }
 
-    public <T extends DynamapPersisted> T update(Updates<T> updates, DynamoRateLimiter writeLimiter) {
-        return update(updates, writeLimiter, null);
-    }
+    public <T extends DynamapPersisted> T update(UpdateParams<T> updateParams) {
+        Updates<T> updates = updateParams.getUpdates();
+        DynamoRateLimiter writeLimiter = updateParams.getWriteLimiter();
+        String suffix = updateParams.getSuffix();
 
-    public <T extends DynamapPersisted> T update(Updates<T> updates, DynamoRateLimiter writeLimiter, String suffix) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(updates.getTableName());
         UpdateItemSpec updateItemSpec = getUpdateItemSpec(updates, tableDefinition);
         Table table = getTable(tableDefinition.getTableName(prefix, suffix));
@@ -487,6 +501,15 @@ public class Dynamap {
         }
     }
 
+    @Deprecated
+    public <T extends DynamapPersisted> T update(Updates<T> updates, DynamoRateLimiter writeLimiter) {
+        return (T) update(new UpdateParams<>(updates).withWriteLimiter(writeLimiter));
+    }
+
+    @Deprecated
+    public <T extends DynamapPersisted> T update(Updates<T> updates, DynamoRateLimiter writeLimiter, String suffix) {
+        return (T) update(new UpdateParams(updates).withWriteLimiter(writeLimiter).withSuffix(suffix));
+    }
 
     private static class GetItemInfo {
         public TableKeysAndAttributes keysAndAttributes;
