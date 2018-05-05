@@ -57,9 +57,23 @@
             },
             {
               "name": "mapOfCustomType",
-              "dynamoName": "mct",
+              "dynamoName": "mctr",
               "type": "com.n3twork.dynamap.CustomType",
               "multivalue": "Map"
+            },
+            {
+              "name": "mapOfCustomTypeReplace",
+              "dynamoName": "mct",
+              "type": "com.n3twork.dynamap.CustomType",
+              "multivalue": "Map",
+              "replace": true
+            },
+            {
+              "name": "noDeltaMapOfCustomType",
+              "dynamoName": "noDeltaMapOfBean",
+              "type": "com.n3twork.dynamap.CustomType",
+              "multivalue": "Map",
+              "deltas": false
             },
             {
               "name": "string",
@@ -134,6 +148,13 @@
               "dynamoName": "mapOfBean",
               "type": "com.n3twork.dynamap.CustomType",
               "multivalue": "Map"
+            },
+            {
+              "name": "mapOfCustomTypeReplace",
+              "dynamoName": "mctr",
+              "type": "com.n3twork.dynamap.CustomType",
+              "multivalue": "Map",
+              "replace": true
             },
             {
               "name": "noDeltaMapOfCustomType",

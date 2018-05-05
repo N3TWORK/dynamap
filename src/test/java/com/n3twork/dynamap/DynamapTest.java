@@ -78,6 +78,28 @@ public class DynamapTest {
     }
 
     @Test
+    public void testNestedUpdatesSolo() {
+
+        NestedTypeBean nested = createNestedTypeBean();
+        nested.setString("string1");
+        TestDocumentBean doc = createTestDocumentBean(nested);
+        doc.setString("string1");
+        dynamap.save(new SaveParams(doc));
+
+        TestDocumentBean testDocumentBean = dynamap.getObject(createGetObjectRequest(doc), null);
+        Assert.assertEquals(testDocumentBean.getNestedObject().getId(), nested.getId());
+        Assert.assertEquals(testDocumentBean.getNestedObject().getString(), nested.getString());
+
+        TestDocumentUpdates testDocumentUpdates = createTestDocumentUpdates(testDocumentBean);
+        NestedTypeUpdates nestedTypeUpdates = createNestedTypeUpdates(testDocumentBean, nested);
+        nestedTypeUpdates.setString("string2");
+        dynamap.update(new UpdateParams<>(nestedTypeUpdates));
+        doc = dynamap.getObject(createGetObjectRequest(doc), null);
+        Assert.assertEquals(doc.getNestedObject().getString(), "string2");
+
+    }
+
+    @Test
     public void testStringField() {
 
         NestedTypeBean nested = createNestedTypeBean();
@@ -161,6 +183,73 @@ public class DynamapTest {
         Assert.assertTrue(testDocument.getMapOfCustomTypeIds().contains("item2"));
         Assert.assertTrue(testDocument.getNestedObject().getMapOfCustomTypeIds().contains("item2"));
     }
+
+    @Test
+    public void testMapOfCustomObjectReplace() {
+
+        NestedTypeBean nested = createNestedTypeBean();
+        TestDocumentBean doc = createTestDocumentBean(nested);
+        dynamap.save(new SaveParams(doc));
+
+        TestDocumentUpdates testDocumentUpdates = createTestDocumentUpdates(doc);
+        CustomType customType1 = new CustomType("item1", "test", CustomType.CustomTypeEnum.VALUE_A);
+        CustomType customType2 = new CustomType("item2", "test", CustomType.CustomTypeEnum.VALUE_A);
+
+        testDocumentUpdates.setMapOfCustomTypeReplaceItem(customType1.getName(), customType1);
+        testDocumentUpdates.setMapOfCustomTypeReplaceItem(customType2.getName(), customType2);
+        NestedTypeUpdates nestedTypeUpdates = createNestedTypeUpdates(doc, nested);
+        nestedTypeUpdates.setMapOfCustomTypeReplaceItem(customType1.getName(), customType1);
+        nestedTypeUpdates.setMapOfCustomTypeReplaceItem(customType2.getName(), customType2);
+
+        dynamap.update(new UpdateParams<>(testDocumentUpdates));
+        dynamap.update(new UpdateParams<>(nestedTypeUpdates));
+        doc = dynamap.getObject(createGetObjectRequest(doc), null);
+        Assert.assertEquals(doc.getMapOfCustomTypeReplaceItem("item1").getName(), "item1");
+        Assert.assertEquals(doc.getNestedObject().getMapOfCustomTypeReplaceItem("item1").getName(), "item1");
+        Assert.assertEquals(doc.getMapOfCustomTypeReplaceItem("item2").getName(), "item2");
+        Assert.assertEquals(doc.getNestedObject().getMapOfCustomTypeReplaceItem("item2").getName(), "item2");
+
+        // Test when without using current state the existing collection is replaced
+        CustomType customType3 = new CustomType("item3", "test", CustomType.CustomTypeEnum.VALUE_A);
+
+        testDocumentUpdates = new TestDocumentUpdates(new TestDocumentBean(), doc.getHashKeyValue(), doc.getRangeKeyValue());
+        testDocumentUpdates.setMapOfCustomTypeReplaceItem(customType3.getName(), customType3);
+        nestedTypeUpdates = new NestedTypeUpdates(new NestedTypeBean(), doc.getHashKeyValue(), doc.getRangeKeyValue());
+        nestedTypeUpdates.setMapOfCustomTypeReplaceItem(customType3.getName(), customType3);
+        testDocumentUpdates.setNestedObjectUpdates(nestedTypeUpdates);
+        TestDocument testDocument = dynamap.update(new UpdateParams<>(testDocumentUpdates));
+
+        Assert.assertFalse(testDocument.getMapOfCustomTypeReplaceIds().contains("item1"));
+        Assert.assertFalse(testDocument.getNestedObject().getMapOfCustomTypeReplaceIds().contains("item1"));
+        Assert.assertFalse(testDocument.getMapOfCustomTypeIds().contains("item2"));
+        Assert.assertFalse(testDocument.getNestedObject().getMapOfCustomTypeReplaceIds().contains("item2"));
+        Assert.assertTrue(testDocument.getMapOfCustomTypeReplaceIds().contains("item3"));
+        Assert.assertTrue(testDocument.getNestedObject().getMapOfCustomTypeReplaceIds().contains("item3"));
+    }
+
+    @Test
+    public void testMapOfCustomObjectNoDelta() {
+        NestedTypeBean nested = createNestedTypeBean();
+        TestDocumentBean doc = createTestDocumentBean(nested);
+        dynamap.save(new SaveParams(doc));
+
+        TestDocumentUpdates testDocumentUpdates = createTestDocumentUpdates(doc);
+        CustomType customType1 = new CustomType("item1", "test", CustomType.CustomTypeEnum.VALUE_A);
+        CustomType customType2 = new CustomType("item2", "test", CustomType.CustomTypeEnum.VALUE_A);
+        Map<String, CustomType> map = ImmutableMap.of(customType1.getName(), customType1, customType2.getName(), customType2);
+
+        testDocumentUpdates.setNoDeltaMapOfCustomType(map);
+        NestedTypeUpdates nestedTypeUpdates = createNestedTypeUpdates(doc, nested);
+        nestedTypeUpdates.setNoDeltaMapOfCustomType(map);
+        testDocumentUpdates.setNestedObjectUpdates(nestedTypeUpdates);
+        TestDocument updated = dynamap.update(new UpdateParams<>(testDocumentUpdates));
+
+        Assert.assertEquals(updated.getNoDeltaMapOfCustomTypeItem("item1").getName(), "item1");
+        Assert.assertEquals(updated.getNestedObject().getNoDeltaMapOfCustomTypeItem("item1").getName(), "item1");
+        Assert.assertEquals(updated.getNoDeltaMapOfCustomTypeItem("item2").getName(), "item2");
+        Assert.assertEquals(updated.getNestedObject().getNoDeltaMapOfCustomTypeItem("item2").getName(), "item2");
+    }
+
 
     @Test
     public void testQuery() {
