@@ -315,11 +315,10 @@ public class Dynamap {
 
         ItemCollection<QueryOutcome> items;
         if (queryRequest.getIndex() != null) {
-            com.n3twork.dynamap.model.Index indexDef =  null;
+            com.n3twork.dynamap.model.Index indexDef = null;
             if (tableDefinition.getGlobalSecondaryIndexes() != null) {
                 indexDef = tableDefinition.getGlobalSecondaryIndexes().stream().filter(i -> i.getIndexName().equals(queryRequest.getIndex().getName())).findFirst().get();
-            }
-            else if (tableDefinition.getLocalSecondaryIndexes() != null) {
+            } else if (tableDefinition.getLocalSecondaryIndexes() != null) {
                 indexDef = tableDefinition.getLocalSecondaryIndexes().stream().filter(i -> i.getIndexName().equals(queryRequest.getIndex().getName())).findFirst().get();
             }
             String indexName = indexDef.getIndexName();
@@ -646,8 +645,8 @@ public class Dynamap {
                 Map<String, Object> objectToPersist = (Map<String, Object>) map.get(field.getDynamoName());
                 Type fieldType = tableDefinition.getFieldType(field.getType());
                 for (Field fieldToCheck : fieldType.getFields()) {
-                    if (objectToPersist.containsKey(fieldToCheck.getDynamoName()) && !fieldToCheck.isPersist()) {
-                        objectToPersist.remove(fieldToCheck.getDynamoName());
+                    if (objectToPersist.containsKey(fieldToCheck.getName()) && !fieldToCheck.isPersist()) {
+                        objectToPersist.remove(fieldToCheck.getName());
                     }
                 }
             }

@@ -6,17 +6,17 @@
       "package": "com.n3twork.dynamap.test",
       "type": "TestDocument",
       "version": 1,
-      "hashKey": "testId",
+      "hashKey": "id",
       "rangeKey": "sequence",
       "globalSecondaryIndexes": [
         {
           "index": "testIndex",
-          "hashKey": "alias",
+          "hashKey": "string",
           "rangeKey": "sequence"
         },
         {
           "index": "testIndex2",
-          "hashKey": "alias",
+          "hashKey": "string",
           "rangeKey": "sequence"
         }
       ],
@@ -25,17 +25,17 @@
           "name": "TestDocument",
           "description": "Top level document",
           "hashCodeFields": [
-            "testId",
+            "id",
             "sequence"
           ],
           "equalsFields": [
-            "testId",
+            "id",
             "sequence"
           ],
           "fields": [
             {
-              "name": "testId",
-              "description": "Test id",
+              "name": "id",
+              "description": "Primary key",
               "dynamoName": "id",
               "type": "String"
             },
@@ -62,8 +62,8 @@
               "multivalue": "Map"
             },
             {
-              "name": "alias",
-              "dynamoName": "alias",
+              "name": "string",
+              "dynamoName": "str",
               "type": "String"
             },
             {
@@ -71,6 +71,12 @@
               "dynamoName": "someList",
               "type": "String",
               "multiValue": "List"
+            },
+            {
+              "name": "notPersistedString",
+              "dynamoName": "notPersistedStr",
+              "type": "String",
+              "persist": false
             }
           ]
         },
@@ -83,14 +89,20 @@
               "type": "String"
             },
             {
-              "name": "bio",
-              "dynamoName": "bio",
+              "name": "string",
+              "dynamoName": "str",
               "type": "String"
             },
             {
               "name": "integerField",
               "dynamoName": "integerField",
               "type": "Integer"
+            },
+            {
+              "name": "notPersistedString",
+              "dynamoName": "notPersistedStr",
+              "type": "String",
+              "persist": false
             },
             {
               "name": "mapOfLong",
