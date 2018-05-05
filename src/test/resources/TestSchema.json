@@ -57,20 +57,20 @@
             },
             {
               "name": "mapOfCustomType",
-              "dynamoName": "mctr",
+              "dynamoName": "mct",
               "type": "com.n3twork.dynamap.CustomType",
               "multivalue": "Map"
             },
             {
               "name": "mapOfCustomTypeReplace",
-              "dynamoName": "mct",
+              "dynamoName": "mctr",
               "type": "com.n3twork.dynamap.CustomType",
               "multivalue": "Map",
               "replace": true
             },
             {
               "name": "noDeltaMapOfCustomType",
-              "dynamoName": "noDeltaMapOfBean",
+              "dynamoName": "noDeltaMapOfCT",
               "type": "com.n3twork.dynamap.CustomType",
               "multivalue": "Map",
               "deltas": false
@@ -79,6 +79,11 @@
               "name": "string",
               "dynamoName": "str",
               "type": "String"
+            },
+            {
+              "name": "integerField",
+              "dynamoName": "intf",
+              "type": "Integer"
             },
             {
               "name": "someList",
@@ -145,7 +150,7 @@
             },
             {
               "name": "mapOfCustomType",
-              "dynamoName": "mapOfBean",
+              "dynamoName": "mct",
               "type": "com.n3twork.dynamap.CustomType",
               "multivalue": "Map"
             },
@@ -158,7 +163,7 @@
             },
             {
               "name": "noDeltaMapOfCustomType",
-              "dynamoName": "noDeltaMapOfBean",
+              "dynamoName": "noDeltaMapOfCT",
               "type": "com.n3twork.dynamap.CustomType",
               "multivalue": "Map",
               "deltas": false

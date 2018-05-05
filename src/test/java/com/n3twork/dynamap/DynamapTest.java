@@ -123,7 +123,6 @@ public class DynamapTest {
         Assert.assertEquals(updated.getString(), "string2");
         Assert.assertEquals(updated.getNestedObject().getString(), "string2");
 
-
     }
 
     @Test
@@ -704,6 +703,38 @@ public class DynamapTest {
 
         List<DummyDoc2Bean> docs = dynamap.query(queryRequest);
         Assert.assertEquals(docs.size(), 1);
+
+    }
+
+    @Test
+    public void testReturnUpdated() {
+
+        NestedTypeBean nested = createNestedTypeBean();
+        nested.setString("string1");
+        nested.setIntegerField(1);
+        TestDocumentBean doc = createTestDocumentBean(nested);
+        doc.setString("string1");
+        doc.setIntegerField(1);
+        dynamap.save(new SaveParams(doc));
+
+        TestDocumentUpdates testDocumentUpdates = createTestDocumentUpdates(doc);
+        doc.setString("string2");
+        NestedTypeUpdates nestedTypeUpdates = createNestedTypeUpdates(doc, nested);
+        testDocumentUpdates.setString("string2");
+        nestedTypeUpdates.setString("string2");
+        testDocumentUpdates.setNestedObjectUpdates(nestedTypeUpdates);
+
+        TestDocument updated = dynamap.update(new UpdateParams<>(testDocumentUpdates).withReturnValue(DynamapReturnValue.UPDATED_NEW));
+        Assert.assertEquals(updated.getIntegerField().intValue(), 1);
+        Assert.assertEquals(updated.getNestedObject().getIntegerField().intValue(), 1);
+        Assert.assertEquals(updated.getString(), "string2");
+        Assert.assertEquals(updated.getNestedObject().getString(), "string2");
+
+        testDocumentUpdates = createTestDocumentUpdates(updated);
+        testDocumentUpdates.setString("string3");
+        updated = dynamap.update(new UpdateParams<>(testDocumentUpdates).withReturnValue(DynamapReturnValue.UPDATED_OLD));
+        Assert.assertEquals(updated.getString(), "string2");
+
 
     }
 

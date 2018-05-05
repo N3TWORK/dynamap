@@ -16,22 +16,22 @@ public class SaveParams<T extends DynamapRecordBean> {
         this.dynamapRecordBean = dynamapRecordBean;
     }
 
-    public SaveParams withDisableOverwrite(boolean disableOverwrite) {
+    public SaveParams<T> withDisableOverwrite(boolean disableOverwrite) {
         this.disableOverwrite = disableOverwrite;
         return this;
     }
 
-    public SaveParams withDisableOptimisticLocking(boolean disableOptimisticLocking) {
+    public SaveParams<T> withDisableOptimisticLocking(boolean disableOptimisticLocking) {
         this.disableOptimisticLocking = disableOptimisticLocking;
         return this;
     }
 
-    public SaveParams withWriteLimiter(DynamoRateLimiter writeLimiter) {
+    public SaveParams<T> withWriteLimiter(DynamoRateLimiter writeLimiter) {
         this.writeLimiter = writeLimiter;
         return this;
     }
 
-    public SaveParams withSuffix(String suffix) {
+    public SaveParams<T> withSuffix(String suffix) {
         this.suffix = suffix;
         return this;
     }

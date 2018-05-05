@@ -471,7 +471,7 @@ public class Dynamap {
         String suffix = updateParams.getSuffix();
 
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(updates.getTableName());
-        UpdateItemSpec updateItemSpec = getUpdateItemSpec(updates, tableDefinition);
+        UpdateItemSpec updateItemSpec = getUpdateItemSpec(updates, tableDefinition, updateParams.getDynamapReturnValue());
         Table table = getTable(tableDefinition.getTableName(prefix, suffix));
 
         logger.debug("About to submit DynamoDB Update: Update expression: {}, Conditional expression: {}, Values {}, Names: {}", updateItemSpec.getUpdateExpression(), updateItemSpec.getConditionExpression(), updateItemSpec.getValueMap(), updateItemSpec.getNameMap());
@@ -488,8 +488,28 @@ public class Dynamap {
             if (writeLimiter != null) {
                 writeLimiter.setConsumedCapacity(updateItemOutcome.getUpdateItemResult().getConsumedCapacity());
             }
-            Class beanClass = Class.forName(tableDefinition.getPackageName() + "." + tableDefinition.getType() + "Bean");
-            return (T) objectMapper.convertValue(updateItemOutcome.getItem().asMap(), beanClass);
+
+            if (updateParams.getDynamapReturnValue() == DynamapReturnValue.NONE) {
+                return null;
+            }
+            if (updateParams.getDynamapReturnValue() == DynamapReturnValue.ALL_NEW ||
+                    updateParams.getDynamapReturnValue() == DynamapReturnValue.ALL_OLD) {
+                Class beanClass = Class.forName(tableDefinition.getPackageName() + "." + tableDefinition.getType() + "Bean");
+                return (T) objectMapper.convertValue(updateItemOutcome.getItem().asMap(), beanClass);
+            }
+
+            // Merge updated values with existing
+            try {
+                Class beanClass = Class.forName(tableDefinition.getPackageName() + "." + tableDefinition.getType() + "Bean");
+                Class interfaceClass = Class.forName(tableDefinition.getPackageName() + "." + tableDefinition.getType());
+                Object updatesAsBean = beanClass.getDeclaredConstructor(interfaceClass).newInstance(updateParams.getUpdates());
+                Map<String, Object> updatesAsMap = objectMapper.convertValue(updatesAsBean, new TypeReference<Map<String, Object>>() {
+                });
+                updatesAsMap.putAll(updateItemOutcome.getItem().asMap());
+                return (T) objectMapper.convertValue(updatesAsMap, beanClass);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
 
         } catch (ClassNotFoundException e) {
             logger.error("Cannot find bean class " + tableDefinition.getPackageName() + "." + tableDefinition.getType() + "Bean");
@@ -747,12 +767,12 @@ public class Dynamap {
         return attributeDefinitions.stream().anyMatch(d -> d.getAttributeName().equals(name));
     }
 
-    private UpdateItemSpec getUpdateItemSpec(Updates updates, TableDefinition tableDefinition) {
+    private UpdateItemSpec getUpdateItemSpec(Updates updates, TableDefinition tableDefinition, DynamapReturnValue returnValue) {
         DynamoExpressionBuilder expressionBuilder = updates.getExpressionBuilder();
         expressionBuilder.setObjectMapper(objectMapper);
         updates.processUpdateExpression();
 
-        UpdateItemSpec result = new UpdateItemSpec().withReturnValues(ReturnValue.ALL_NEW);
+        UpdateItemSpec result = new UpdateItemSpec().withReturnValues(ReturnValue.fromValue(returnValue.toString()));
         Field hashField = tableDefinition.getField(tableDefinition.getHashKey());
         if (updates.getRangeKeyValue() != null) {
             Field rangeField = tableDefinition.getField(tableDefinition.getRangeKey());

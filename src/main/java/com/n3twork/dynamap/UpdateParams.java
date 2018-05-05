@@ -5,6 +5,7 @@ public class UpdateParams<T extends DynamapPersisted> {
     private Updates<T> updates;
     private DynamoRateLimiter writeLimiter;
     private String suffix;
+    private DynamapReturnValue dynamapReturnValue = DynamapReturnValue.ALL_NEW;
 
     private UpdateParams() {
     }
@@ -13,13 +14,18 @@ public class UpdateParams<T extends DynamapPersisted> {
         this.updates = updates;
     }
 
-    public UpdateParams withWriteLimiter(DynamoRateLimiter writeLimiter) {
+    public UpdateParams<T> withWriteLimiter(DynamoRateLimiter writeLimiter) {
         this.writeLimiter = writeLimiter;
         return this;
     }
 
-    public UpdateParams withSuffix(String suffix) {
+    public UpdateParams<T> withSuffix(String suffix) {
         this.suffix = suffix;
+        return this;
+    }
+
+    public UpdateParams<T> withReturnValue(DynamapReturnValue dynamapReturnValue) {
+        this.dynamapReturnValue = dynamapReturnValue;
         return this;
     }
 
@@ -36,5 +42,9 @@ public class UpdateParams<T extends DynamapPersisted> {
 
     public String getSuffix() {
         return suffix;
+    }
+
+    public DynamapReturnValue getDynamapReturnValue() {
+        return dynamapReturnValue;
     }
 }
