@@ -693,7 +693,16 @@ public class Dynamap {
                     }
                 }
             }
-            item.with(field.getDynamoName(), map.get(field.getDynamoName()));
+            // Jackson converts all collections to array lists, which in turn are treated as lists
+            // Need to handle string sets specifically. String sets can also not be empty
+            if (field.getMultiValue() == Field.MultiValue.SET && field.getType().equals("String")) {
+                List list = (List) map.get(field.getDynamoName());
+                if (list.size() > 0) {
+                    item.with(field.getDynamoName(), new HashSet<>((List) map.get(field.getDynamoName())));
+                }
+            } else {
+                item.with(field.getDynamoName(), map.get(field.getDynamoName()));
+            }
         }
 
         String hashKeyFieldName = tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName();
@@ -772,29 +781,30 @@ public class Dynamap {
         expressionBuilder.setObjectMapper(objectMapper);
         updates.processUpdateExpression();
 
-        UpdateItemSpec result = new UpdateItemSpec().withReturnValues(ReturnValue.fromValue(returnValue.toString()));
+        UpdateItemSpec updateItemSpec = new UpdateItemSpec().withReturnValues(ReturnValue.fromValue(returnValue.toString()));
         Field hashField = tableDefinition.getField(tableDefinition.getHashKey());
         if (updates.getRangeKeyValue() != null) {
             Field rangeField = tableDefinition.getField(tableDefinition.getRangeKey());
-            result.withPrimaryKey(hashField.getDynamoName(), updates.getHashKeyValue(), rangeField.getDynamoName(), updates.getRangeKeyValue());
+            updateItemSpec.withPrimaryKey(hashField.getDynamoName(), updates.getHashKeyValue(), rangeField.getDynamoName(), updates.getRangeKeyValue());
         } else {
-            result.withPrimaryKey(hashField.getDynamoName(), updates.getHashKeyValue());
+            updateItemSpec.withPrimaryKey(hashField.getDynamoName(), updates.getHashKeyValue());
         }
         String conditionalExpression = expressionBuilder.buildConditionalExpression();
         if (null != conditionalExpression && !"".equals(conditionalExpression)) {
-            result = result.withConditionExpression(conditionalExpression);
+            updateItemSpec = updateItemSpec.withConditionExpression(conditionalExpression);
         }
         String updateExpression = expressionBuilder.buildUpdateExpression();
         if (null != updateExpression && !"".equals(updateExpression)) {
-            result = result.withUpdateExpression(updateExpression);
+            updateItemSpec = updateItemSpec.withUpdateExpression(updateExpression);
         }
         if (!expressionBuilder.getNameMap().isEmpty()) {
-            result = result.withNameMap(expressionBuilder.getNameMap());
+            updateItemSpec = updateItemSpec.withNameMap(expressionBuilder.getNameMap());
         }
         if (!expressionBuilder.getValueMap().isEmpty()) {
-            result = result.withValueMap(expressionBuilder.getValueMap());
+            updateItemSpec = updateItemSpec.withValueMap(expressionBuilder.getValueMap());
         }
-        return result;
+
+        return updateItemSpec;
     }
 
 

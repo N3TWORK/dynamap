@@ -25,6 +25,7 @@ import com.amazonaws.util.IOUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import com.n3twork.dynamap.test.*;
 import org.apache.commons.lang3.RandomUtils;
 import org.testng.Assert;
@@ -249,6 +250,22 @@ public class DynamapTest {
         Assert.assertEquals(updated.getNestedObject().getNoDeltaMapOfCustomTypeItem("item2").getName(), "item2");
     }
 
+    @Test
+    public void testStringSet() {
+        NestedTypeBean nested = createNestedTypeBean();
+        TestDocumentBean doc = createTestDocumentBean(nested);
+        doc.setSetOfString(Sets.newHashSet("test1", "test2"));
+        dynamap.save(new SaveParams(doc));
+
+        doc = dynamap.getObject(createGetObjectRequest(doc), null);
+        Assert.assertEquals(doc.getSetOfString().size(), 2);
+        Assert.assertTrue(doc.getSetOfString().containsAll(Sets.newHashSet("test1", "test2")));
+        TestDocumentUpdates updates = createTestDocumentUpdates(doc);
+        updates.setSetOfStringItem("test3");
+        TestDocument updated = dynamap.update(new UpdateParams<>(updates));
+        Assert.assertTrue(updated.getSetOfString().containsAll(Sets.newHashSet("test1", "test2", "test3")));
+    }
+
 
     @Test
     public void testQuery() {
@@ -271,6 +288,7 @@ public class DynamapTest {
         TestDocumentBean doc = createTestDocumentBean(createNestedTypeBean());
         doc.setString("String");
         doc.setNotPersistedString("foo");
+        doc.setSetOfString(Sets.newHashSet("test1", "test2"));
         dynamap.save(new SaveParams(doc));
 
         String jsonSchema = IOUtils.toString(getClass().getResourceAsStream("/TestSchema.json"));

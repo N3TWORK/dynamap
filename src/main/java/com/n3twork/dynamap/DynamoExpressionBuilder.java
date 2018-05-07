@@ -110,6 +110,13 @@ public class DynamoExpressionBuilder {
         return this;
     }
 
+    public DynamoExpressionBuilder addSetValuesToSet(String parentField, String fieldName, Set value, Class type) {
+        if (value.size() > 0) {
+            addSection.add(String.format("%s %s", joinFields(parentField, fieldName), processValueAlias(vals, value, type)));
+        }
+        return this;
+    }
+
     public <V> DynamoExpressionBuilder setMultiValue(String parentField, String fieldName, Object collection, Class type) {
         setSection.add(String.format("%s=%s", joinFields(parentField, fieldName), processValueAlias(vals, collection, type)));
         return this;

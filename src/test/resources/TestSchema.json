@@ -96,6 +96,12 @@
               "dynamoName": "notPersistedStr",
               "type": "String",
               "persist": false
+            },
+            {
+              "name": "setOfString",
+              "dynamoName": "setOfString",
+              "type": "String",
+              "multivalue": "Set"
             }
           ]
         },
@@ -135,6 +141,12 @@
               "name": "setOfLong",
               "dynamoName": "setOfLong",
               "type": "Long",
+              "multivalue": "Set"
+            },
+            {
+              "name": "setOfString",
+              "dynamoName": "setOfString",
+              "type": "String",
               "multivalue": "Set"
             },
             {

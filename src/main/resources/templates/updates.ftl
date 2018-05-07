@@ -479,9 +479,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
 
         <#elseif field.multiValue! == 'SET'>
             <#if field.useDeltas()>
-                for (Object value : ${field.name}Sets) {
-                    expression.setValue(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Sets);
-                }
+                expression.addSetValuesToSet(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Sets, ${field.type}.class);
             <#else>
                 expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.type}.class);
             </#if>
