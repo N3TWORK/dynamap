@@ -7,13 +7,13 @@
     <artifactId>dynamap</artifactId>
     <packaging>jar</packaging>
     <name>Dynamap</name>
-    <version>0.9.26</version>
+    <version>0.9.27-SNAPSHOT</version>
 
     <scm>
         <url>https://github.com/N3TWORK/dynamap.git</url>
         <connection>scm:git:git://github.com:N3TWORK/dynamap.git</connection>
         <developerConnection>scm:git:git@github.com:N3TWORK/dynamap.git</developerConnection>
-        <tag>v0.9.26</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <properties>
