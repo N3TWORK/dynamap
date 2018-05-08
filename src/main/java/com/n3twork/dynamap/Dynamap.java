@@ -299,7 +299,8 @@ public class Dynamap {
         if (batchGetObjectRequest.getReadWriteRateLimiterPair() != null) {
             batchGetObjectRequest.withRateLimiters(ImmutableMap.of(getObjectRequest.getResultClass(), batchGetObjectRequest.getReadWriteRateLimiterPair()));
         }
-        return (List<T>) (Object) batchGetObject(batchGetObjectRequest).get(getObjectRequest.getResultClass());
+        List<T> result = (List<T>) (Object) batchGetObject(batchGetObjectRequest).get(getObjectRequest.getResultClass());
+        return result == null ? Collections.emptyList() : result;
     }
 
     public <T extends DynamapRecordBean> List<T> query(QueryRequest<T> queryRequest) {
