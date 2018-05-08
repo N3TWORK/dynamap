@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import com.n3twork.BatchSaveParams;
 import com.n3twork.dynamap.test.*;
 import org.apache.commons.lang3.RandomUtils;
 import org.testng.Assert;
@@ -554,12 +555,12 @@ public class DynamapTest {
     }
 
     @Test
-    public void testBatchSave() {
+    public void testBatchSaveAndScan() {
         batchSave(null);
     }
 
     @Test
-    public void testBatchSaveWithRateLimiter() {
+    public void testBatchSaveAndScanWithRateLimiter() {
         Map<Class, DynamoRateLimiter> limiterMap = new HashMap<>();
         limiterMap.put(TestDocumentBean.class, new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.WRITE, 100));
         limiterMap.put(DummyDocBean.class, new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.WRITE, 100));
@@ -569,7 +570,7 @@ public class DynamapTest {
     }
 
     private void batchSave(Map<Class, DynamoRateLimiter> limiterMap) {
-        final int EXAMPLE_DOCS_SIZE = 22;
+        final int TEST_DOCS_SIZE = 22;
         final int DUMMY_DOCS_SIZE = 23;
         List<DynamapRecordBean> docsToSave = new ArrayList<>();
         List<String> testDocsIds = new ArrayList<>();
@@ -577,25 +578,20 @@ public class DynamapTest {
 
         String bigString = new String(new char[10000]).replace('\0', 'X');
 
-        for (int i = 0; i < EXAMPLE_DOCS_SIZE; i++) {
-            String docId = UUID.randomUUID().toString();
-            String nestedId = UUID.randomUUID().toString();
-            NestedTypeBean nestedObject = new NestedTypeBean().setId(nestedId);
-            TestDocumentBean doc = new TestDocumentBean().setId(docId).setSequence(1).setNestedObject(nestedObject).setString("String");
-
-            testDocsIds.add(docId);
-            docsToSave.add(doc);
+        for (int i = 0; i < TEST_DOCS_SIZE; i++) {
+            TestDocumentBean testDocument = createTestDocumentBean(createNestedTypeBean());
+            testDocsIds.add(testDocument.getId());
+            docsToSave.add(testDocument);
         }
 
         for (int i = 0; i < DUMMY_DOCS_SIZE; i++) {
             String id = UUID.randomUUID().toString();
             DummyDocBean doc = new DummyDocBean().setId(id).setName(bigString).setWeight(i);
-
             dummyDocsIds.add(id);
             docsToSave.add(doc);
         }
 
-        dynamap.batchSave(docsToSave, limiterMap);
+        dynamap.batchSave(new BatchSaveParams<>(docsToSave).withWriteLimiters(limiterMap));
 
         ScanRequest<TestDocumentBean> scanRequest = new ScanRequest<>(TestDocumentBean.class);
         ScanResult<TestDocumentBean> scanResult = dynamap.scan(scanRequest);
@@ -605,7 +601,7 @@ public class DynamapTest {
         ScanResult<DummyDocBean> scanResult2 = dynamap.scan(scanRequest2);
         List<DummyDocBean> savedDummyDocs = scanResult2.getResults();
 
-        Assert.assertEquals(savedTestDocs.size(), EXAMPLE_DOCS_SIZE);
+        Assert.assertEquals(savedTestDocs.size(), TEST_DOCS_SIZE);
         Assert.assertEquals(savedDummyDocs.size(), DUMMY_DOCS_SIZE);
 
         List<String> savedTestDocsIds = savedTestDocs.stream().map(TestDocumentBean::getId).collect(Collectors.toList());
@@ -613,6 +609,13 @@ public class DynamapTest {
 
         Assert.assertTrue(savedTestDocsIds.containsAll(testDocsIds) && testDocsIds.containsAll(savedTestDocsIds));
         Assert.assertTrue(savedDummyDocsIds.containsAll(dummyDocsIds) && dummyDocsIds.containsAll(savedDummyDocsIds));
+
+        // Test start exclusive
+        ScanRequest<TestDocumentBean> scanRequest3 = new ScanRequest<>(TestDocumentBean.class).withStartExclusiveHashKeyValue(testDocsIds.get(3));
+        ScanResult<TestDocumentBean> scanResult3 = dynamap.scan(scanRequest3);
+        Assert.assertTrue(scanResult3.getResults().size() > 0);
+
+
     }
 
     @Test

@@ -29,6 +29,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
+import com.n3twork.BatchSaveParams;
 import com.n3twork.dynamap.model.Field;
 import com.n3twork.dynamap.model.Schema;
 import com.n3twork.dynamap.model.TableDefinition;
@@ -377,8 +378,12 @@ public class Dynamap {
         if (scanRequest.getFilterExpression() != null) {
             scanspec.withFilterExpression(scanRequest.getFilterExpression());
         }
-        if (scanRequest.getStartExclusiveHashKey() != null) {
-            scanspec.withExclusiveStartKey(scanRequest.getStartExclusiveHashKey(), scanRequest.getStartExclusiveRangeKey());
+        if (scanRequest.getStartExclusiveHashKeyValue() != null) {
+            if (scanRequest.getStartExclusiveRangeKeyValue() != null) {
+                scanspec.withExclusiveStartKey(tableDefinition.getHashKey(), scanRequest.getStartExclusiveHashKeyValue(), tableDefinition.getRangeKey(), scanRequest.getStartExclusiveRangeKeyValue());
+            } else {
+                scanspec.withExclusiveStartKey(tableDefinition.getHashKey(), scanRequest.getStartExclusiveHashKeyValue());
+            }
         }
         if (scanRequest.getMaxResultSize() != null) {
             scanspec.withMaxPageSize(scanRequest.getMaxResultSize());
@@ -862,13 +867,8 @@ public class Dynamap {
         }
     }
 
-
-    public <T extends DynamapRecordBean> void batchSave(List<T> objects, Map<Class, DynamoRateLimiter> writeLimiterMap) {
-        batchSave(objects, writeLimiterMap, null);
-    }
-
-    public <T extends DynamapRecordBean> void batchSave(List<T> objects, Map<Class, DynamoRateLimiter> writeLimiterMap, String suffix) {
-        final List<List<T>> objectsBatch = Lists.partition(objects, MAX_BATCH_SIZE);
+    public <T extends DynamapRecordBean> void batchSave(BatchSaveParams<T> batchSaveParams) {
+        final List<List<T>> objectsBatch = Lists.partition(batchSaveParams.getDynamapRecordBeans(), MAX_BATCH_SIZE);
         for (List<T> batch : objectsBatch) {
             logger.debug("Sending batch to save of size: {}", batch.size());
             Map<String, TableWriteItems> tableWriteItems = new HashMap<>();
@@ -877,13 +877,23 @@ public class Dynamap {
                 TableDefinition tableDefinition = schemaRegistry.getTableDefinition(object.getClass());
                 Item item = buildDynamoItemFromObject(object, tableDefinition);
 
-                String tableName = tableDefinition.getTableName(prefix, suffix);
+                String tableName = tableDefinition.getTableName(prefix, batchSaveParams.getSuffix());
                 TableWriteItems writeItems = tableWriteItems.getOrDefault(tableName, new TableWriteItems(tableName));
                 tableWriteItems.put(tableName, writeItems.addItemToPut(item));
             }
 
-            doBatchWriteItem(writeLimiterMap, tableWriteItems);
+            doBatchWriteItem(batchSaveParams.getWriteLimiters(), tableWriteItems);
         }
+    }
+
+    @Deprecated
+    public <T extends DynamapRecordBean> void batchSave(List<T> objects, Map<Class, DynamoRateLimiter> writeLimiterMap) {
+        batchSave(objects, writeLimiterMap, null);
+    }
+
+    @Deprecated
+    public <T extends DynamapRecordBean> void batchSave(List<T> objects, Map<Class, DynamoRateLimiter> writeLimiterMap, String suffix) {
+        batchSave(new BatchSaveParams<>(objects).withWriteLimiters(writeLimiterMap).withSuffix(suffix));
     }
 
     private void doBatchWriteItem(Map<Class, DynamoRateLimiter> writeLimiterMap, Map<String, TableWriteItems> tableWriteItems) {
