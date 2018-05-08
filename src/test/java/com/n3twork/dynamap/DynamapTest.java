@@ -153,10 +153,12 @@ public class DynamapTest {
         dynamap.save(new SaveParams(doc));
 
         TestDocumentUpdates testDocumentUpdates = createTestDocumentUpdates(doc);
+        Assert.assertEquals(testDocumentUpdates.getMapOfCustomTypeIds().size(), 0);
         CustomType customType1 = new CustomType("item1", "test", CustomType.CustomTypeEnum.VALUE_A);
         CustomType customType2 = new CustomType("item2", "test", CustomType.CustomTypeEnum.VALUE_A);
 
         testDocumentUpdates.setMapOfCustomTypeItem(customType1.getName(), customType1);
+        Assert.assertTrue(testDocumentUpdates.getMapOfCustomTypeIds().contains("item1"));
         testDocumentUpdates.setMapOfCustomTypeItem(customType2.getName(), customType2);
         NestedTypeUpdates nestedTypeUpdates = createNestedTypeUpdates(doc, nested);
         nestedTypeUpdates.setMapOfCustomTypeItem(customType1.getName(), customType1);
@@ -196,6 +198,7 @@ public class DynamapTest {
         CustomType customType2 = new CustomType("item2", "test", CustomType.CustomTypeEnum.VALUE_A);
 
         testDocumentUpdates.setMapOfCustomTypeReplaceItem(customType1.getName(), customType1);
+        Assert.assertTrue(testDocumentUpdates.getMapOfCustomTypeReplaceIds().contains("item1"));
         testDocumentUpdates.setMapOfCustomTypeReplaceItem(customType2.getName(), customType2);
         NestedTypeUpdates nestedTypeUpdates = createNestedTypeUpdates(doc, nested);
         nestedTypeUpdates.setMapOfCustomTypeReplaceItem(customType1.getName(), customType1);
@@ -262,6 +265,7 @@ public class DynamapTest {
         Assert.assertTrue(doc.getSetOfString().containsAll(Sets.newHashSet("test1", "test2")));
         TestDocumentUpdates updates = createTestDocumentUpdates(doc);
         updates.setSetOfStringItem("test3");
+        Assert.assertTrue(updates.getSetOfString().contains("test3"));
         TestDocument updated = dynamap.update(new UpdateParams<>(updates));
         Assert.assertTrue(updated.getSetOfString().containsAll(Sets.newHashSet("test1", "test2", "test3")));
     }
@@ -367,9 +371,11 @@ public class DynamapTest {
         Assert.assertEquals(testDocumentUpdates.getMapOfLongValue("a").longValue(), 1);
         testDocumentUpdates.incrementMapOfLongAmount("a", 1L);
         Assert.assertEquals(testDocumentUpdates.getMapOfLongValue("a").longValue(), 2);
+        Assert.assertEquals(testDocumentUpdates.getMapOfLong().get("a").longValue(), 2);
         dynamap.update(new UpdateParams<>(testDocumentUpdates));
         doc = dynamap.getObject(new GetObjectRequest<>(TestDocumentBean.class).withHashKeyValue(docId1).withRangeKeyValue(1), null);
-        Assert.assertEquals(testDocumentUpdates.getMapOfLongValue("a").longValue(), 2);
+        Assert.assertEquals(doc.getMapOfLongValue("a").longValue(), 2);
+        Assert.assertEquals(doc.getMapOfLong().get("a").longValue(), 2);
 
         testDocumentUpdates = new TestDocumentUpdates(doc, docId1, 1);
         testDocumentUpdates.setMapOfLongValue("a", 1L);
@@ -377,12 +383,14 @@ public class DynamapTest {
         dynamap.update(new UpdateParams<>(testDocumentUpdates));
         doc = dynamap.getObject(createGetObjectRequest(doc), null);
         Assert.assertEquals(doc.getMapOfLongValue("a").longValue(), 1);
+        Assert.assertEquals(doc.getMapOfLong().get("a").longValue(), 1);
 
         // Set value then increment - only the set value is considered. Once set value is used, deltas are ignored.
         testDocumentUpdates = new TestDocumentUpdates(doc, docId1, 1);
         testDocumentUpdates.setMapOfLongValue("a", 10L);
         testDocumentUpdates.incrementMapOfLongAmount("a", 1L);
         Assert.assertEquals(testDocumentUpdates.getMapOfLongValue("a").longValue(), 10L);
+        Assert.assertEquals(testDocumentUpdates.getMapOfLong().get("a").longValue(), 10L);
 
     }
 

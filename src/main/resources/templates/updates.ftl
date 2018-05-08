@@ -126,7 +126,12 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         <#else>
             <#assign deltas>null</#assign>
         </#if>
-        return MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}Ids(), ${deltas}, ${field.name}Sets.keySet(), ${field.name}Deletes, ${field.name}Clear);
+        if (${field.name}Modified) {
+            return MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}Ids(), ${deltas}, ${field.name}Sets.keySet(), ${field.name}Deletes, ${field.name}Clear);
+        }
+        else {
+            return ${currentState}.get${field.name?cap_first}Ids();
+        }
     }
     @Override
     public ${field.type} get${field.name?cap_first}<@collection_item field=field />(String id) {
@@ -167,7 +172,12 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         }
         return ${currentState}.get${field.name?cap_first}();
         <#else>
-        return MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}(), ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
+        if (${field.name}Modified) {
+            return MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}(), ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
+        }
+        else {
+            return ${currentState}.get${field.name?cap_first}();
+        }
         </#if>
     }
     <#if field.isNumber()>
@@ -189,7 +199,12 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         if (${field.name} != null) {
             return ${field.name};
         }
-        return MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}(), null, ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
+        if (${field.name}Modified) {
+            return MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}(), null, ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
+        }
+        else {
+            return ${currentState}.get${field.name?cap_first}();
+        }
     }
     </#if>
     <#else>
@@ -254,6 +269,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     public ${updatesName} clear${field.name?cap_first}() {
         ${field.name}Clear = true;
         modified = true;
+        ${field.name}Modified = true;
         <@persisted_modified field/>
         return this;
     }
@@ -265,12 +281,14 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     public ${updatesName} increment${field.name?cap_first}Amount(String id, ${field.type} amount) {
         ${field.name}Deltas.put(id, ${field.name}Deltas.getOrDefault(id, <@defaultNumber field />) + amount);
         modified = true;
+        ${field.name}Modified = true;
         <@persisted_modified field/>
         return this;
     }
     public ${updatesName} decrement${field.name?cap_first}Amount(String id, ${field.type} amount) {
         ${field.name}Deltas.put(id, ${field.name}Deltas.getOrDefault(id, <@defaultNumber field />) - amount);
         modified = true;
+        ${field.name}Modified = true;
         <@persisted_modified field/>
         return this;
     }
@@ -278,6 +296,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     public ${updatesName} set${field.name?cap_first}<@collection_item field=field />(String id, ${field.type} value) {
         ${field.name}Sets.put(id, value);
         modified = true;
+        ${field.name}Modified = true;
         <@persisted_modified field/>
         return this;
     }
@@ -287,12 +306,14 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
             ${field.name}Deletes.remove(id);
         }
         modified = true;
+        ${field.name}Modified = true;
         <@persisted_modified field/>
         return this;
     }
     public ${updatesName} delete${field.name?cap_first}<@collection_item field=field />(String id) {
         ${field.name}Deletes.add(id);
         modified = true;
+        ${field.name}Modified = true;
         <@persisted_modified field/>
         return this;
     }
@@ -301,6 +322,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
        public ${updatesName} set${field.name?cap_first}(Map<String,${field.type}> value) {
                 this.${field.name} = value;
                 modified = true;
+                ${field.name}Modified = true;
                 return this;
         }
     </#if>
@@ -309,12 +331,14 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     public ${updatesName} add${field.name?cap_first}<@collection_item field=field />(${field.type} value) {
         ${field.name}Adds.add(value);
         modified = true;
+        ${field.name}Modified = true;
         <@persisted_modified field/>
         return this;
     }
     public ${updatesName} set${field.name?cap_first}(List<${field.type}> list) {
         this.${field.name} = list;
         modified = true;
+        ${field.name}Modified = true;
         <@persisted_modified field/>
         return this;
     }
@@ -323,12 +347,14 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     public ${updatesName} set${field.name?cap_first}<@collection_item field=field />(${field.type} value) {
         ${field.name}Sets.add(value);
         modified = true;
+        ${field.name}Modified = true;
         <@persisted_modified field/>
         return this;
     }
     public ${updatesName} delete${field.name?cap_first}<@collection_item field=field />(${field.type} value) {
         ${field.name}Deletes.remove(value);
         modified = true;
+        ${field.name}Modified = true;
         <@persisted_modified field/>
         return this;
     }
@@ -336,6 +362,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     public ${updatesName} set${field.name?cap_first}(Set<${field.type}> value) {
         this.${field.name} = value;
         modified = true;
+        ${field.name}Modified = true;
         <@persisted_modified field/>
         return this;
     }
@@ -344,20 +371,22 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     public ${updatesName} set${field.name?cap_first}(${field.type} value) {
         this.${field.name} = value;
         modified = true;
-        <@persisted_modified field/>
         ${field.name}Modified = true;
+        <@persisted_modified field/>
         return this;
     }
     <#if field.isNumber()>
     public ${updatesName} increment${field.name?cap_first}(${field.type} amount) {
         ${field.name}Delta = (${field.name}Delta == null ? <@defaultNumber field /> : ${field.name}Delta) + amount;
         modified = true;
+        ${field.name}Modified = true;
         <@persisted_modified field/>
         return this;
     }
     public ${updatesName} decrement${field.name?cap_first}(${field.type} amount) {
         ${field.name}Delta = (${field.name}Delta == null ? <@defaultNumber field /> : ${field.name}Delta) - amount;
         modified = true;
+        ${field.name}Modified = true;
         <@persisted_modified field/>
         return this;
     }
