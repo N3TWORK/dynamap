@@ -60,30 +60,30 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     @JsonCreator
     public ${beanName}(
         <#list type.serializedFields as field>
-        @JsonProperty(${field.name?upper_case}_FIELD) <#if field.generatedType>${field.type}Bean<#else><@field_type field=field /></#if> ${field.name}<#sep>,
+        @JsonProperty(${field.name?upper_case}_FIELD) <#if field.generatedType>${field.elementType}Bean<#else><@field_type field=field /></#if> ${field.name}<#sep>,
         </#list><#if isRoot && optimisticLocking>,@JsonProperty(REVISION_FIELD) Integer _revision</#if>
             <#if tableDefinition.isEnableMigrations() && isRoot>,@JsonProperty(SCHEMA_VERSION_FIELD) Integer _schemaVersion</#if>) {
 
     <#list type.fields as field>
         <#if field.isPersist()>
-            <#if field.multiValue??>
-            <#if field.multiValue == 'MAP'>
+            <#if field.isCollection()>
+            <#if field.type == 'Map'>
             this.${field.name} = ${field.name} == null ? Collections.emptyMap() : ${field.name};
-            <#elseif field.multiValue == 'LIST'>
+            <#elseif field.type == 'List'>
             this.${field.name} = ${field.name} == null ? Collections.emptyList() : ${field.name};
-            <#elseif field.multiValue == 'SET'>
+            <#elseif field.type == 'Set'>
             this.${field.name} = ${field.name} == null ? Collections.emptySet() : ${field.name};
             </#if>
             <#else>
-            this.${field.name} = ${field.name} == null ? ${field.defaultValue} : ${field.name};
+            this.${field.name} = ${field.name} == null ? <@defaultValue field false /> : ${field.name};
             </#if>
         <#else>
-           <#if field.multiValue??>
-           <#if field.multiValue == 'MAP'>
+           <#if field.isCollection()>
+           <#if field.type == 'Map'>
                 this.${field.name} = ${field.name} == null ? Collections.emptyMap() : ${field.name};
-                <#elseif field.multiValue == 'LIST'>
+                <#elseif field.type == 'List'>
                 this.${field.name} = ${field.name} == null ? Collections.emptyList() : ${field.name};
-                <#elseif field.multiValue == 'SET'>
+                <#elseif field.type == 'Set'>
                 this.${field.name} = ${field.name} == null ? Collections.emptySet() : ${field.name};
            </#if>
            </#if>
@@ -100,8 +100,8 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     public ${beanName}(${type.name} bean) {
 
     <#list type.fields as field>
-        <#if field.multiValue?? && field.multiValue == 'MAP'>
-        <#if field.multiValue == 'MAP'>
+        <#if field.isCollection() && field.type == 'Map'>
+        <#if field.type == 'Map'>
         this.${field.name} = new HashMap();
         for (String id : bean.get${field.name?cap_first}Ids()) {
             this.${field.name}.put(id, bean.get${field.name?cap_first}<@collection_item field=field />(id));
@@ -210,15 +210,15 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
         this.${field.name} = value;
         return this;
     }
-    <#if field.multiValue! == 'MAP'>
+    <#if field.type == 'Map'>
         @JsonIgnore
         public Set<String> get${field.name?cap_first}Ids() {
         return this.${field.name}.keySet();
         }
         @JsonIgnore
-        public ${field.type} get${field.name?cap_first}<@collection_item field=field />(String id) {
+        public ${field.elementType} get${field.name?cap_first}<@collection_item field=field />(String id) {
             <#if field.useDefaultForNulls()>
-            return this.${field.name}.getOrDefault(id, ${field.defaultValue});
+            return this.${field.name}.getOrDefault(id, <@defaultValue field=field elementOnly=true/>);
             <#else>
             return this.${field.name}.get(id);
             </#if>

@@ -114,8 +114,8 @@ public class CodeGenerator {
             model.put("currentState", "current" + type.getName());
             Set<String> imports = new HashSet<>();
             for (Field field : type.getFields()) {
-                if (nonGeneratedCustomTypes.contains(field.getType())) {
-                    imports.add(field.getType());
+                if (nonGeneratedCustomTypes.contains(field.getElementType())) {
+                    imports.add(field.getElementType());
                 }
             }
             model.put("imports", imports);
@@ -124,7 +124,7 @@ public class CodeGenerator {
                 model.put("isRoot", true);
             } else {
                 model.put("isRoot", false);
-                Field field = tableType.getFields().stream().filter(f -> f.getType().equals(type.getName())).findFirst().get();
+                Field field = tableType.getFields().stream().filter(f -> f.getElementType().equals(type.getName())).findFirst().get();
                 model.put("parentFieldName", field.getDynamoName());
             }
 
@@ -150,17 +150,12 @@ public class CodeGenerator {
         Set<String> generatedTypes = tableDefinition.getTypes().stream().map(t -> t.getName()).collect(Collectors.toSet());
         for (Type type : tableDefinition.getTypes()) {
             for (Field field : type.getFields()) {
-                if (!generatedTypes.contains(field.getType()) && !BUILT_IN_TYPES.contains(field.getType())) {
-                    if (field.getType().equals("Set") || field.getType().equals("List") || field.getType().equals("Map")) {
-                        customTypes.add("java.util." + field.getType());
-                    } else {
-                        customTypes.add(field.getType());
-                    }
+                if (!generatedTypes.contains(field.getElementType()) && !BUILT_IN_TYPES.contains(field.getElementType())) {
+                    customTypes.add(field.getElementType());
                 }
             }
         }
         return customTypes;
     }
-
 
 }

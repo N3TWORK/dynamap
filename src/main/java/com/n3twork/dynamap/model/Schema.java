@@ -34,7 +34,7 @@ public class Schema {
             Set<String> generatedTypeNames = tableDefinition.getTypes().stream().map(Type::getName).collect(Collectors.toSet());
             for (Type type : tableDefinition.getTypes()) {
                 for (Field field : type.getFields()) {
-                    if (generatedTypeNames.contains(field.getType())) {
+                    if (generatedTypeNames.contains(field.getElementType())) {
                         field.setGeneratedType(true);
                     }
                 }

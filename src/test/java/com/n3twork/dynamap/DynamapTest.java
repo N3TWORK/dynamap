@@ -147,6 +147,35 @@ public class DynamapTest {
     }
 
     @Test
+    public void testMapOfLong() {
+        NestedTypeBean nested = createNestedTypeBean();
+        TestDocumentBean doc = createTestDocumentBean(nested);
+        dynamap.save(new SaveParams<>(doc));
+        Assert.assertNull(nested.getMapOfLongValue("new"));
+        Assert.assertEquals(nested.getMapOfLongWithDefaultsValue("new").longValue(), 0L);
+
+        NestedTypeUpdates nestedTypeUpdates = createNestedTypeUpdates(doc, nested);
+        Assert.assertNull(nestedTypeUpdates.getMapOfLongValue("new"));
+        Assert.assertEquals(nestedTypeUpdates.getMapOfLongWithDefaultsValue("new").longValue(), 0L);
+
+        nestedTypeUpdates.incrementMapOfLongAmount("test1", 1L);
+        Assert.assertEquals(nestedTypeUpdates.getMapOfLongValue("test1").longValue(), 1L);
+        nestedTypeUpdates.incrementMapOfLongAmount("test1", 1L);
+        Assert.assertEquals(nestedTypeUpdates.getMapOfLongValue("test1").longValue(), 2L);
+
+        nestedTypeUpdates.incrementMapOfLongWithDefaultsAmount("new", 1L);
+        Assert.assertEquals(nestedTypeUpdates.getMapOfLongWithDefaultsValue("new").longValue(), 1L);
+        nestedTypeUpdates.incrementMapOfLongWithDefaultsAmount("new", 1L);
+        Assert.assertEquals(nestedTypeUpdates.getMapOfLongWithDefaultsValue("new").longValue(), 2L);
+
+        dynamap.update(new UpdateParams<>(nestedTypeUpdates));
+        doc = dynamap.getObject(createGetObjectRequest(doc), null);
+        Assert.assertEquals(doc.getNestedObject().getMapOfLongWithDefaults().get("new").longValue(), 2L);
+
+
+    }
+
+    @Test
     public void testMapOfCustomObject() {
 
         NestedTypeBean nested = createNestedTypeBean();

@@ -48,27 +48,27 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
 <#list type.fields as field>
     protected <@field_type field=field /> ${field.name};
     <#if field.isGeneratedType()>
-    protected ${field.type}Updates ${field.name}Updates;
+    protected ${field.elementType}Updates ${field.name}Updates;
     </#if>
     protected boolean ${field.name}Modified = false;
-    <#if field.multiValue??>
+    <#if field.isCollection()>
     protected boolean ${field.name}Clear = false;
-    <#if field.multiValue == 'LIST'>
+    <#if field.type == 'List'>
     protected <@field_type field=field /> ${field.name}Adds = new ArrayList();
     </#if>
-    <#if field.multiValue == 'SET'>
+    <#if field.type == 'Set'>
     protected <@field_type field=field /> ${field.name}Deletes = new HashSet();
     protected <@field_type field=field /> ${field.name}Sets = new HashSet();
     </#if>
-    <#if field.multiValue == 'MAP'>
+    <#if field.type == 'Map'>
     protected Set<String> ${field.name}Deletes = new HashSet();
     protected <@field_type field=field /> ${field.name}Sets = new HashMap();
     </#if>
-    <#if field.multiValue == 'MAP' && field.isNumber()>
+    <#if field.type == 'Map' && field.isNumber()>
     protected <@field_type field=field /> ${field.name}Deltas = new HashMap();
     </#if>
     <#elseif field.isNumber()>
-    protected ${field.type} ${field.name}Delta;
+    protected ${field.elementType} ${field.name}Delta;
     </#if>
 </#list>
     protected final boolean disableOptimisticLocking;
@@ -113,9 +113,9 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     }
 
 <#list type.fields as field>
-    <#if field.multiValue??>
+    <#if field.isCollection()>
 
-    <#if field.multiValue == 'MAP'>
+    <#if field.type == 'Map'>
     @Override
     public Set<String> get${field.name?cap_first}Ids() {
         if (${field.name} != null) {
@@ -134,28 +134,28 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         }
     }
     @Override
-    public ${field.type} get${field.name?cap_first}<@collection_item field=field />(String id) {
+    public ${field.elementType} get${field.name?cap_first}<@collection_item field=field />(String id) {
         if (${field.name} != null) {
           <#if field.useDefaultForNulls()>
-            return ${field.name}.getOrDefault(id, ${field.defaultValue});
+            return ${field.name}.getOrDefault(id, <@defaultValue field=field elementOnly=true />);
           <#else>
             return ${field.name}.get(id);
           </#if>
         }
         <#if field.isNumber()>
-        ${field.type} value = MergeUtil.getLatestNumericValue(${field.type}.class, id, ${currentState}.get${field.name?cap_first}<@collection_item field=field />(id), ${field.name}Deltas, ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
+        ${field.elementType} value = MergeUtil.getLatestNumericValue(${field.elementType}.class, id, ${currentState}.get${field.name?cap_first}<@collection_item field=field />(id), ${field.name}Deltas, ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
         <#else>
-        ${field.type} value = MergeUtil.getLatestValue(id, ${currentState}.get${field.name?cap_first}<@collection_item field=field />(id), ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
+        ${field.elementType} value = MergeUtil.getLatestValue(id, ${currentState}.get${field.name?cap_first}<@collection_item field=field />(id), ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
         </#if>
         <#if field.useDefaultForNulls()>
         if (value == null) {
-            return ${field.defaultValue};
+            return <@defaultValue field=field elementOnly=true />;
         }
         </#if>
         return value;
     }
     @Override
-    public Map<String,${field.type}> get${field.name?cap_first}() {
+    public Map<String,${field.elementType}> get${field.name?cap_first}() {
         if (${field.name} != null) {
             return ${field.name};
         }
@@ -164,7 +164,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         }
         <#if field.isNumber()>
         if ( ${field.name}Deltas.size() > 0 || ${field.name}Deletes.size() > 0 || ${field.name}Sets.size() > 0) {
-            Map<String, ${field.type}> allItems = new HashMap<>();
+            Map<String, ${field.elementType}> allItems = new HashMap<>();
             for (String id : get${field.name?cap_first}Ids()) {
                 allItems.put(id, get${field.name?cap_first}<@collection_item field=field />(id));
             }
@@ -181,21 +181,21 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         </#if>
     }
     <#if field.isNumber()>
-    public Map<String,${field.type}> get${field.name?cap_first}Deltas() {
+    public Map<String,${field.elementType}> get${field.name?cap_first}Deltas() {
         return ${field.name}Deltas;
     }
     </#if>
-    <#elseif field.multiValue == 'LIST'>
+    <#elseif field.type == 'List'>
     @Override
-    public List<${field.type}> get${field.name?cap_first}() {
+    public List<${field.elementType}> get${field.name?cap_first}() {
         if (${field.name} != null) {
             return ${field.name};
         }
         return MergeUtil.mergeAdds(${currentState}.get${field.name?cap_first}(), ${field.name}Adds, ${field.name}Clear);
     }
-    <#elseif field.multiValue == 'SET'>
+    <#elseif field.type == 'Set'>
     @Override
-    public Set<${field.type}> get${field.name?cap_first}() {
+    public Set<${field.elementType}> get${field.name?cap_first}() {
         if (${field.name} != null) {
             return ${field.name};
         }
@@ -209,9 +209,9 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     </#if>
     <#else>
     @Override
-    public ${field.type} get${field.name?cap_first}() {
+    public ${field.elementType} get${field.name?cap_first}() {
         <#if field.isNumber()>
-        return MergeUtil.getLatestNumericValue(${field.type}.class, ${currentState}.get${field.name?cap_first}(), ${field.name}Delta, ${field.name});
+        return MergeUtil.getLatestNumericValue(${field.elementType}.class, ${currentState}.get${field.name?cap_first}(), ${field.name}Delta, ${field.name});
         <#else>
         return this.${field.name} == null ? ${currentState}.get${field.name?cap_first}() : this.${field.name};
         </#if>
@@ -264,7 +264,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     /////// Mutator methods ///////////////////////
 
 <#list type.fields as field>
-  <#if field.multiValue??>
+  <#if field.isCollection()>
     <#if field.useDeltas()>
     public ${updatesName} clear${field.name?cap_first}() {
         ${field.name}Clear = true;
@@ -275,32 +275,32 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     }
     </#if>
   </#if>
-    <#if field.multiValue! == 'MAP'>
+    <#if field.type == 'Map'>
     <#if field.useDeltas()>
         <#if field.isNumber()>
-    public ${updatesName} increment${field.name?cap_first}Amount(String id, ${field.type} amount) {
-        ${field.name}Deltas.put(id, ${field.name}Deltas.getOrDefault(id, <@defaultNumber field />) + amount);
+    public ${updatesName} increment${field.name?cap_first}Amount(String id, ${field.elementType} amount) {
+        ${field.name}Deltas.put(id, ${field.name}Deltas.getOrDefault(id, <@numberSuffix field 0 />) + amount);
         modified = true;
         ${field.name}Modified = true;
         <@persisted_modified field/>
         return this;
     }
-    public ${updatesName} decrement${field.name?cap_first}Amount(String id, ${field.type} amount) {
-        ${field.name}Deltas.put(id, ${field.name}Deltas.getOrDefault(id, <@defaultNumber field />) - amount);
+    public ${updatesName} decrement${field.name?cap_first}Amount(String id, ${field.elementType} amount) {
+        ${field.name}Deltas.put(id, ${field.name}Deltas.getOrDefault(id, <@numberSuffix field 0 />) - amount);
         modified = true;
         ${field.name}Modified = true;
         <@persisted_modified field/>
         return this;
     }
         </#if>
-    public ${updatesName} set${field.name?cap_first}<@collection_item field=field />(String id, ${field.type} value) {
+    public ${updatesName} set${field.name?cap_first}<@collection_item field=field />(String id, ${field.elementType} value) {
         ${field.name}Sets.put(id, value);
         modified = true;
         ${field.name}Modified = true;
         <@persisted_modified field/>
         return this;
     }
-    public ${updatesName} set${field.name?cap_first}<@collection_item field=field />(String id, ${field.type} value, boolean override) {
+    public ${updatesName} set${field.name?cap_first}<@collection_item field=field />(String id, ${field.elementType} value, boolean override) {
         ${field.name}Sets.put(id, value);
         if (override) {
             ${field.name}Deletes.remove(id);
@@ -319,7 +319,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     }
 
     <#else>
-       public ${updatesName} set${field.name?cap_first}(Map<String,${field.type}> value) {
+       public ${updatesName} set${field.name?cap_first}(Map<String,${field.elementType}> value) {
                 this.${field.name} = value;
                 modified = true;
                 ${field.name}Modified = true;
@@ -327,31 +327,31 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         }
     </#if>
 
-    <#elseif field.multiValue! == 'LIST'>
-    public ${updatesName} add${field.name?cap_first}<@collection_item field=field />(${field.type} value) {
+    <#elseif field.type == 'List'>
+    public ${updatesName} add${field.name?cap_first}<@collection_item field=field />(${field.elementType} value) {
         ${field.name}Adds.add(value);
         modified = true;
         ${field.name}Modified = true;
         <@persisted_modified field/>
         return this;
     }
-    public ${updatesName} set${field.name?cap_first}(List<${field.type}> list) {
+    public ${updatesName} set${field.name?cap_first}(List<${field.elementType}> list) {
         this.${field.name} = list;
         modified = true;
         ${field.name}Modified = true;
         <@persisted_modified field/>
         return this;
     }
-    <#elseif field.multiValue! == 'SET'>
+    <#elseif field.type == 'Set'>
     <#if field.useDeltas()>
-    public ${updatesName} set${field.name?cap_first}<@collection_item field=field />(${field.type} value) {
+    public ${updatesName} set${field.name?cap_first}<@collection_item field=field />(${field.elementType} value) {
         ${field.name}Sets.add(value);
         modified = true;
         ${field.name}Modified = true;
         <@persisted_modified field/>
         return this;
     }
-    public ${updatesName} delete${field.name?cap_first}<@collection_item field=field />(${field.type} value) {
+    public ${updatesName} delete${field.name?cap_first}<@collection_item field=field />(${field.elementType} value) {
         ${field.name}Deletes.remove(value);
         modified = true;
         ${field.name}Modified = true;
@@ -359,7 +359,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         return this;
     }
     <#else>
-    public ${updatesName} set${field.name?cap_first}(Set<${field.type}> value) {
+    public ${updatesName} set${field.name?cap_first}(Set<${field.elementType}> value) {
         this.${field.name} = value;
         modified = true;
         ${field.name}Modified = true;
@@ -368,7 +368,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     }
     </#if>
     <#else>
-    public ${updatesName} set${field.name?cap_first}(${field.type} value) {
+    public ${updatesName} set${field.name?cap_first}(${field.elementType} value) {
         this.${field.name} = value;
         modified = true;
         ${field.name}Modified = true;
@@ -376,15 +376,15 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         return this;
     }
     <#if field.isNumber()>
-    public ${updatesName} increment${field.name?cap_first}(${field.type} amount) {
-        ${field.name}Delta = (${field.name}Delta == null ? <@defaultNumber field /> : ${field.name}Delta) + amount;
+    public ${updatesName} increment${field.name?cap_first}(${field.elementType} amount) {
+        ${field.name}Delta = (${field.name}Delta == null ? amount: ${field.name}Delta) + amount;
         modified = true;
         ${field.name}Modified = true;
         <@persisted_modified field/>
         return this;
     }
-    public ${updatesName} decrement${field.name?cap_first}(${field.type} amount) {
-        ${field.name}Delta = (${field.name}Delta == null ? <@defaultNumber field /> : ${field.name}Delta) - amount;
+    public ${updatesName} decrement${field.name?cap_first}(${field.elementType} amount) {
+        ${field.name}Delta = (${field.name}Delta == null ? amount : ${field.name}Delta) - amount;
         modified = true;
         ${field.name}Modified = true;
         <@persisted_modified field/>
@@ -397,13 +397,13 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     /////////// Expose Modifications /////////////
 
 <#list type.fields as field>
-    <#if field.multiValue??>
-        <#if field.multiValue == 'LIST'>
+    <#if field.isCollection()>
+        <#if field.type == 'List'>
         public <@field_type field=field /> ${field.name}Adds() {
             return ${field.name}Adds;
         }
         </#if>
-        <#if field.multiValue == 'SET'>
+        <#if field.type == 'Set'>
         public <@field_type field=field /> ${field.name}Deletes() {
             return ${field.name}Deletes;
         }
@@ -411,7 +411,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
             return ${field.name}Sets;
         }
         </#if>
-        <#if field.multiValue == 'MAP'>
+        <#if field.type == 'Map'>
         public Set<String> ${field.name}Deletes() {
             return ${field.name}Deletes;
         }
@@ -419,7 +419,7 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
             return ${field.name}Sets;
         }
         </#if>
-        <#if field.multiValue == 'MAP' && field.isNumber()>
+        <#if field.type == 'Map' && field.isNumber()>
         public <@field_type field=field /> ${field.name}Deltas() {
             return ${field.name}Deltas;
         }
@@ -432,11 +432,11 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     //////////////// Nested Updates ////////////////
     <#list type.fields as field>
     <#if field.isGeneratedType()>
-    public ${field.type}Updates get${field.name?cap_first}Updates() {
+    public ${field.elementType}Updates get${field.name?cap_first}Updates() {
         return this.${field.name}Updates;
     }
 
-    public ${updatesName} set${field.name?cap_first}Updates(${field.type}Updates value) {
+    public ${updatesName} set${field.name?cap_first}Updates(${field.elementType}Updates value) {
         if (this.${field.name} != null) {
             throw new IllegalStateException("Nested property: ${field.name}, should not be set when passing its Updates object");
         }
@@ -480,37 +480,37 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
 </#if>
 
     <#list type.persistedFields as field>
-        <#if field.multiValue! == 'MAP'>
+        <#if field.type == 'Map'>
             <#if field.useDeltas()>
 
             <#if field.isReplace()>
-                expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.type}.class);
+                expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.elementType}.class);
             <#else>
                 <#if field.isNumber()>
-                    expression.updateMap(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Deltas, ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear, ${field.type}.class);
+                    expression.updateMap(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Deltas, ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear, ${field.elementType}.class);
                 <#else>
-                    expression.updateMap(parentDynamoFieldName, "${field.dynamoName}", null, ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear, ${field.type}.class);
+                    expression.updateMap(parentDynamoFieldName, "${field.dynamoName}", null, ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear, ${field.elementType}.class);
                 </#if>
              </#if>
 
             <#else>
-                expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.type}.class);
+                expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.elementType}.class);
             </#if>
 
-        <#elseif field.multiValue! == 'LIST'>
+        <#elseif field.type == 'List'>
             <#if field.useDeltas()>
                 for (Object value : ${field.name}Adds) {
                     expression.incrementNumber(parentDynamoFieldName, "${field.dynamoName}", (Number) value);
                 }
             <#else>
-                expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.type}.class);
+                expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.elementType}.class);
             </#if>
 
-        <#elseif field.multiValue! == 'SET'>
+        <#elseif field.type == 'Set'>
             <#if field.useDeltas()>
-                expression.addSetValuesToSet(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Sets, ${field.type}.class);
+                expression.addSetValuesToSet(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Sets, ${field.elementType}.class);
             <#else>
-                expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.type}.class);
+                expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.elementType}.class);
             </#if>
         <#else>
             <#if field.isNumber()>

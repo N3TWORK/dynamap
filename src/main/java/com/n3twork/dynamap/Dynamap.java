@@ -89,7 +89,7 @@ public class Dynamap {
             keySchema.add(new KeySchemaElement().withAttributeName(hashField.getDynamoName()).withKeyType(KeyType.HASH));
             if (tableDefinition.getRangeKey() != null) {
                 Field field = tableDefinition.getField(tableDefinition.getRangeKey());
-                attributeDefinitions.add(new AttributeDefinition().withAttributeName(field.getDynamoName()).withAttributeType(field.getType().equals("String") ? "S" : "N"));
+                attributeDefinitions.add(new AttributeDefinition().withAttributeName(field.getDynamoName()).withAttributeType(field.getElementType().equals("String") ? "S" : "N"));
                 keySchema.add(new KeySchemaElement().withAttributeName(field.getDynamoName()).withKeyType(KeyType.RANGE));
             }
 
@@ -107,7 +107,7 @@ public class Dynamap {
                             .withAttributeName(field.getDynamoName())
                             .withKeyType(KeyType.HASH));
                     if (!hasAttributeDefinition(attributeDefinitions, field.getDynamoName())) {
-                        attributeDefinitions.add(new AttributeDefinition().withAttributeName(field.getDynamoName()).withAttributeType(field.getType().equals("String") ? "S" : "N"));
+                        attributeDefinitions.add(new AttributeDefinition().withAttributeName(field.getDynamoName()).withAttributeType(field.getElementType().equals("String") ? "S" : "N"));
                     }
 
                     if (index.getRangeKey() != null) {
@@ -117,7 +117,7 @@ public class Dynamap {
                                 .withKeyType(KeyType.RANGE));
 
                         if (!hasAttributeDefinition(attributeDefinitions, rangeField.getDynamoName())) {
-                            attributeDefinitions.add(new AttributeDefinition().withAttributeName(rangeField.getDynamoName()).withAttributeType(rangeField.getType().equals("String") ? "S" : "N"));
+                            attributeDefinitions.add(new AttributeDefinition().withAttributeName(rangeField.getDynamoName()).withAttributeType(rangeField.getElementType().equals("String") ? "S" : "N"));
                         }
                     }
                     gsi.setKeySchema(indexKeySchema);
@@ -147,7 +147,7 @@ public class Dynamap {
                             .withAttributeName(field.getDynamoName())
                             .withKeyType(KeyType.HASH));
                     if (!hasAttributeDefinition(attributeDefinitions, field.getDynamoName())) {
-                        attributeDefinitions.add(new AttributeDefinition().withAttributeName(field.getDynamoName()).withAttributeType(field.getType().equals("String") ? "S" : "N"));
+                        attributeDefinitions.add(new AttributeDefinition().withAttributeName(field.getDynamoName()).withAttributeType(field.getElementType().equals("String") ? "S" : "N"));
                     }
 
                     Field rangeField = tableDefinition.getField(index.getRangeKey());
@@ -156,7 +156,7 @@ public class Dynamap {
                             .withKeyType(KeyType.RANGE));
 
                     if (!hasAttributeDefinition(attributeDefinitions, rangeField.getDynamoName())) {
-                        attributeDefinitions.add(new AttributeDefinition().withAttributeName(rangeField.getDynamoName()).withAttributeType(rangeField.getType().equals("String") ? "S" : "N"));
+                        attributeDefinitions.add(new AttributeDefinition().withAttributeName(rangeField.getDynamoName()).withAttributeType(rangeField.getElementType().equals("String") ? "S" : "N"));
                     }
 
                     lsi.setKeySchema(indexKeySchema);
@@ -703,7 +703,7 @@ public class Dynamap {
             // if field is a nested dynamap object then remove any non persisted fields
             if (field.isGeneratedType()) {
                 Map<String, Object> objectToPersist = (Map<String, Object>) map.get(field.getDynamoName());
-                Type fieldType = tableDefinition.getFieldType(field.getType());
+                Type fieldType = tableDefinition.getFieldType(field.getElementType());
                 for (Field fieldToCheck : fieldType.getFields()) {
                     if (objectToPersist.containsKey(fieldToCheck.getName()) && !fieldToCheck.isPersist()) {
                         objectToPersist.remove(fieldToCheck.getName());
@@ -712,7 +712,7 @@ public class Dynamap {
             }
             // Jackson converts all collections to array lists, which in turn are treated as lists
             // Need to handle string sets specifically. String sets can also not be empty
-            if (field.getMultiValue() == Field.MultiValue.SET && field.getType().equals("String")) {
+            if (field.getType().equals("Set") && field.getElementType().equals("String")) {
                 List list = (List) map.get(field.getDynamoName());
                 if (list.size() > 0) {
                     item.with(field.getDynamoName(), new HashSet<>((List) map.get(field.getDynamoName())));

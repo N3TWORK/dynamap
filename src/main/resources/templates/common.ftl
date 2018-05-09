@@ -16,16 +16,16 @@
 
 <#macro field_type field>
     <#compress>
-        <#if field.multiValue??>
-            <#if field.multiValue! == 'MAP'>
-            Map<String,${field.type}>
-            <#elseif field.multiValue! == 'LIST'>
-            List<${field.type}>
-            <#elseif field.multiValue! == 'SET'>
-            Set<${field.type}>
+        <#if field.isCollection()>
+            <#if field.type == 'Map'>
+            Map<String,${field.elementType}>
+            <#elseif field.type == 'List'>
+            List<${field.elementType}>
+            <#elseif field.type == 'Set'>
+            Set<${field.elementType}>
             </#if>
         <#else>
-        ${field.type}
+        ${field.elementType}
         </#if>
     </#compress>
 </#macro>
@@ -40,22 +40,62 @@
     </#compress>
 </#macro>
 
-<#macro defaultNumber field>
+<#macro defaultValue field elementOnly>
     <#compress>
-        <#if field.defaultValue == 'null'>
-            <#if field.type == 'Integer'>
-            0
-            <#elseif field.type == 'Long'>
-            0L
-            <#elseif field.type == 'Float'>
-            0.0
-            <#elseif field.type == 'Double'>
-            0.0
-            </#if>
-        <#else>
-        ${field.defaultValue}
-        </#if>
+      <#if field.defaultValue??>
+          <#if field.isCollection() && !elementOnly>
+            <@default_collection field=field />
+          <#else>
+              <#if field.elementType == 'String'>
+              "${field.defaultValue}"
+              <#elseif field.isNumber()>
+              <@numberSuffix field field.defaultValue />
+              <#else>
+              ${field.defaultValue}
+              </#if>
+          </#if>
+     <#else>
+         <#if elementOnly>
+              <#if field.isNumber()>
+                   <@numberSuffix field 0 />
+              <#else>
+                  "${field.defaultValue}"
+              </#if>
+          <#else>
+              <#if field.isCollection()>
+                  <@default_collection field=field />
+              <#else>
+                  null
+              </#if>
+         </#if>
+     </#if>
     </#compress>
+</#macro>
+
+<#macro numberSuffix field value>
+<#compress>
+    <#if field.elementType == 'Long'>
+    ${value}L
+    <#elseif field.elementType = 'Float'>
+    ${value}f
+    <#elseif field.elementType = 'Double'>
+    ${value}d
+    <#else>
+    ${value}
+    </#if>
+</#compress>
+</#macro>
+
+<#macro default_collection field>
+<#compress>
+    <#if field.type == 'Map'>
+        Collections.emptyMap()
+    <#elseif field.type == 'Set'>
+        Collections.emptySet()
+    <#else>
+        Collections.emptyList()
+    </#if>
+</#compress>
 </#macro>
 
 <#macro persisted_modified field>

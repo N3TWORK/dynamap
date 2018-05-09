@@ -57,27 +57,27 @@
             {
               "name": "mapOfLong",
               "dynamoName": "mol",
-              "type": "Long",
-              "multivalue": "Map"
+              "type": "Map",
+              "elementType": "Long"
             },
             {
               "name": "mapOfCustomType",
               "dynamoName": "mct",
-              "type": "com.n3twork.dynamap.CustomType",
-              "multivalue": "Map"
+              "type": "Map",
+              "elementType": "com.n3twork.dynamap.CustomType"
             },
             {
               "name": "mapOfCustomTypeReplace",
               "dynamoName": "mctr",
-              "type": "com.n3twork.dynamap.CustomType",
-              "multivalue": "Map",
+              "type": "Map",
+              "elementType": "com.n3twork.dynamap.CustomType",
               "replace": true
             },
             {
               "name": "noDeltaMapOfCustomType",
               "dynamoName": "noDeltaMapOfCT",
-              "type": "com.n3twork.dynamap.CustomType",
-              "multivalue": "Map",
+              "type": "Map",
+              "elementType": "com.n3twork.dynamap.CustomType",
               "deltas": false
             },
             {
@@ -93,8 +93,8 @@
             {
               "name": "someList",
               "dynamoName": "someList",
-              "type": "String",
-              "multiValue": "List"
+              "type": "List",
+              "elementType": "String"
             },
             {
               "name": "notPersistedString",
@@ -105,8 +105,8 @@
             {
               "name": "setOfString",
               "dynamoName": "setOfString",
-              "type": "String",
-              "multivalue": "Set"
+              "type": "Set",
+              "elementType": "String"
             }
           ]
         },
@@ -137,28 +137,40 @@
             {
               "name": "mapOfLong",
               "dynamoName": "mapOfLong",
-              "type": "Long",
-              "multivalue": "Map",
-              "useDefaultForNulls": "true",
-              "default": "0L"
+              "type": "Map",
+              "elementType": "Long"
+            },
+            {
+              "name": "mapOfLongWithDefaults",
+              "dynamoName": "mapOfLongWithDefaults",
+              "type": "Map",
+              "elementType": "Long",
+              "useDefaultForNulls": "true"
+            },
+            {
+              "name": "mapOfDoubleWithDefaults",
+              "dynamoName": "mapOfDoubleWithDefaults",
+              "type": "Map",
+              "elementType": "Double",
+              "useDefaultForNulls": "true"
             },
             {
               "name": "setOfLong",
               "dynamoName": "setOfLong",
-              "type": "Long",
-              "multivalue": "Set"
+              "type": "Set",
+              "elementType": "Long"
             },
             {
               "name": "setOfString",
               "dynamoName": "setOfString",
-              "type": "String",
-              "multivalue": "Set"
+              "type": "Set",
+              "elementType": "String"
             },
             {
               "name": "listOfLong",
               "dynamoName": "listOfLong",
-              "type": "Long",
-              "multivalue": "List"
+              "type": "List",
+              "elementType": "Long"
             },
             {
               "name": "customType",
@@ -168,34 +180,34 @@
             {
               "name": "mapOfCustomType",
               "dynamoName": "mct",
-              "type": "com.n3twork.dynamap.CustomType",
-              "multivalue": "Map"
+              "type": "Map",
+              "elementType": "com.n3twork.dynamap.CustomType"
             },
             {
               "name": "mapOfCustomTypeReplace",
               "dynamoName": "mctr",
-              "type": "com.n3twork.dynamap.CustomType",
-              "multivalue": "Map",
+              "type": "Map",
+              "elementType": "com.n3twork.dynamap.CustomType",
               "replace": true
             },
             {
               "name": "noDeltaMapOfCustomType",
               "dynamoName": "noDeltaMapOfCT",
-              "type": "com.n3twork.dynamap.CustomType",
-              "multivalue": "Map",
+              "type": "Map",
+              "elementType": "com.n3twork.dynamap.CustomType",
               "deltas": false
             },
             {
               "name": "setOfCustomType",
               "dynamoName": "setOfCustomType",
-              "type": "com.n3twork.dynamap.CustomType",
-              "multivalue": "Set"
+              "type": "Set",
+              "elementType": "com.n3twork.dynamap.CustomType"
             },
             {
               "name": "listOfCustomType",
               "dynamoName": "listOfCustomType",
-              "type": "com.n3twork.dynamap.CustomType",
-              "multivalue": "List"
+              "type": "List",
+              "elementType": "com.n3twork.dynamap.CustomType"
             }
           ]
         }

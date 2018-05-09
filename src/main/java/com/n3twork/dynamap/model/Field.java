@@ -16,74 +16,56 @@
 
 package com.n3twork.dynamap.model;
 
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Field {
 
-    public enum MultiValue {
-
-        MAP("Map"), LIST("List"), SET("Set");
-
-        private final String value;
-
-        MultiValue(String value) {
-            this.value = value;
-        }
-
-        @JsonValue
-        public String getValue() {
-            return value;
-        }
-    }
-
     private final String name;
     private final String description;
     private final String dynamoName;
-    private final String type;
     private final String defaultValue;
-    private final MultiValue multiValue;
+    private final String type;
+    private final String elementType;
     private final Boolean useDefaultForNulls;
     private final Boolean replace;
     private final Boolean persist;
     private final Boolean serialize;
     private final Boolean deltas;
+    private final boolean isCollection;
 
     private boolean generatedType;
 
     @JsonCreator
-    public Field(@JsonProperty("name") String name, @JsonProperty("description") String description, @JsonProperty("dynamoName") String dynamoName, @JsonProperty("type") String type,
-                 @JsonProperty("default") String defaultValue, @JsonProperty("multivalue") MultiValue multiValue,
+    public Field(@JsonProperty("name") String name, @JsonProperty("description") String description, @JsonProperty("dynamoName") String dynamoName,
+                 @JsonProperty("type") String type, @JsonProperty("elementType") String elementType, @JsonProperty("default") String defaultValue,
                  @JsonProperty("useDefaultForNulls") Boolean useDefaultForNulls, @JsonProperty("replace") Boolean replace, @JsonProperty("persist") Boolean persist, @JsonProperty("serialize") Boolean serialize, @JsonProperty("deltas") Boolean deltas) {
         this.name = name;
         this.description = description;
         this.dynamoName = dynamoName;
         this.type = type;
+        this.elementType = elementType;
         this.useDefaultForNulls = useDefaultForNulls == null ? Boolean.FALSE : useDefaultForNulls;
-        if (defaultValue == null) {
-            if (this.useDefaultForNulls) {
-                throw new RuntimeException("Invalid field definition for :" + name + ". Must specify a default value if useDefaultForNulls is set");
-            }
-            if (type.equals("Map")) {
-                this.defaultValue = "Collections.emptyMap()";
-            } else if (type.equals("List")) {
-                this.defaultValue = "Collections.emptyList()";
-            } else if (type.equals("Set")) {
-                this.defaultValue = "Collections.emptySet()";
-            } else {
-                this.defaultValue = "null";
-            }
-        } else if (type.equals("String")) {
-            this.defaultValue = "\"" + defaultValue + "\"";
-        } else {
-            this.defaultValue = defaultValue;
+
+        isCollection = ((type.equals("Map") || type.equals("List") || type.equals("Set"))) ? true : false;
+
+        if (!isNumber() && defaultValue == null && (useDefaultForNulls != null && useDefaultForNulls)) {
+            throw new RuntimeException("Invalid field definition for :" + name + ". Must specify a default value if useDefaultForNulls is set.");
         }
-        this.multiValue = multiValue;
+        if (isNumber() && isCollection() && defaultValue != null && !defaultValue.equals(0)) {
+            throw new RuntimeException("Invalid field definition for : " + name + ". You cannot specify a default value other than zero for collections of numbers.");
+        }
+        this.defaultValue = defaultValue;
+
         this.replace = replace == null ? Boolean.FALSE : replace;
         this.persist = persist == null ? Boolean.TRUE : persist;
         this.serialize = serialize == null ? Boolean.TRUE : serialize;
         this.deltas = deltas == null ? Boolean.TRUE : deltas;
     }
+
 
     public String getName() {
         return name;
@@ -101,16 +83,24 @@ public class Field {
         return type;
     }
 
+    public String getElementType() {
+        if (!isCollection) {
+            return type;
+        }
+        return elementType;
+    }
+
+    public boolean isCollection() {
+        return isCollection;
+    }
+
     public boolean isNumber() {
-        return type.equals("Number") || type.equals("Integer") || type.equals("Long") || type.equals("Float") || type.equals("Double");
+        String elementType = getElementType();
+        return elementType.equals("Number") || elementType.equals("Integer") || elementType.equals("Long") || elementType.equals("Float") || elementType.equals("Double");
     }
 
     public String getDefaultValue() {
         return defaultValue;
-    }
-
-    public MultiValue getMultiValue() {
-        return multiValue;
     }
 
     public Boolean useDefaultForNulls() {
