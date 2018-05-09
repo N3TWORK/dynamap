@@ -10,14 +10,19 @@
       "rangeKey": "sequence",
       "globalSecondaryIndexes": [
         {
-          "index": "testIndex",
+          "index": "testIndexProjection",
           "hashKey": "string",
-          "rangeKey": "sequence"
+          "rangeKey": "integerField",
+          "nonKeyFields": [
+            "mapOfLong",
+            "someList"
+          ],
+          "projectionType": "INCLUDE"
         },
         {
-          "index": "testIndex2",
+          "index": "testIndexFull",
           "hashKey": "string",
-          "rangeKey": "sequence"
+          "rangeKey": "integerField"
         }
       ],
       "types": [

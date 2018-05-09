@@ -277,11 +277,12 @@ public class DynamapTest {
 
         NestedTypeBean nestedTypeBean = createNestedTypeBean();
         TestDocumentBean doc = createTestDocumentBean(createNestedTypeBean());
+        doc.setIntegerField(1);
         doc.setString("text_to_query");
         dynamap.save(new SaveParams(doc));
 
         QueryRequest<TestDocumentBean> queryRequest = new QueryRequest<>(TestDocumentBean.class).withHashKeyValue(doc.getString())
-                .withRangeKeyCondition(new RangeKeyCondition("seq").eq(doc.getSequence())).withIndex(TestDocumentBean.GlobalSecondaryIndex.testIndex);
+                .withRangeKeyCondition(new RangeKeyCondition(TestDocumentBean.INTEGERFIELD_FIELD).eq(doc.getIntegerField())).withIndex(TestDocumentBean.GlobalSecondaryIndex.testIndexFull);
         List<TestDocumentBean> testDocuments = dynamap.query(queryRequest);
         Assert.assertEquals(testDocuments.size(), 1);
         Assert.assertEquals(testDocuments.get(0).getNestedObject().getString(), nestedTypeBean.getString());
@@ -691,7 +692,7 @@ public class DynamapTest {
 
         String suffix2 = "-10";
         dynamap.createTableFromExisting(DummyDocBean.getTableName(), DummyDocBean.getTableName() + suffix2, true);
-        dynamap.batchSave(docsToSave, null, suffix2);
+        dynamap.batchSave(new BatchSaveParams<>(docsToSave).withSuffix(suffix2));
 
         // scan
         ScanRequest<DummyDocBean> scanRequest = new ScanRequest<>(DummyDocBean.class).withSuffix(suffix2);
@@ -723,7 +724,7 @@ public class DynamapTest {
             docsToSave.add(doc);
         }
 
-        dynamap.batchSave(docsToSave, null);
+        dynamap.batchSave(new BatchSaveParams<>(docsToSave));
 
         QueryRequest<DummyDoc2Bean> queryRequest = new QueryRequest<>(DummyDoc2Bean.class)
                 .withHashKeyValue(id)
@@ -734,6 +735,27 @@ public class DynamapTest {
         Assert.assertEquals(docs.size(), 1);
 
     }
+
+    @Test
+    public void testGlobalSecondaryIndex() {
+        for (int i = 0; i < 10; i++) {
+            TestDocumentBean testDocumentBean = createTestDocumentBean(null);
+            testDocumentBean.setString("test");
+            testDocumentBean.setIntegerField(i);
+            testDocumentBean.setSetOfString(Sets.newHashSet("ignore1", "ignore2"));
+            dynamap.save(new SaveParams(testDocumentBean));
+        }
+
+        QueryRequest<TestDocumentBean> queryRequest = new QueryRequest<>(TestDocumentBean.class)
+                .withHashKeyValue("test")
+                .withRangeKeyCondition(new RangeKeyCondition(TestDocumentBean.INTEGERFIELD_FIELD).lt(5))
+                .withIndex(TestDocumentBean.GlobalSecondaryIndex.testIndexProjection);
+
+        List<TestDocumentBean> docs = dynamap.query(queryRequest);
+        Assert.assertEquals(docs.size(), 5);
+        Assert.assertEquals(docs.get(0).getSetOfString().size(), 0); // ensure that non projected fields are not populated
+    }
+
 
     @Test
     public void testReturnUpdated() {

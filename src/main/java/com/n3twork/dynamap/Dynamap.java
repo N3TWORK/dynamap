@@ -121,6 +121,17 @@ public class Dynamap {
                         }
                     }
                     gsi.setKeySchema(indexKeySchema);
+                    if (index.getNonKeyFields() != null) {
+                        Projection projection = new Projection()
+                                .withProjectionType(index.getProjectionType());
+                        List<String> nonKeyAttributes = new ArrayList<>();
+                        for (String nonKeyField : index.getNonKeyFields()) {
+                            Field nkf = tableDefinition.getField(nonKeyField);
+                            nonKeyAttributes.add(nkf.getDynamoName());
+                        }
+                        projection.withNonKeyAttributes(nonKeyAttributes);
+                        gsi.setProjection(projection);
+                    }
                     globalSecondaryIndexes.add(gsi);
                 }
             }
