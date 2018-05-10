@@ -52,30 +52,30 @@ public class Field {
 
         isCollection = ((type.equals("Map") || type.equals("List") || type.equals("Set"))) ? true : false;
 
-        if (!isNumber() && defaultValue == null && (useDefaultForNulls != null && useDefaultForNulls)) {
+        if (defaultValue == null && (useDefaultForNulls != null && useDefaultForNulls)) {
             throw new RuntimeException("Invalid field definition for :" + name + ". Must specify a default value if useDefaultForNulls is set.");
         }
-        if (isNumber() && defaultValue != null) {
-            boolean invalid = false;
-            try {
-                if (type.equals("Float") || type.equals("Double")) {
-                    Double d = Double.valueOf(defaultValue);
-                    if (!d.equals(0.0)) {
-                        invalid = true;
-                    }
-                } else {
-                    Long l = Long.valueOf(defaultValue);
-                    if (!l.equals(0)) {
-                        invalid = true;
-                    }
-                }
-            } catch (Exception e) {
-                throw new RuntimeException("Cannot parse default value for field " + name);
-            }
-            if (invalid) {
-                throw new RuntimeException("Invalid field definition for : " + name + ". You cannot specify a default value other than zero for numbers or collections of numbers");
-            }
-        }
+//        if (isNumber() && defaultValue != null) {
+//            boolean invalid = false;
+//            try {
+//                if (type.equals("Float") || type.equals("Double")) {
+//                    Double d = Double.valueOf(defaultValue);
+//                    if (!d.equals(0.0)) {
+//                        invalid = true;
+//                    }
+//                } else {
+//                    Long l = Long.valueOf(defaultValue);
+//                    if (!l.equals(0)) {
+//                        invalid = true;
+//                    }
+//                }
+//            } catch (Exception e) {
+//                throw new RuntimeException("Cannot parse default value for field " + name);
+//            }
+//            if (invalid) {
+//                throw new RuntimeException("Invalid field definition for : " + name + ". You cannot specify a default value other than zero for numbers or collections of numbers");
+//            }
+//        }
         this.defaultValue = defaultValue;
 
         this.replace = replace == null ? Boolean.FALSE : replace;

@@ -145,14 +145,16 @@
               "dynamoName": "mapOfLongWithDefaults",
               "type": "Map",
               "elementType": "Long",
-              "useDefaultForNulls": "true"
+              "useDefaultForNulls": "true",
+              "default": "2L"
             },
             {
               "name": "mapOfDoubleWithDefaults",
               "dynamoName": "mapOfDoubleWithDefaults",
               "type": "Map",
               "elementType": "Double",
-              "useDefaultForNulls": "true"
+              "useDefaultForNulls": "true",
+              "default": "0.0"
             },
             {
               "name": "setOfLong",

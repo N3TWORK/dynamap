@@ -48,25 +48,17 @@
           <#else>
               <#if field.elementType == 'String'>
               "${field.defaultValue}"
-              <#elseif field.isNumber()>
-              <@numberSuffix field field.defaultValue />
               <#else>
               ${field.defaultValue}
               </#if>
           </#if>
      <#else>
-         <#if elementOnly>
-              <#if field.isNumber()>
-                   <@numberSuffix field 0 />
-              <#else>
-                  "${field.defaultValue}"
-              </#if>
-          <#else>
-              <#if field.isCollection()>
-                  <@default_collection field=field />
-              <#else>
-                  null
-              </#if>
+         <#if field.isNumber() && elementOnly>
+            <@numberSuffix field 0 />
+         <#elseif field.isCollection()>
+            <@default_collection field=field />
+         <#else>
+            null
          </#if>
      </#if>
     </#compress>

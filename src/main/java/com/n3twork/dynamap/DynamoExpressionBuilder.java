@@ -127,12 +127,12 @@ public class DynamoExpressionBuilder {
         return this;
     }
 
-    public <N extends Number, T extends Object> DynamoExpressionBuilder updateMap(String parentField, String fieldName, Map<String, N> deltas, Map<String, T> updates, Collection<String> deletes, boolean clear, Class type) {
+    public <N extends Number, T extends Object> DynamoExpressionBuilder updateMap(String parentField, String fieldName, Map<String, N> deltas, Set<String> currentIds, N defaultValue, Map<String, T> updates, Collection<String> deletes, boolean clear, Class type) {
         if (clear) {
             setSection.add(String.format("%s=%s", joinFields(parentField, fieldName), processValueAlias(vals, Collections.emptyMap(), type)));
         }
         if (deltas != null) {
-            processMapForAdd(parentField, fieldName, deltas);
+            processMapForAdd(parentField, fieldName, deltas, currentIds, defaultValue);
         }
         if (updates != null) {
             processMapForUpdates(parentField, fieldName, updates);
@@ -207,9 +207,24 @@ public class DynamoExpressionBuilder {
 
     ///////////////
 
-    private <N extends Number> void processMapForAdd(String parentField, String fieldName, Map<String, N> deltas) {
+    private <N extends Number> void processMapForAdd(String parentField, String fieldName, Map<String, N> deltas, Set<String> currentIds, N defaultValue) {
         for (Map.Entry<String, N> entry : deltas.entrySet()) {
-            addSection.add(String.format("%s %s", joinFields(parentField, fieldName, entry.getKey()), processValueAlias(vals, entry.getValue())));
+            N delta = entry.getValue();
+            if (defaultValue != null) {
+                // if keys do not exist and defaults values are provided, then need to add the default value to the delta
+                if (!currentIds.contains(entry.getKey())) {
+                    if (delta instanceof Integer && defaultValue.intValue() != 0) {
+                        delta = (N) new Integer(delta.intValue() + defaultValue.intValue());
+                    } else if (delta instanceof Long && defaultValue.longValue() != 0L) {
+                        delta = (N) new Long(delta.longValue() + defaultValue.longValue());
+                    } else if (delta instanceof Float && defaultValue.floatValue() != 0f) {
+                        delta = (N) new Float(delta.floatValue() + defaultValue.floatValue());
+                    } else if (delta instanceof Double && defaultValue.doubleValue() != 0d) {
+                        delta = (N) new Double(delta.doubleValue() + defaultValue.doubleValue());
+                    }
+                }
+            }
+            addSection.add(String.format("%s %s", joinFields(parentField, fieldName, entry.getKey()), processValueAlias(vals, delta)));
         }
     }
 

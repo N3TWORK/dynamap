@@ -482,17 +482,15 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     <#list type.persistedFields as field>
         <#if field.type == 'Map'>
             <#if field.useDeltas()>
-
             <#if field.isReplace()>
                 expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.elementType}.class);
             <#else>
                 <#if field.isNumber()>
-                    expression.updateMap(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Deltas, ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear, ${field.elementType}.class);
+                    expression.updateMap(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Deltas, ${currentState}.get${field.name?cap_first}Ids(), <@defaultValue field=field elementOnly=true />, ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear, ${field.elementType}.class);
                 <#else>
-                    expression.updateMap(parentDynamoFieldName, "${field.dynamoName}", null, ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear, ${field.elementType}.class);
+                    expression.updateMap(parentDynamoFieldName, "${field.dynamoName}", null, null, null, ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear, ${field.elementType}.class);
                 </#if>
              </#if>
-
             <#else>
                 expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.elementType}.class);
             </#if>
