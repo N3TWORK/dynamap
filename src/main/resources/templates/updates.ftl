@@ -218,6 +218,10 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     }
     </#if>
 
+    public boolean is${field.name?cap_first}Modified() {
+        return this.${field.name}Modified;
+    }
+
 </#list>
 <#if isRoot && optimisticLocking>
     @Override
