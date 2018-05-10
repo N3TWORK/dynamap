@@ -64,6 +64,12 @@ public class DynamapTest {
     }
 
     @Test
+    public void testToString() {
+        TestDocumentBean doc = createTestDocumentBean(createNestedTypeBean());
+        Assert.assertNotNull(doc.toString());
+    }
+
+    @Test
     public void testGetObject() {
 
         NestedTypeBean nested = createNestedTypeBean();

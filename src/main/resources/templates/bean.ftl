@@ -198,6 +198,26 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     }
     </#if>
 
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("${beanName}{");
+        <#if tableDefinition.isEnableMigrations() && isRoot>
+        sb.append("schemaVersion=").append(this._schemaVersion);
+        <#assign comma=true/>
+        </#if>
+        <#if isRoot && optimisticLocking>
+        sb.append("<#if comma??>,</#if> revision=").append(this._revision);
+        <#assign comma=true/>
+        </#if>
+        <#list type.fields as field>
+            sb.append("<#if comma??>,</#if>${field.name}=").append(${field.name});
+            <#assign comma=true/>
+        </#list>
+        sb.append("}");
+        return sb.toString();
+    }
+
     <#list type.fields as field>
     <#if !field.isSerialize()>
     @JsonIgnore

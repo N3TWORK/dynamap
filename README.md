@@ -1,12 +1,29 @@
 # Dynamap
 
-[![](https://jitpack.io/v/com.n3twork/dynamap.svg)](https://jitpack.io/#com.n3twork/dynamap)
+Dynamap is Java object model and mapping library for Amazon's DynamoDB database.
 
-A Java object mapping library for Amazon's DynamoDB database.
+It generates strongly typed Java classes that represent your schema and indexes, and provides methods for saving, querying and updating the state.
 
-Generates strongly typed Java classes that represent your schema, and provides methods for saving, querying and updating the state.
+**Creating and persisting an object is as simple as:**
+```java
+ UserBean user = new UserBean().setId("mark").setCurrencyBalancesAmount("gold",10);
+ dynamap.save(user);
+```
 
-Benefits:
+**Reading an object:**
+
+```java
+UserBean user = dynamap.getObject(new GetObjectRequest<>(UserBean.class).withHashKeyValue("mark"));
+```
+
+**Updating an object:**
+```java
+UserBeanUpdates updates = new UserBeanUpdates(user);
+updates.incrementCurrencyBalancesAmount(2).setStatus("away");
+dynamap.update(new UpdateParams(updates));
+```
+
+**Benefits**:
 
 * Define your schema and attribute behavior using JSON.
 * Strongly typed classes are automatically generated.
@@ -19,16 +36,26 @@ Benefits:
 * Additional custom generated types can be defined and nested in the top level document
 
 
-## Overview
 
-### Define a schema
+## Quickstart
 
+### Step 1. Add the maven dependency
 
-Using this simple schema:
+In your Maven project file add the following dependency:
+
+```xml
+<dependency>
+    <groupId>com.n3twork</groupId>
+    <artifactId>dynamap</artifactId>
+    <version>0.9.29</version>
+</dependency>
+```
+
+### Step 2. Define a schema
+
+Create this simple schema below and save it to a file in your project resources folder.
 
 ```javascript
-
-{
   "tables": [
     {
       "table": "User",
@@ -62,9 +89,68 @@ Using this simple schema:
     }
   ]
 }
-
-
 ```
+
+Attach the code generator on your schema file and bind this execution to the `generate-sources` Maven build phase:
+
+```xml
+  <plugin>
+    <groupId>org.codehaus.mojo</groupId>
+    <artifactId>exec-maven-plugin</artifactId>
+    <executions>
+        <execution>
+            <id>generate-source-files</id>
+            <phase>generate-sources</phase>
+            <goals>
+                <goal>java</goal>
+            </goals>
+            <configuration>
+                <mainClass>com.n3twork.dynamap.CodeGenerator</mainClass>
+                <arguments>
+                    <argument>--schema</argument>
+                    <argument>${project.basedir}/src/main/resources/<your-schema-file>.json</argument>
+                    <argument>--output</argument>
+                    <argument>${project.build.directory}/generated-sources/dynamap/</argument>
+                </arguments>
+            </configuration>
+        </execution>
+    </executions>
+  </plugin>
+```
+
+Optional: The maven-build-helper can add these generated sources to your classpath:
+
+```xml
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-sources/dynamap/</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+         </plugins>
+     </build>
+```
+
+### Step 3. Generate the code
+
+Execute the generate-sources maven goal to trigger the code generation:
+
+`mvn generate-sources`
 
 Dynamap will generate the following 3 java classes:
 
@@ -122,125 +208,62 @@ dynamap.update(updates);
 
 ```
 
-
-## Getting Started
-
-In your Maven project file add the following repository:
-
-```xml
-<repositories>
-    <repository>
-        <id>jitpack.io</id>
-        <url>https://jitpack.io</url>
-    </repository>
-</repositories>
-
-```
-
-Add the following dependency: 
-
-```xml
-<dependency>
-    <groupId>com.n3twork</groupId>
-    <artifactId>dynamap</artifactId>
-    <version>-SNAPSHOT</version>
-</dependency>
-```
-
-Execute the code generator on your your schema file and bind this execution to the `generate-sources` Maven build phase:
-
-```xml
-  <plugin>
-    <groupId>org.codehaus.mojo</groupId>
-    <artifactId>exec-maven-plugin</artifactId>
-    <executions>
-        <execution>
-            <id>generate-source-files</id>
-            <phase>generate-sources</phase>
-            <goals>
-                <goal>java</goal>
-            </goals>
-            <configuration>
-                <mainClass>com.n3twork.dynamap.CodeGenerator</mainClass>
-                <arguments>
-                    <argument>--schema</argument>
-                    <argument>${project.basedir}/src/main/resources/DynamoDBSchema.json</argument>
-                    <argument>--output</argument>
-                    <argument>${project.build.directory}/generated-sources/dynamap/</argument>
-                </arguments>
-            </configuration>
-        </execution>
-    </executions>
-  </plugin>
-
-
-```
-
-The maven-build-helper can add these generated sources to your classpath:
-
-```xml
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>1.8</version>
-                <executions>
-                    <execution>
-                        <id>add-source</id>
-                        <phase>generate-test-sources</phase>
-                        <goals>
-                            <goal>add-source</goal>
-                        </goals>
-                        <configuration>
-                            <sources>
-                                <source>${project.build.directory}/generated-sources/dynamap/</source>
-                            </sources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-         </plugins>
-     </build>
-```
-
-
-## A more complex schema
+### A more complex schema
 
 In addition to defining a class that maps to the DynamoDB, additional classes can be defined that are nested within the top level class. Each of these types have their own interface, bean and updates classes automatically generated.
 
 The following is a full schema that is used by the unit tests:
 
 ```javascript
-
 {
   "tables": [
     {
-      "table": "Example",
+      "table": "Test",
+      "description": "Test Schema",
       "package": "com.n3twork.dynamap.test",
-      "type": "ExampleDocument",
+      "type": "TestDocument",
       "version": 1,
-      "hashkey": "id",
-      "rangekey": "range",
+      "hashKey": "id",
+      "rangeKey": "sequence",
       "globalSecondaryIndexes": [
         {
-          "index": "exampleIndex",
-          "hashKey": "alias",
-          "rangeKey": "range"
+          "index": "testIndexProjection",
+          "hashKey": "string",
+          "rangeKey": "integerField",
+          "nonKeyFields": [
+            "mapOfLong",
+            "someList"
+          ],
+          "projectionType": "INCLUDE"
+        },
+        {
+          "index": "testIndexFull",
+          "hashKey": "string",
+          "rangeKey": "integerField"
         }
       ],
       "types": [
         {
-          "name": "ExampleDocument",
+          "name": "TestDocument",
+          "description": "Top level document",
+          "hashCodeFields": [
+            "id",
+            "sequence"
+          ],
+          "equalsFields": [
+            "id",
+            "sequence"
+          ],
           "fields": [
             {
               "name": "id",
+              "description": "Primary key",
               "dynamoName": "id",
               "type": "String"
             },
             {
-              "name": "range",
-              "dynamoName": "range",
+              "name": "sequence",
+              "dynamoName": "seq",
               "type": "Integer"
             },
             {
@@ -250,20 +273,57 @@ The following is a full schema that is used by the unit tests:
             },
             {
               "name": "mapOfLong",
-              "dynamoName": "mapOfLong",
-              "type": "Long",
-              "multivalue": "Map"
+              "dynamoName": "mol",
+              "type": "Map",
+              "elementType": "Long"
             },
             {
               "name": "mapOfCustomType",
-              "dynamoName": "mapOfCustomType",
-              "type": "com.n3twork.dynamap.CustomType",
-              "multivalue": "Map"
+              "dynamoName": "mct",
+              "type": "Map",
+              "elementType": "com.n3twork.dynamap.CustomType"
             },
             {
-              "name": "alias",
-              "dynamoName": "alias",
+              "name": "mapOfCustomTypeReplace",
+              "dynamoName": "mctr",
+              "type": "Map",
+              "elementType": "com.n3twork.dynamap.CustomType",
+              "replace": true
+            },
+            {
+              "name": "noDeltaMapOfCustomType",
+              "dynamoName": "noDeltaMapOfCT",
+              "type": "Map",
+              "elementType": "com.n3twork.dynamap.CustomType",
+              "deltas": false
+            },
+            {
+              "name": "string",
+              "dynamoName": "str",
               "type": "String"
+            },
+            {
+              "name": "integerField",
+              "dynamoName": "intf",
+              "type": "Integer"
+            },
+            {
+              "name": "someList",
+              "dynamoName": "someList",
+              "type": "List",
+              "elementType": "String"
+            },
+            {
+              "name": "notPersistedString",
+              "dynamoName": "notPersistedStr",
+              "type": "String",
+              "persist": false
+            },
+            {
+              "name": "setOfString",
+              "dynamoName": "setOfString",
+              "type": "Set",
+              "elementType": "String"
             }
           ]
         },
@@ -276,10 +336,9 @@ The following is a full schema that is used by the unit tests:
               "type": "String"
             },
             {
-              "name": "bio",
-              "dynamoName": "bio",
-              "type": "String",
-              "default": "empty"
+              "name": "string",
+              "dynamoName": "str",
+              "type": "String"
             },
             {
               "name": "integerField",
@@ -287,23 +346,50 @@ The following is a full schema that is used by the unit tests:
               "type": "Integer"
             },
             {
+              "name": "notPersistedString",
+              "dynamoName": "notPersistedStr",
+              "type": "String",
+              "persist": false
+            },
+            {
               "name": "mapOfLong",
               "dynamoName": "mapOfLong",
-              "type": "Long",
-              "multivalue": "Map",
-              "useDefaultForNulls": "true"
+              "type": "Map",
+              "elementType": "Long"
+            },
+            {
+              "name": "mapOfLongWithDefaults",
+              "dynamoName": "mapOfLongWithDefaults",
+              "type": "Map",
+              "elementType": "Long",
+              "useDefaultForNulls": "true",
+              "default": "2L"
+            },
+            {
+              "name": "mapOfDoubleWithDefaults",
+              "dynamoName": "mapOfDoubleWithDefaults",
+              "type": "Map",
+              "elementType": "Double",
+              "useDefaultForNulls": "true",
+              "default": "0.0"
             },
             {
               "name": "setOfLong",
               "dynamoName": "setOfLong",
-              "type": "Long",
-              "multivalue": "Set"
+              "type": "Set",
+              "elementType": "Long"
+            },
+            {
+              "name": "setOfString",
+              "dynamoName": "setOfString",
+              "type": "Set",
+              "elementType": "String"
             },
             {
               "name": "listOfLong",
               "dynamoName": "listOfLong",
-              "type": "Long",
-              "multivalue": "List"
+              "type": "List",
+              "elementType": "Long"
             },
             {
               "name": "customType",
@@ -312,21 +398,35 @@ The following is a full schema that is used by the unit tests:
             },
             {
               "name": "mapOfCustomType",
-              "dynamoName": "mapOfBean",
-              "type": "com.n3twork.dynamap.CustomType",
-              "multivalue": "Map"
+              "dynamoName": "mct",
+              "type": "Map",
+              "elementType": "com.n3twork.dynamap.CustomType"
+            },
+            {
+              "name": "mapOfCustomTypeReplace",
+              "dynamoName": "mctr",
+              "type": "Map",
+              "elementType": "com.n3twork.dynamap.CustomType",
+              "replace": true
+            },
+            {
+              "name": "noDeltaMapOfCustomType",
+              "dynamoName": "noDeltaMapOfCT",
+              "type": "Map",
+              "elementType": "com.n3twork.dynamap.CustomType",
+              "deltas": false
             },
             {
               "name": "setOfCustomType",
               "dynamoName": "setOfCustomType",
-              "type": "com.n3twork.dynamap.CustomType",
-              "multivalue": "Set"
+              "type": "Set",
+              "elementType": "com.n3twork.dynamap.CustomType"
             },
             {
               "name": "listOfCustomType",
               "dynamoName": "listOfCustomType",
-              "type": "com.n3twork.dynamap.CustomType",
-              "multivalue": "List"
+              "type": "List",
+              "elementType": "com.n3twork.dynamap.CustomType"
             }
           ]
         }
@@ -334,7 +434,6 @@ The following is a full schema that is used by the unit tests:
     }
   ]
 }
-
 ```
 
 
