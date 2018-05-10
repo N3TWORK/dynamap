@@ -159,14 +159,14 @@ Dynamap will generate the following 3 java classes:
 * `com.n3twork.dynamp.example.UserUpdates` : a class that extends the bean class and provides additional methods for mutating the data. It wraps the original bean class and thus retains old and new state
 
 
-### Write code to create tables, store, query and update
+### Step 4. Write code to create tables, store, query and update
 
 First create an instance of Dynamap, providing the handle to DynamoDB and a pointer to the schema file:
 
 ```
  AmazonDynamoDB ddb = DynamoDBEmbedded.create().amazonDynamoDB(); // use Local DynamoDB library
- SchemaRegistry schemaRegistry = new SchemaRegistry(getClass().getResourceAsStream("/TestSchema.json")); // load schema from schema file
- Dynamap dynamap = new Dynamap(ddb, "test", schemaRegistry, new ObjectMapper()); // create Dynamap and use "test" as a prefix for the tables
+ SchemaRegistry schemaRegistry = new SchemaRegistry(getClass().getResourceAsStream("/<your-schema>.json")); // load schema from schema file
+ Dynamap dynamap = new Dynamap(ddb, "test", schemaRegistry); // create Dynamap
  dynamap.createTables(false); // create tables, do not delete if they already exist
      
 ```
