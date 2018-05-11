@@ -131,6 +131,13 @@ public class DynamapTest {
         Assert.assertEquals(updated.getString(), "string2");
         Assert.assertEquals(updated.getNestedObject().getString(), "string2");
 
+        TestDocumentBean user = dynamap.getObject(new GetObjectParams(
+                new GetObjectRequest<>(TestDocumentBean.class)
+                        .withHashKeyValue("id1"))
+                .withRateLimiters()
+                ;
+
+
     }
 
     @Test
@@ -534,7 +541,7 @@ public class DynamapTest {
         NestedTypeBean nestedObject = new NestedTypeBean().setId(nestedId1).setMapOfLong(ImmutableMap.of("dollars", 1L, "francs", 1L));
 
         TestDocumentBean doc = new TestDocumentBean().setId(docId1).setSequence(1)
-                .setSomeList(Arrays.asList("test1", "test2")).setNestedObject(nestedObject).setString("String");
+                .setListOfString(Arrays.asList("test1", "test2")).setNestedObject(nestedObject).setString("String");
         dynamap.save(new SaveParams<>(doc));
 
         // add 1 to dollars and a check to ensure it is less than 2
@@ -662,7 +669,7 @@ public class DynamapTest {
         NestedTypeBean nestedObject = new NestedTypeBean().setId(nestedId1).setString("biography");
 
         TestDocumentBean doc = new TestDocumentBean().setId(docId1).setSequence(1)
-                .setSomeList(Arrays.asList("test1", "test2")).setNestedObject(nestedObject).setString("String");
+                .setListOfString(Arrays.asList("test1", "test2")).setNestedObject(nestedObject).setString("String");
         dynamap.save(new SaveParams<>(doc));
 
         GetObjectRequest<TestDocumentBeanSubclass> getObjectRequest = new GetObjectRequest<>(TestDocumentBeanSubclass.class).withHashKeyValue(docId1).withRangeKeyValue(1);

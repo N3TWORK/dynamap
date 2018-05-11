@@ -1,0 +1,38 @@
+main:
+  - title: "View on Github"
+    url: https://github.com/n3twork/dynamap
+nav:
+  - title: Overview
+    children:
+      - title: "What is Dynamap?"
+        url: /
+      - title: "Benefits"
+        url: /benefits
+      - title: "Quick Start"
+        url: /quickstart/
+  - title: User Guide
+    children:
+      - title: "Schema Definition"
+        url: /schema/
+      - title: "Code Generation"
+        url: /code-generation/
+      - title: "Generated Classes"
+        url: /generated-classes/
+      - title: "Instantiating Dynamap"
+        url: /instantiating-dynamap/
+      - title: "Saving Objects"
+        url: /saving-objects/
+      - title: "Loading Objects"
+        url: /loading-objects/
+      - title: "Queries"
+        url: /queries/
+      - title: "Using Rate Limiters"
+        url: /rate-limiters/
+      - title: "Schema Migrations"
+        url: /schema-migrations/
+  - title: About
+    children:
+      - title: Team
+        url: /team
+      - title: License
+        url: https://www.apache.org/licenses/LICENSE-2.0

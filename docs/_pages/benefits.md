@@ -1,29 +1,7 @@
-# Dynamap
-
-Dynamap is Java object model and mapping library for Amazon's DynamoDB database.
-
-It generates strongly typed Java classes that represent your schema and indexes, and provides methods for saving, querying and updating the state.
-
-**Creating and persisting an object is as simple as:**
-```java
- UserBean user = new UserBean().setId("mark").setCurrencyBalancesAmount("gold",10);
- dynamap.save(user);
-```
-
-**Reading an object:**
-
-```java
-UserBean user = dynamap.getObject(new GetObjectRequest<>(UserBean.class).withHashKeyValue("mark"));
-```
-
-**Updating an object:**
-```java
-UserBeanUpdates updates = new UserBeanUpdates(user);
-updates.incrementCurrencyBalancesAmount(2).setStatus("away");
-dynamap.update(new UpdateParams(updates));
-```
-
-**Benefits**:
+---
+title: "Benefits"
+permalink: /benefits
+---
 
 * Define your schema and attribute behavior using JSON.
 * Strongly typed classes are automatically generated.
@@ -37,10 +15,3 @@ dynamap.update(new UpdateParams(updates));
 * Additional custom generated types can be defined and nested in the top level document.
 * Easy to make simple modifications to your schema such as adding new fields. Just make the change and regenerate the code
 * Provides a mechanism for schema migrations for more complex changes
-
-## Quick Start
-
-[Check out the quick start guide](https://dynamap.n3twork.com/quickstart)
-
-or consult the full documentation on the official site: https://dynamap.n3twork.com
-
