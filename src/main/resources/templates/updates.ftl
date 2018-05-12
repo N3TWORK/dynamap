@@ -32,7 +32,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Maps;
 
-public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
+public class ${updatesName} implements ${type.name}, Updates<${package}.${rootType}Bean> {
 
     protected final DynamoExpressionBuilder expression = new DynamoExpressionBuilder(${typeSequence});
     protected boolean updatesApplied = false;
@@ -94,6 +94,11 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     @Override
     public String getTableName() {
         return "${tableName}";
+    }
+
+    @Override
+    public Class<${package}.${rootType}Bean> getTableClass() {
+        return ${package}.${rootType}Bean.class;
     }
 
     @Override

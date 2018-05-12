@@ -32,7 +32,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<${type.name}></#if> {
+public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<${updatesName}><#else>, DynamapUpdatable<${updatesName}></#if> {
 
     <#list type.fields as field>
     <#if field.isSerialize()>
@@ -197,6 +197,11 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
         return true;
     }
     </#if>
+
+    @Override
+    public ${updatesName} asUpdates(String hashKey, Object rangeKey, boolean disableOptimisticLocking) {
+        return new ${updatesName}(this, hashKey, <#if tableDefinition.rangeKey??>rangeKey,</#if> disableOptimisticLocking);
+    }
 
     <#list type.fields as field>
     <#if !field.isSerialize()>

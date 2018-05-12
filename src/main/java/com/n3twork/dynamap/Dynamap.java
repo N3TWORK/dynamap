@@ -465,8 +465,8 @@ public class Dynamap {
         save(saveParams);
     }
 
-    public <T extends DynamapPersisted> T update(UpdateParams<T> updateParams) {
-        Updates<T> updates = updateParams.getUpdates();
+    public <U extends Updates<T>, T extends DynamapRecordBean<?>> T update(UpdateParams<T, U> updateParams) {
+        Updates updates = updateParams.getUpdates();
         DynamoRateLimiter writeLimiter = updateParams.getWriteLimiter();
         String suffix = updateParams.getSuffix();
 
@@ -494,8 +494,7 @@ public class Dynamap {
             }
             if (updateParams.getDynamapReturnValue() == DynamapReturnValue.ALL_NEW ||
                     updateParams.getDynamapReturnValue() == DynamapReturnValue.ALL_OLD) {
-                Class beanClass = Class.forName(tableDefinition.getPackageName() + "." + tableDefinition.getType() + "Bean");
-                return (T) objectMapper.convertValue(updateItemOutcome.getItem().asMap(), beanClass);
+                return (T) objectMapper.convertValue(updateItemOutcome.getItem().asMap(), updates.getTableClass());
             }
 
             // Merge updated values with existing
@@ -506,14 +505,10 @@ public class Dynamap {
                 Map<String, Object> updatesAsMap = objectMapper.convertValue(updatesAsBean, new TypeReference<Map<String, Object>>() {
                 });
                 updatesAsMap.putAll(updateItemOutcome.getItem().asMap());
-                return (T) objectMapper.convertValue(updatesAsMap, beanClass);
+                return (T) objectMapper.convertValue(updatesAsMap, updates.getTableClass());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-
-        } catch (ClassNotFoundException e) {
-            logger.error("Cannot find bean class " + tableDefinition.getPackageName() + "." + tableDefinition.getType() + "Bean");
-            throw new RuntimeException(e);
         } catch (Exception e) {
             String keyComponents = updateItemSpec.getKeyComponents().stream().map(Object::toString).collect(Collectors.joining(","));
             logger.debug("Error updating item: Key: " + keyComponents + " Update expression:" + updateItemSpec.getUpdateExpression() + " Conditional expression: " + updateItemSpec.getConditionExpression() + " Values: " + updateItemSpec.getValueMap() + " Names: " + updateItemSpec.getNameMap());
@@ -522,13 +517,13 @@ public class Dynamap {
     }
 
     @Deprecated
-    public <T extends DynamapPersisted> T update(Updates<T> updates, DynamoRateLimiter writeLimiter) {
+    public <U extends Updates, T extends DynamapRecordBean<?>> T update(U updates, DynamoRateLimiter writeLimiter) {
         return (T) update(new UpdateParams<>(updates).withWriteLimiter(writeLimiter));
     }
 
     @Deprecated
-    public <T extends DynamapPersisted> T update(Updates<T> updates, DynamoRateLimiter writeLimiter, String suffix) {
-        return (T) update(new UpdateParams(updates).withWriteLimiter(writeLimiter).withSuffix(suffix));
+    public <U extends Updates, T extends DynamapRecordBean<?>> T update(U updates, DynamoRateLimiter writeLimiter, String suffix) {
+        return (T) update(new UpdateParams<>(updates).withWriteLimiter(writeLimiter).withSuffix(suffix));
     }
 
     private static class GetItemInfo {

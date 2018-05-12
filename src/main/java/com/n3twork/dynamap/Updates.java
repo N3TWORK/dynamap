@@ -16,7 +16,7 @@
 
 package com.n3twork.dynamap;
 
-public interface Updates<T extends DynamapPersisted> {
+public interface Updates<T extends DynamapRecordBean<?>> {
 
     DynamoExpressionBuilder getExpressionBuilder();
 
@@ -27,6 +27,8 @@ public interface Updates<T extends DynamapPersisted> {
     String getHashKeyValue();
 
     Object getRangeKeyValue();
+
+    Class<T> getTableClass();
 
     /**
      *

@@ -94,8 +94,7 @@ public class DynamapTest {
         TestDocumentUpdates testDocumentUpdates = createTestDocumentUpdates(testDocumentBean);
         NestedTypeUpdates nestedTypeUpdates = createNestedTypeUpdates(testDocumentBean, nested);
         nestedTypeUpdates.setString("string2");
-        dynamap.update(new UpdateParams<>(nestedTypeUpdates));
-        doc = dynamap.getObject(createGetObjectRequest(doc), null);
+        doc = dynamap.update(new UpdateParams<>(nestedTypeUpdates));
         Assert.assertEquals(doc.getNestedObject().getString(), "string2");
 
     }
@@ -741,7 +740,7 @@ public class DynamapTest {
         TestDocumentBean doc = createTestDocumentBean(nested);
         doc.setString("string1");
         doc.setIntegerField(1);
-        dynamap.save(new SaveParams(doc));
+        dynamap.save(new SaveParams<>(doc));
 
         TestDocumentUpdates testDocumentUpdates = createTestDocumentUpdates(doc);
         doc.setString("string2");
@@ -760,8 +759,6 @@ public class DynamapTest {
         testDocumentUpdates.setString("string3");
         updated = dynamap.update(new UpdateParams<>(testDocumentUpdates).withReturnValue(DynamapReturnValue.UPDATED_OLD));
         Assert.assertEquals(updated.getString(), "string2");
-
-
     }
 
     private TestDocumentBean createTestDocumentBean(NestedTypeBean nestedTypeBean) {
