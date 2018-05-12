@@ -517,13 +517,13 @@ public class Dynamap {
     }
 
     @Deprecated
-    public <U extends Updates, T extends DynamapRecordBean<?>> T update(U updates, DynamoRateLimiter writeLimiter) {
-        return (T) update(new UpdateParams<>(updates).withWriteLimiter(writeLimiter));
+    public <U extends Updates<T>, T extends DynamapRecordBean<?>> T update(U updates, DynamoRateLimiter writeLimiter) {
+        return update(new UpdateParams<>(updates).withWriteLimiter(writeLimiter));
     }
 
     @Deprecated
-    public <U extends Updates, T extends DynamapRecordBean<?>> T update(U updates, DynamoRateLimiter writeLimiter, String suffix) {
-        return (T) update(new UpdateParams<>(updates).withWriteLimiter(writeLimiter).withSuffix(suffix));
+    public <U extends Updates<T>, T extends DynamapRecordBean<?>> T update(U updates, DynamoRateLimiter writeLimiter, String suffix) {
+        return update(new UpdateParams<>(updates).withWriteLimiter(writeLimiter).withSuffix(suffix));
     }
 
     private static class GetItemInfo {
