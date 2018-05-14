@@ -123,9 +123,9 @@ Dynamap will generate the following 3 java classes:
 
 
 --- | ---
-`com.n3twork.dynamp.example.User` | an interface defining the attributes of the table record
-`com.n3twork.dynamp.example.UserBean` | a bean class that implements the interface and is used for holding the data
-`com.n3twork.dynamp.example.UserUpdates` | a class that extends the bean class and provides additional methods for mutating the data. It wraps the original bean class and thus retains old and new state
+`com.n3twork.dynamap.example.User` | an interface defining the attributes of the table record
+`com.n3twork.dynamap.example.UserBean` | a bean class that implements the interface and is used for holding the data
+`com.n3twork.dynamap.example.UserUpdates` | a class that extends the bean class and provides additional methods for mutating the data. It wraps the original bean class and thus retains old and new state
 
 
 ### Step 5. Write code to create tables, store, query and update
