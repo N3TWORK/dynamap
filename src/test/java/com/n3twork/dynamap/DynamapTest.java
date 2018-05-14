@@ -468,13 +468,13 @@ public class DynamapTest {
         ReadWriteRateLimiterPair rateLimiterPair = ReadWriteRateLimiterPair.of(new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.READ, 20),
                 new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.WRITE, 20));
 
-        BatchGetObjectRequest<TestDocumentBean> batchGetObjectRequest = new BatchGetObjectRequest<TestDocumentBean>()
+        BatchGetObjectParams<TestDocumentBean> batchGetObjectParams = new BatchGetObjectParams<TestDocumentBean>()
                 .withGetObjectRequests(ImmutableList.of(
                         new GetObjectRequest<>(TestDocumentBean.class).withHashKeyValue(docId1).withRangeKeyValue(1),
                         new GetObjectRequest<>(TestDocumentBean.class).withHashKeyValue(docId2).withRangeKeyValue(1)))
                 .withRateLimiters(rateLimiterPair);
 
-        testDocuments = dynamap.batchGetObjectSingleCollection(batchGetObjectRequest);
+        testDocuments = dynamap.batchGetObjectSingleCollection(batchGetObjectParams);
 
         Assert.assertEquals(testDocuments.size(), 2);
     }
@@ -695,7 +695,7 @@ public class DynamapTest {
             return new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(Integer.toString(i + 1000)).withSuffix(suffix);
         }).collect(Collectors.toList());
 
-        BatchGetObjectRequest<DummyDocBean> batchRequest = new BatchGetObjectRequest<DummyDocBean>().withGetObjectRequests(getObjectRequests);
+        BatchGetObjectParams<DummyDocBean> batchRequest = new BatchGetObjectParams<DummyDocBean>().withGetObjectRequests(getObjectRequests);
         List<DummyDocBean> dummyDocBeans = dynamap.batchGetObjectSingleCollection(batchRequest);
         Assert.assertEquals(dummyDocBeans.size(), MAX);
 

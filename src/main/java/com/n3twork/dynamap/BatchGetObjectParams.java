@@ -20,8 +20,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-@Deprecated
-public class BatchGetObjectRequest<T extends DynamapRecordBean> {
+public class BatchGetObjectParams<T extends DynamapRecordBean> {
 
     private Collection<GetObjectRequest<T>> getObjectRequests;
     private Map<Class, ReadWriteRateLimiterPair> rateLimiters = new HashMap<>();
@@ -30,32 +29,32 @@ public class BatchGetObjectRequest<T extends DynamapRecordBean> {
     private ProgressCallback progressCallback;
     private boolean writeMigrationChange = true;
 
-    public BatchGetObjectRequest<T> withGetObjectRequests(Collection getObjectRequests) {
+    public BatchGetObjectParams<T> withGetObjectRequests(Collection getObjectRequests) {
         this.getObjectRequests = getObjectRequests;
         return this;
     }
 
-    public BatchGetObjectRequest<T> withRateLimiters(Map<Class, ReadWriteRateLimiterPair> rateLimiters) {
+    public BatchGetObjectParams<T> withRateLimiters(Map<Class, ReadWriteRateLimiterPair> rateLimiters) {
         this.rateLimiters = rateLimiters;
         return this;
     }
 
-    public BatchGetObjectRequest<T> withRateLimiters(ReadWriteRateLimiterPair rateLimiters) {
+    public BatchGetObjectParams<T> withRateLimiters(ReadWriteRateLimiterPair rateLimiters) {
         this.readWriteRateLimiterPair = rateLimiters;
         return this;
     }
 
-    public BatchGetObjectRequest<T> withMigrationContext(Object migrationContext) {
+    public BatchGetObjectParams<T> withMigrationContext(Object migrationContext) {
         this.migrationContext = migrationContext;
         return this;
     }
 
-    public BatchGetObjectRequest<T> withProgressCallback(ProgressCallback progressCallback) {
+    public BatchGetObjectParams<T> withProgressCallback(ProgressCallback progressCallback) {
         this.progressCallback = progressCallback;
         return this;
     }
 
-    public BatchGetObjectRequest<T> writeMigrationChange(boolean writeMigrationChange) {
+    public BatchGetObjectParams<T> withWriteMigrationChange(boolean writeMigrationChange) {
         this.writeMigrationChange = writeMigrationChange;
         return this;
     }

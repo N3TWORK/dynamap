@@ -227,16 +227,42 @@ public class Dynamap {
         return null;
     }
 
+    public <T extends DynamapRecordBean> T getObject(GetObjectParams<T> getObjectParams) {
+        BatchGetObjectParams<T> batchGetObjectParams = new BatchGetObjectParams<T>()
+                .withGetObjectRequests(Arrays.asList(getObjectParams.getGetObjectRequest()))
+                .withRateLimiters(ImmutableMap.of(getObjectParams.getGetObjectRequest().getResultClass(), getObjectParams.getRateLimiters()))
+                .withMigrationContext(getObjectParams.getMigrationContext())
+                .withWriteMigrationChange(getObjectParams.isWriteMigrationChange());
+        Map<Class, List<Object>> results = batchGetObject(batchGetObjectParams);
+        List<Object> resultList = results.values().iterator().next();
+        if (resultList.size() > 0) {
+            return (T) resultList.get(0);
+        }
+        return null;
+    }
+
+    @Deprecated
     public Map<Class, List<Object>> batchGetObject(BatchGetObjectRequest batchGetObjectRequest) {
+        BatchGetObjectParams batchGetObjectParams = new BatchGetObjectParams()
+                .withGetObjectRequests(batchGetObjectRequest.getGetObjectRequests())
+                .withMigrationContext(batchGetObjectRequest.getMigrationContext())
+                .withProgressCallback(batchGetObjectRequest.getProgressCallback())
+                .withRateLimiters(batchGetObjectRequest.getRateLimiters())
+                .withWriteMigrationChange(batchGetObjectRequest.isWriteMigrationChange());
+        return batchGetObject(batchGetObjectParams);
+    }
+
+
+    public Map<Class, List<Object>> batchGetObject(BatchGetObjectParams batchGetObjectParams) {
         Map<String, ReadWriteRateLimiterPair> rateLimitersByTable = new HashMap<>();
-        Map<Class, ReadWriteRateLimiterPair> rateLimiters = batchGetObjectRequest.getRateLimiters();
-        if (batchGetObjectRequest.getRateLimiters() != null) {
+        Map<Class, ReadWriteRateLimiterPair> rateLimiters = batchGetObjectParams.getRateLimiters();
+        if (batchGetObjectParams.getRateLimiters() != null) {
             for (Class resultClass : rateLimiters.keySet()) {
                 rateLimitersByTable.put(schemaRegistry.getTableDefinition(resultClass).getTableName(prefix), rateLimiters.get(resultClass));
             }
         }
 
-        List<List<GetObjectRequest>> partitions = Lists.partition(new ArrayList<>(batchGetObjectRequest.getGetObjectRequests()), MAX_BATCH_GET_SIZE);
+        List<List<GetObjectRequest>> partitions = Lists.partition(new ArrayList<>(batchGetObjectParams.getGetObjectRequests()), MAX_BATCH_GET_SIZE);
         Map<Class, List<Object>> results = new HashMap<>();
         int totalProgress = 0;
         for (List<GetObjectRequest> getObjectRequestBatch : partitions) {
@@ -269,7 +295,7 @@ public class Dynamap {
                 getItemInfo.table = getTable(tableName);
             }
 
-            Multimap<String, Item> allItems = doBatchGetItem(queryInfos, rateLimitersByTable, totalProgress, batchGetObjectRequest.getProgressCallback());
+            Multimap<String, Item> allItems = doBatchGetItem(queryInfos, rateLimitersByTable, totalProgress, batchGetObjectParams.getProgressCallback());
             totalProgress += allItems.values().size();
             for (GetItemInfo getItemInfo : queryInfos.values()) {
 
@@ -289,16 +315,29 @@ public class Dynamap {
                     }
                     resultsForClass.add(((Object) buildObjectFromDynamoItem(item, getItemInfo.tableDefinition,
                             getItemInfo.getObjectRequest.getResultClass(), writeLimiter,
-                            batchGetObjectRequest.getMigrationContext(), batchGetObjectRequest.isWriteMigrationChange(), false, getItemInfo.getObjectRequest.getSuffix())));
+                            batchGetObjectParams.getMigrationContext(), batchGetObjectParams.isWriteMigrationChange(), false, getItemInfo.getObjectRequest.getSuffix())));
                 }
             }
         }
         return results;
     }
 
+    @Deprecated
     @SuppressWarnings("unchecked")
     public <T extends DynamapRecordBean> List<T> batchGetObjectSingleCollection(BatchGetObjectRequest<T> batchGetObjectRequest) {
-        Collection<GetObjectRequest<T>> getObjectRequests = batchGetObjectRequest.getGetObjectRequests();
+        BatchGetObjectParams batchGetObjectParams = new BatchGetObjectParams()
+                .withGetObjectRequests(batchGetObjectRequest.getGetObjectRequests())
+                .withMigrationContext(batchGetObjectRequest.getMigrationContext())
+                .withProgressCallback(batchGetObjectRequest.getProgressCallback())
+                .withRateLimiters(batchGetObjectRequest.getRateLimiters())
+                .withWriteMigrationChange(batchGetObjectRequest.isWriteMigrationChange());
+        return batchGetObjectSingleCollection(batchGetObjectParams);
+
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends DynamapRecordBean> List<T> batchGetObjectSingleCollection(BatchGetObjectParams<T> batchGetObjectParams) {
+        Collection<GetObjectRequest<T>> getObjectRequests = batchGetObjectParams.getGetObjectRequests();
         if (getObjectRequests.size() == 0) {
             return Collections.emptyList();
         }
@@ -308,10 +347,10 @@ public class Dynamap {
         if (getObjectRequests.stream().anyMatch(r -> !r.getResultClass().getCanonicalName().equals(resultClass))) {
             throw new IllegalArgumentException("More than one ResultClass has been specified");
         }
-        if (batchGetObjectRequest.getReadWriteRateLimiterPair() != null) {
-            batchGetObjectRequest.withRateLimiters(ImmutableMap.of(getObjectRequest.getResultClass(), batchGetObjectRequest.getReadWriteRateLimiterPair()));
+        if (batchGetObjectParams.getReadWriteRateLimiterPair() != null) {
+            batchGetObjectParams.withRateLimiters(ImmutableMap.of(getObjectRequest.getResultClass(), batchGetObjectParams.getReadWriteRateLimiterPair()));
         }
-        List<T> result = (List<T>) (Object) batchGetObject(batchGetObjectRequest).get(getObjectRequest.getResultClass());
+        List<T> result = (List<T>) (Object) batchGetObject(batchGetObjectParams).get(getObjectRequest.getResultClass());
         return result == null ? Collections.emptyList() : result;
     }
 
