@@ -109,7 +109,6 @@ public class DynamapTest {
 
     @Test
     public void testStringField() {
-
         NestedTypeBean nested = createNestedTypeBean();
         nested.setString("string1");
         TestDocumentBean doc = createTestDocumentBean(nested);
@@ -130,14 +129,6 @@ public class DynamapTest {
         TestDocument updated = dynamap.update(new UpdateParams<>(testDocumentUpdates));
         Assert.assertEquals(updated.getString(), "string2");
         Assert.assertEquals(updated.getNestedObject().getString(), "string2");
-
-        TestDocumentBean user = dynamap.getObject(new GetObjectParams(
-                new GetObjectRequest<>(TestDocumentBean.class)
-                        .withHashKeyValue("id1"))
-                .withRateLimiters()
-                ;
-
-
     }
 
     @Test
