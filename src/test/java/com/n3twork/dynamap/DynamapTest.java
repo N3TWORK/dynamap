@@ -513,8 +513,8 @@ public class DynamapTest {
         }
 
         // optimist locking disabled
-        DummyDocUpdates docUpdates3 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue(), true);
-        DummyDocUpdates docUpdates4 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue(), true);
+        DummyDocUpdates docUpdates3 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue()).setDisableOptimisticLocking(true);
+        DummyDocUpdates docUpdates4 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue()).setDisableOptimisticLocking(true);
         dynamap.update(new UpdateParams<>(docUpdates3));
         dynamap.update(new UpdateParams<>(docUpdates4));
 
