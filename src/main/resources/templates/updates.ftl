@@ -71,8 +71,9 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     protected ${field.elementType} ${field.name}Delta;
     </#if>
 </#list>
-    protected final boolean disableOptimisticLocking;
+    protected boolean disableOptimisticLocking;
 
+    @Deprecated
     public ${updatesName}(${type.name} ${currentState}, String hashKeyValue, <#if tableDefinition.rangeKey??>Object rangeKeyValue,</#if> boolean disableOptimisticLocking) {
         this.${currentState} = ${currentState};
         this.hashKeyValue = hashKeyValue;
@@ -86,6 +87,13 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
         this._revision = ${currentState}.getRevision();
 </#if>
     }
+
+    <#if optimisticLocking>
+    public ${updatesName} setDisableOptimisticLocking(boolean disableOptimisticLocking) {
+        this.disableOptimisticLocking = disableOptimisticLocking;
+        return this;
+    }
+    </#if>
 
     public ${updatesName}(${type.name} ${currentState}, String hashKeyValue<#if tableDefinition.rangeKey??>,Object rangeKeyValue</#if>) {
         this(${currentState}, hashKeyValue, <#if tableDefinition.rangeKey??>rangeKeyValue,</#if> false);
