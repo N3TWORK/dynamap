@@ -202,37 +202,26 @@ public class Dynamap {
         return TableUtils.createTableIfNotExists(amazonDynamoDB, createTableRequest);
     }
 
+    @Deprecated
     public <T extends DynamapRecordBean> T getObject(GetObjectRequest<T> getObjectRequest, Object migrationContext) {
-        Collection<GetObjectRequest<T>> requests = new ArrayList<>();
-        requests.add(getObjectRequest);
-        BatchGetObjectRequest<T> batchGetObjectRequest = new BatchGetObjectRequest().withGetObjectRequests(requests).withMigrationContext(migrationContext);
-        Map<Class, List<Object>> results = batchGetObject(batchGetObjectRequest);
-        List<Object> resultList = results.values().iterator().next();
-        if (resultList.size() > 0) {
-            return (T) resultList.get(0);
-        }
-        return null;
+        GetObjectParams getObjectParams = new GetObjectParams(getObjectRequest).withMigrationContext(migrationContext);
+        return (T) getObject(getObjectParams);
     }
 
+    @Deprecated
     public <T extends DynamapRecordBean> T getObject(GetObjectRequest<T> getObjectRequest, ReadWriteRateLimiterPair rateLimiters, Object migrationContext) {
-        BatchGetObjectRequest<T> batchGetObjectRequest = new BatchGetObjectRequest<T>()
-                .withGetObjectRequests(Arrays.asList(getObjectRequest))
-                .withRateLimiters(ImmutableMap.of(getObjectRequest.getResultClass(), rateLimiters))
-                .withMigrationContext(migrationContext);
-        Map<Class, List<Object>> results = batchGetObject(batchGetObjectRequest);
-        List<Object> resultList = results.values().iterator().next();
-        if (resultList.size() > 0) {
-            return (T) resultList.get(0);
-        }
-        return null;
+        GetObjectParams<T> getObjectParams = new GetObjectParams<>(getObjectRequest).withRateLimiters(rateLimiters).withMigrationContext(migrationContext);
+        return (T) getObject(getObjectParams);
     }
 
     public <T extends DynamapRecordBean> T getObject(GetObjectParams<T> getObjectParams) {
         BatchGetObjectParams<T> batchGetObjectParams = new BatchGetObjectParams<T>()
                 .withGetObjectRequests(Arrays.asList(getObjectParams.getGetObjectRequest()))
-                .withRateLimiters(ImmutableMap.of(getObjectParams.getGetObjectRequest().getResultClass(), getObjectParams.getRateLimiters()))
                 .withMigrationContext(getObjectParams.getMigrationContext())
                 .withWriteMigrationChange(getObjectParams.isWriteMigrationChange());
+        if (getObjectParams.getRateLimiters() != null) {
+            batchGetObjectParams.withRateLimiters(ImmutableMap.of(getObjectParams.getGetObjectRequest().getResultClass(), getObjectParams.getRateLimiters()));
+        }
         Map<Class, List<Object>> results = batchGetObject(batchGetObjectParams);
         List<Object> resultList = results.values().iterator().next();
         if (resultList.size() > 0) {

@@ -17,6 +17,11 @@ public class GetObjectParams<T extends DynamapRecordBean> {
         return this;
     }
 
+    public GetObjectParams<T> withMigrationContext(Object migrationContext) {
+        this.migrationContext = migrationContext;
+        return this;
+    }
+
     public GetObjectParams<T> withWriteMigrationChange(boolean writeMigrationChange) {
         this.writeMigrationChange = writeMigrationChange;
         return this;
