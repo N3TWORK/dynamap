@@ -4,13 +4,23 @@ permalink: /quickstart/
 ---
 ### Step 1. Add the maven dependency
 
+Dynamap will soon be hosted on Maven Central. In the meantime you will need to clone this repository, build the JAR and install it into your local maven repo.
+
+```bash
+$ git clone git@github.com:N3TWORK/dynamap.git
+$ cd dynamap
+$ git checkout v0.9.34
+$ mvn clean install
+```
+
+
 In your Maven project file add the following dependency:
 
 ```xml
 <dependency>
     <groupId>com.n3twork</groupId>
     <artifactId>dynamap</artifactId>
-    <version>0.9.29</version>
+    <version>0.9.34</version>
 </dependency>
 ```
 
