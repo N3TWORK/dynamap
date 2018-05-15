@@ -21,7 +21,7 @@ title_separator          : "-"
 name                     :
 description              : "Dynamap is Java object model and mapping library for Amazon's DynamoDB database."
 url                      : https://dynamap.n3twork.com
-baseurl                  : /dynamap # the subpath of your site, e.g. "/blog"
+baseurl                  : # the subpath of your site, e.g. "/blog"
 repository               : n3twork/dynamap
 teaser                   : # path of fallback teaser image, e.g. "/assets/images/500x300.png"
 # breadcrumbs            : false # true, false (default)
