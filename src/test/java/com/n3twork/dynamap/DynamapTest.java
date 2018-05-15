@@ -186,7 +186,7 @@ public class DynamapTest {
         Assert.assertEquals(doc.getNestedObject().getMapOfCustomTypeItem("item2").getName(), "item2");
 
         // Test delete without using current state
-        testDocumentUpdates = new TestDocumentBean().setId(doc.getId()).setSequence(doc.getSequence()).createUpdates();
+        testDocumentUpdates = new TestDocumentBean(doc.getId(), doc.getSequence()).createUpdates();
         testDocumentUpdates.deleteMapOfCustomTypeItem("item1");
         nestedTypeUpdates = new NestedTypeBean().createUpdates();
         nestedTypeUpdates.deleteMapOfCustomTypeItem("item1");
@@ -228,7 +228,7 @@ public class DynamapTest {
         // Test when without using current state the existing collection is replaced
         CustomType customType3 = new CustomType("item3", "test", CustomType.CustomTypeEnum.VALUE_A);
 
-        testDocumentUpdates = new TestDocumentBean().setId(doc.getId()).setSequence(doc.getSequence()).createUpdates();
+        testDocumentUpdates = new TestDocumentBean(doc.getId(), doc.getSequence()).createUpdates();
         testDocumentUpdates.setMapOfCustomTypeReplaceItem(customType3.getName(), customType3);
         nestedTypeUpdates = new NestedTypeBean().createUpdates();
         nestedTypeUpdates.setMapOfCustomTypeReplaceItem(customType3.getName(), customType3);
@@ -377,7 +377,7 @@ public class DynamapTest {
         Map<String, Long> mapOfLong = new HashMap<>();
         mapOfLong.put("a", 1L);
 
-        TestDocumentBean doc = new TestDocumentBean().setId(docId1).setSequence(1).setMapOfLong(mapOfLong);
+        TestDocumentBean doc = new TestDocumentBean(docId1, 1).setMapOfLong(mapOfLong);
         dynamap.save(new SaveParams<>(doc));
 
         doc = dynamap.getObject(createGetObjectParams(doc));
@@ -434,9 +434,9 @@ public class DynamapTest {
         String nestedId1 = UUID.randomUUID().toString();
         String docId2 = UUID.randomUUID().toString();
         String nestedId2 = UUID.randomUUID().toString();
-        dynamap.save(new SaveParams<>((new TestDocumentBean().setId(docId1).setSequence(1).setString("String")
+        dynamap.save(new SaveParams<>((new TestDocumentBean(docId1, 1).setString("String")
                 .setNestedObject(new NestedTypeBean().setId(nestedId1)))));
-        dynamap.save(new SaveParams<>(new TestDocumentBean().setId(docId2).setSequence(1).setString("String")
+        dynamap.save(new SaveParams<>(new TestDocumentBean(docId2, 1).setString("String")
                 .setNestedObject(new NestedTypeBean().setId(nestedId2))));
 
 
@@ -459,7 +459,7 @@ public class DynamapTest {
     @Test
     public void testOptimisticLocking() {
         final String DOC_ID = "1";
-        DummyDocBean doc = new DummyDocBean().setId(DOC_ID).setName("test").setWeight(6);
+        DummyDocBean doc = new DummyDocBean(DOC_ID).setName("test").setWeight(6);
         dynamap.save(new SaveParams<>(doc));
 
         DummyDocBean savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
@@ -510,7 +510,7 @@ public class DynamapTest {
 
         NestedTypeBean nestedObject = new NestedTypeBean().setId(nestedId1).setMapOfLong(ImmutableMap.of("dollars", 1L, "francs", 1L));
 
-        TestDocumentBean doc = new TestDocumentBean().setId(docId1).setSequence(1)
+        TestDocumentBean doc = new TestDocumentBean(docId1, 1)
                 .setListOfString(Arrays.asList("test1", "test2")).setNestedObject(nestedObject).setString("String");
         dynamap.save(new SaveParams<>(doc));
 
@@ -541,7 +541,7 @@ public class DynamapTest {
     @Test
     public void testOptimisticLockingWithSave() {
         final String DOC_ID = "1";
-        DummyDocBean doc = new DummyDocBean().setId(DOC_ID).setName("test").setWeight(6);
+        DummyDocBean doc = new DummyDocBean(DOC_ID).setName("test").setWeight(6);
         dynamap.save(new SaveParams<>(doc));
 
         DummyDocBean savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
@@ -602,7 +602,7 @@ public class DynamapTest {
 
         for (int i = 0; i < DUMMY_DOCS_SIZE; i++) {
             String id = UUID.randomUUID().toString();
-            DummyDocBean doc = new DummyDocBean().setId(id).setName(bigString).setWeight(i);
+            DummyDocBean doc = new DummyDocBean(id).setName(bigString).setWeight(i);
             dummyDocsIds.add(id);
             docsToSave.add(doc);
         }
@@ -641,7 +641,7 @@ public class DynamapTest {
 
         NestedTypeBean nestedObject = new NestedTypeBean().setId(nestedId1).setString("biography");
 
-        TestDocumentBean doc = new TestDocumentBean().setId(docId1).setSequence(1)
+        TestDocumentBean doc = new TestDocumentBean(docId1, 1)
                 .setListOfString(Arrays.asList("test1", "test2")).setNestedObject(nestedObject).setString("String");
         dynamap.save(new SaveParams<>(doc));
 
@@ -661,9 +661,9 @@ public class DynamapTest {
         // save and get
         IntStream.range(0, MAX).forEach(i -> {
             String suffix = "-" + i;
-            DummyDocBean doc = new DummyDocBean().setId(Integer.toString(i)).setName("test" + i).setWeight(RandomUtils.nextInt(0, 100));
+            DummyDocBean doc = new DummyDocBean(Integer.toString(i)).setName("test" + i).setWeight(RandomUtils.nextInt(0, 100));
             dynamap.save(new SaveParams<>(doc).withSuffix(suffix));
-            doc = new DummyDocBean().setId(Integer.toString(i + 1000)).setName("test" + i).setWeight(RandomUtils.nextInt(0, 100));
+            doc = new DummyDocBean(Integer.toString(i + 1000)).setName("test" + i).setWeight(RandomUtils.nextInt(0, 100));
             dynamap.save(new SaveParams<>(doc).withSuffix(suffix));
             DummyDocBean savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(Integer.toString(i)).withSuffix(suffix)));
             Assert.assertEquals(savedDoc.getId(), Integer.toString(i));
@@ -699,7 +699,7 @@ public class DynamapTest {
         List<String> dummyDocsIds = new ArrayList<>();
         for (int i = 0; i < DUMMY_DOCS_SIZE; i++) {
             String id = UUID.randomUUID().toString();
-            DummyDocBean doc = new DummyDocBean().setId(id).setName("name" + i).setWeight(i);
+            DummyDocBean doc = new DummyDocBean(id).setName("name" + i).setWeight(i);
 
             dummyDocsIds.add(id);
             docsToSave.add(doc);
@@ -734,7 +734,7 @@ public class DynamapTest {
 
         String id = "123";
         for (int i = 0; i < DUMMY_DOCS_SIZE; i++) {
-            DummyDoc2Bean doc = new DummyDoc2Bean().setId(id).setName("name" + i).setWeight(i);
+            DummyDoc2Bean doc = new DummyDoc2Bean(id, "name" + i).setWeight(i);
             dummyDocsIds.add(id);
             docsToSave.add(doc);
         }
@@ -805,7 +805,7 @@ public class DynamapTest {
     }
 
     private TestDocumentBean createTestDocumentBean(NestedTypeBean nestedTypeBean) {
-        return new TestDocumentBean().setId(UUID.randomUUID().toString()).setSequence(1).setNestedObject(nestedTypeBean);
+        return new TestDocumentBean(UUID.randomUUID().toString(), 1).setNestedObject(nestedTypeBean);
     }
 
     private NestedTypeBean createNestedTypeBean() {

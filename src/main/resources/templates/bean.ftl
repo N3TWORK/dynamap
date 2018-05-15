@@ -52,7 +52,16 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     private Integer _revision;
     </#if>
 
-    public ${beanName}() {
+    <#if isRoot>
+    public ${beanName}(String ${tableDefinition.hashKey}<#if tableDefinition.rangeKey??>, ${tableDefinition.getField(tableDefinition.rangeKey).type} ${tableDefinition.rangeKey}</#if>) {
+            this(<#list type.serializedFields as field>null<#sep>,</#list>
+            <#if isRoot && optimisticLocking>,null</#if><#if tableDefinition.isEnableMigrations() && isRoot>,null</#if>);
+            this.${tableDefinition.hashKey} = ${tableDefinition.hashKey};
+            <#if tableDefinition.rangeKey??>this.${tableDefinition.rangeKey} = ${tableDefinition.rangeKey};</#if>
+    }
+    </#if>
+
+    <#if isRoot>protected<#else>public</#if> ${beanName}() {
         this(<#list type.serializedFields as field>null<#sep>,</#list>
         <#if isRoot && optimisticLocking>,null</#if><#if tableDefinition.isEnableMigrations() && isRoot>,null</#if>);
     }
