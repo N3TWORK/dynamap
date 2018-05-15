@@ -1,6 +1,6 @@
 ---
 title: "Generated Classes"
-permalink: /generated-classes
+permalink: /generated-classes/
 ---
 
 For each table Dynamap *type*, defined by the [Type](/schema#type-definition) in the schemas, it will generate 3 java classes using the package specified for the table.

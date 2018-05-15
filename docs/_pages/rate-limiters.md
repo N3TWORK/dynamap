@@ -1,6 +1,6 @@
 ---
 title: "Using Rate Limiters"
-permalink: /rate-limiters
+permalink: /rate-limiters/
 ---
 
 DynamoDB will throw an exception if read or write capacity is exceeded.

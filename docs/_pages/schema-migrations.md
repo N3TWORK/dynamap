@@ -1,6 +1,6 @@
 ---
 title: "Schema Migrations"
-permalink: /schema-migrations
+permalink: /schema-migrations/
 ---
 
 Documentation forthcoming...

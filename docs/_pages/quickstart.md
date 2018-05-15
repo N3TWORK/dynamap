@@ -1,6 +1,6 @@
 ---
 title: "Quickstart"
-permalink: /quickstart
+permalink: /quickstart/
 ---
 ### Step 1. Add the maven dependency
 

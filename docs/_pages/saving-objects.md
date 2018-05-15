@@ -1,6 +1,6 @@
 ---
 title: "Saving Objects"
-permalink: /saving-objects
+permalink: /saving-objects/
 ---
 
 Saving objects is very simple with Dynamap using `save` method. It takes a single SaveParams object as a parameter which allows you to specify additional options such as the write rate limiter.

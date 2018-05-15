@@ -1,6 +1,6 @@
 ---
 title: "Instantiating Dynamap"
-permalink: /instantiating-dynamap
+permalink: /instantiating-dynamap/
 ---
 
 Dynamap provides a single class, `com.n3twork.Dynamap`, for all interactions with DyanamoDB. It requires two parameters to be instantianted; an instance of the DynamoDB client and the schema registry.

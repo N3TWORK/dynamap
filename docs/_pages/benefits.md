@@ -1,6 +1,6 @@
 ---
 title: "Benefits"
-permalink: /benefits
+permalink: /benefits/
 ---
 
 * Define your schema and attribute behavior using JSON.

@@ -1,6 +1,6 @@
 ---
 title: "Team"
-permalink: /team
+permalink: /team/
 ---
 
 Dynamap was created by [Mark Williams](https://github.com/camyon) and is maintained by a small group of developers on GitHub.

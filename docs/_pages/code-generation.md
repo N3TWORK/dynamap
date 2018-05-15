@@ -1,6 +1,6 @@
 ---
 title: "Code Generation"
-permalink: /code-generation
+permalink: /code-generation/
 ---
 
 ## Calling the code generator directly from command line

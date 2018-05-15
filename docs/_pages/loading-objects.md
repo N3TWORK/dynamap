@@ -1,6 +1,6 @@
 ---
 title: "Loading Objects"
-permalink: /loading-objects
+permalink: /loading-objects/
 ---
 
 Dynamap provides a few methods for loading an object or multiple objects in a batch. All these methods use the `GetObjectRequest` class to specify what to retreive from DynamoDB.

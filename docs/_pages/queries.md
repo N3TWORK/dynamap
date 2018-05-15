@@ -1,6 +1,6 @@
 ---
 title: "Queries"
-permalink: /queries
+permalink: /queries/
 ---
 
 Dynamap's `query` method provides the ability to execute all sorts of queries. The `QueryRequest` object is used to specify the hash key value and an optional range key condition.

@@ -1,6 +1,6 @@
 ---
 title: "Schema Definition"
-permalink: /schema
+permalink: /schema/
 ---
 ## Structure of a Schema File
 
