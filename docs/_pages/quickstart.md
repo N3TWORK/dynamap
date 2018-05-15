@@ -13,7 +13,6 @@ $ git checkout v0.9.34
 $ mvn clean install
 ```
 
-
 In your Maven project file add the following dependency:
 
 ```xml
