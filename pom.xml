@@ -123,6 +123,45 @@
         </dependency>
     </dependencies>
 
+    <profiles>
+      <profile>
+          <id>release</id>
+          <build>
+              <plugins>
+                  <plugin>
+                      <artifactId>maven-source-plugin</artifactId>
+                      <executions>
+                          <execution>
+                              <id>attach-sources</id>
+                              <goals>
+                                  <goal>jar</goal>
+                              </goals>
+                          </execution>
+                      </executions>
+                  </plugin>
+                  <plugin>
+                      <artifactId>maven-javadoc-plugin</artifactId>
+                      <executions>
+                          <execution>
+                              <id>attach-javadocs</id>
+                              <goals>
+                                  <goal>jar</goal>
+                              </goals>
+                          </execution>
+                      </executions>
+                  </plugin>
+                  <plugin>
+                      <artifactId>maven-deploy-plugin</artifactId>
+                      <configuration>
+                          <updateReleaseInfo>true</updateReleaseInfo>
+                      </configuration>
+                  </plugin>
+              </plugins>
+          </build>
+      </profile>
+
+    </profiles>
+
     <build>
         <plugins>
             <plugin>
@@ -221,16 +260,10 @@
                 <version>2.5.3</version>
                 <configuration>
                     <tagNameFormat>v@{project.version}</tagNameFormat>
+                    <releaseProfiles>release</releaseProfiles>
                 </configuration>
             </plugin>
         </plugins>
-        <extensions>
-            <extension>
-                <groupId>org.springframework.build</groupId>
-                <artifactId>aws-maven</artifactId>
-                <version>5.0.0.RELEASE</version>
-            </extension>
-        </extensions>
     </build>
 
 </project>
