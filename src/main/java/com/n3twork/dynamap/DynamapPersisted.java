@@ -16,6 +16,8 @@
 
 package com.n3twork.dynamap;
 
-public interface DynamapPersisted {
+public interface DynamapPersisted<U extends Updates> {
+
+    U createUpdates();
 
 }

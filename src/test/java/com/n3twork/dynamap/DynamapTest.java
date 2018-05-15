@@ -86,28 +86,6 @@ public class DynamapTest {
     }
 
     @Test
-    public void testNestedUpdatesSolo() {
-
-        NestedTypeBean nested = createNestedTypeBean();
-        nested.setString("string1");
-        TestDocumentBean doc = createTestDocumentBean(nested);
-        doc.setString("string1");
-        dynamap.save(new SaveParams<>(doc));
-
-        TestDocumentBean testDocumentBean = dynamap.getObject(createGetObjectParams(doc));
-        Assert.assertEquals(testDocumentBean.getNestedObject().getId(), nested.getId());
-        Assert.assertEquals(testDocumentBean.getNestedObject().getString(), nested.getString());
-
-        TestDocumentUpdates testDocumentUpdates = createTestDocumentUpdates(testDocumentBean);
-        NestedTypeUpdates nestedTypeUpdates = createNestedTypeUpdates(testDocumentBean, nested);
-        nestedTypeUpdates.setString("string2");
-        dynamap.update(new UpdateParams<>(nestedTypeUpdates));
-        doc = dynamap.getObject(createGetObjectParams(doc));
-        Assert.assertEquals(doc.getNestedObject().getString(), "string2");
-
-    }
-
-    @Test
     public void testStringField() {
         NestedTypeBean nested = createNestedTypeBean();
         nested.setString("string1");
@@ -121,8 +99,8 @@ public class DynamapTest {
         Assert.assertEquals(testDocumentBean.getNestedObject().getId(), nested.getId());
         Assert.assertEquals(testDocumentBean.getNestedObject().getString(), nested.getString());
 
-        TestDocumentUpdates testDocumentUpdates = createTestDocumentUpdates(testDocumentBean);
-        NestedTypeUpdates nestedTypeUpdates = createNestedTypeUpdates(testDocumentBean, nested);
+        NestedTypeUpdates nestedTypeUpdates = nested.createUpdates();
+        TestDocumentUpdates testDocumentUpdates = testDocumentBean.createUpdates().setNestedObjectUpdates(nestedTypeUpdates);
         testDocumentUpdates.setString("string2");
         nestedTypeUpdates.setString("string2");
         testDocumentUpdates.setNestedObjectUpdates(nestedTypeUpdates);
@@ -144,7 +122,7 @@ public class DynamapTest {
         dynamap.save(new SaveParams<>(doc).withWriteLimiter(rateLimiterPair.getWriteLimiter()));
         dynamap.getObject(createGetObjectParams(doc));
 
-        TestDocumentUpdates testDocumentUpdates = new TestDocumentUpdates(doc, doc.getHashKeyValue(), doc.getRangeKeyValue());
+        TestDocumentUpdates testDocumentUpdates = doc.createUpdates();
         testDocumentUpdates.setString("new String");
         dynamap.update(new UpdateParams<>(testDocumentUpdates).withWriteLimiter(rateLimiterPair.getWriteLimiter()));
 
@@ -158,7 +136,7 @@ public class DynamapTest {
         Assert.assertNull(nested.getMapOfLongValue("new"));
         Assert.assertEquals(nested.getMapOfLongWithDefaultsValue("new").longValue(), 2L);
 
-        NestedTypeUpdates nestedTypeUpdates = createNestedTypeUpdates(doc, nested);
+        NestedTypeUpdates nestedTypeUpdates = nested.createUpdates();
         Assert.assertNull(nestedTypeUpdates.getMapOfLongValue("new"));
         Assert.assertEquals(nestedTypeUpdates.getMapOfLongWithDefaultsValue("new").longValue(), 2L);
 
@@ -172,7 +150,8 @@ public class DynamapTest {
         nestedTypeUpdates.incrementMapOfLongWithDefaultsAmount("new", 1L);
         Assert.assertEquals(nestedTypeUpdates.getMapOfLongWithDefaultsValue("new").longValue(), 4L);
 
-        dynamap.update(new UpdateParams<>(nestedTypeUpdates));
+        TestDocumentUpdates documentUpdates = doc.createUpdates().setNestedObjectUpdates(nestedTypeUpdates);
+        dynamap.update(new UpdateParams<>(documentUpdates));
         doc = dynamap.getObject(createGetObjectParams(doc));
         Assert.assertEquals(doc.getNestedObject().getMapOfLongWithDefaults().get("new").longValue(), 4L);
 
@@ -186,7 +165,8 @@ public class DynamapTest {
         TestDocumentBean doc = createTestDocumentBean(nested);
         dynamap.save(new SaveParams<>(doc));
 
-        TestDocumentUpdates testDocumentUpdates = createTestDocumentUpdates(doc);
+        NestedTypeUpdates nestedTypeUpdates = nested.createUpdates();
+        TestDocumentUpdates testDocumentUpdates = doc.createUpdates().setNestedObjectUpdates(nestedTypeUpdates);
         Assert.assertEquals(testDocumentUpdates.getMapOfCustomTypeIds().size(), 0);
         CustomType customType1 = new CustomType("item1", "test", CustomType.CustomTypeEnum.VALUE_A);
         CustomType customType2 = new CustomType("item2", "test", CustomType.CustomTypeEnum.VALUE_A);
@@ -194,12 +174,11 @@ public class DynamapTest {
         testDocumentUpdates.setMapOfCustomTypeItem(customType1.getName(), customType1);
         Assert.assertTrue(testDocumentUpdates.getMapOfCustomTypeIds().contains("item1"));
         testDocumentUpdates.setMapOfCustomTypeItem(customType2.getName(), customType2);
-        NestedTypeUpdates nestedTypeUpdates = createNestedTypeUpdates(doc, nested);
         nestedTypeUpdates.setMapOfCustomTypeItem(customType1.getName(), customType1);
         nestedTypeUpdates.setMapOfCustomTypeItem(customType2.getName(), customType2);
 
+        testDocumentUpdates.setNestedObjectUpdates(nestedTypeUpdates);
         dynamap.update(new UpdateParams<>(testDocumentUpdates));
-        dynamap.update(new UpdateParams<>(nestedTypeUpdates));
         doc = dynamap.getObject(createGetObjectParams(doc));
         Assert.assertEquals(doc.getMapOfCustomTypeItem("item1").getName(), "item1");
         Assert.assertEquals(doc.getNestedObject().getMapOfCustomTypeItem("item1").getName(), "item1");
@@ -207,9 +186,9 @@ public class DynamapTest {
         Assert.assertEquals(doc.getNestedObject().getMapOfCustomTypeItem("item2").getName(), "item2");
 
         // Test delete without using current state
-        testDocumentUpdates = new TestDocumentUpdates(new TestDocumentBean(), doc.getHashKeyValue(), doc.getRangeKeyValue());
+        testDocumentUpdates = new TestDocumentBean().setId(doc.getId()).setSequence(doc.getSequence()).createUpdates();
         testDocumentUpdates.deleteMapOfCustomTypeItem("item1");
-        nestedTypeUpdates = new NestedTypeUpdates(new NestedTypeBean(), doc.getHashKeyValue(), doc.getRangeKeyValue());
+        nestedTypeUpdates = new NestedTypeBean().createUpdates();
         nestedTypeUpdates.deleteMapOfCustomTypeItem("item1");
         testDocumentUpdates.setNestedObjectUpdates(nestedTypeUpdates);
         TestDocument testDocument = dynamap.update(new UpdateParams<>(testDocumentUpdates));
@@ -227,19 +206,19 @@ public class DynamapTest {
         TestDocumentBean doc = createTestDocumentBean(nested);
         dynamap.save(new SaveParams<>(doc));
 
-        TestDocumentUpdates testDocumentUpdates = createTestDocumentUpdates(doc);
+        NestedTypeUpdates nestedTypeUpdates = nested.createUpdates();
+        TestDocumentUpdates testDocumentUpdates = doc.createUpdates().setNestedObjectUpdates(nestedTypeUpdates);
         CustomType customType1 = new CustomType("item1", "test", CustomType.CustomTypeEnum.VALUE_A);
         CustomType customType2 = new CustomType("item2", "test", CustomType.CustomTypeEnum.VALUE_A);
 
         testDocumentUpdates.setMapOfCustomTypeReplaceItem(customType1.getName(), customType1);
         Assert.assertTrue(testDocumentUpdates.getMapOfCustomTypeReplaceIds().contains("item1"));
         testDocumentUpdates.setMapOfCustomTypeReplaceItem(customType2.getName(), customType2);
-        NestedTypeUpdates nestedTypeUpdates = createNestedTypeUpdates(doc, nested);
         nestedTypeUpdates.setMapOfCustomTypeReplaceItem(customType1.getName(), customType1);
         nestedTypeUpdates.setMapOfCustomTypeReplaceItem(customType2.getName(), customType2);
 
+        testDocumentUpdates.setNestedObjectUpdates(nestedTypeUpdates);
         dynamap.update(new UpdateParams<>(testDocumentUpdates));
-        dynamap.update(new UpdateParams<>(nestedTypeUpdates));
         doc = dynamap.getObject(createGetObjectParams(doc));
         Assert.assertEquals(doc.getMapOfCustomTypeReplaceItem("item1").getName(), "item1");
         Assert.assertEquals(doc.getNestedObject().getMapOfCustomTypeReplaceItem("item1").getName(), "item1");
@@ -249,9 +228,9 @@ public class DynamapTest {
         // Test when without using current state the existing collection is replaced
         CustomType customType3 = new CustomType("item3", "test", CustomType.CustomTypeEnum.VALUE_A);
 
-        testDocumentUpdates = new TestDocumentUpdates(new TestDocumentBean(), doc.getHashKeyValue(), doc.getRangeKeyValue());
+        testDocumentUpdates = new TestDocumentBean().setId(doc.getId()).setSequence(doc.getSequence()).createUpdates();
         testDocumentUpdates.setMapOfCustomTypeReplaceItem(customType3.getName(), customType3);
-        nestedTypeUpdates = new NestedTypeUpdates(new NestedTypeBean(), doc.getHashKeyValue(), doc.getRangeKeyValue());
+        nestedTypeUpdates = new NestedTypeBean().createUpdates();
         nestedTypeUpdates.setMapOfCustomTypeReplaceItem(customType3.getName(), customType3);
         testDocumentUpdates.setNestedObjectUpdates(nestedTypeUpdates);
         TestDocument testDocument = dynamap.update(new UpdateParams<>(testDocumentUpdates));
@@ -270,13 +249,13 @@ public class DynamapTest {
         TestDocumentBean doc = createTestDocumentBean(nested);
         dynamap.save(new SaveParams<>(doc));
 
-        TestDocumentUpdates testDocumentUpdates = createTestDocumentUpdates(doc);
+        NestedTypeUpdates nestedTypeUpdates = nested.createUpdates();
+        TestDocumentUpdates testDocumentUpdates = doc.createUpdates().setNestedObjectUpdates(nestedTypeUpdates);
         CustomType customType1 = new CustomType("item1", "test", CustomType.CustomTypeEnum.VALUE_A);
         CustomType customType2 = new CustomType("item2", "test", CustomType.CustomTypeEnum.VALUE_A);
         Map<String, CustomType> map = ImmutableMap.of(customType1.getName(), customType1, customType2.getName(), customType2);
 
         testDocumentUpdates.setNoDeltaMapOfCustomType(map);
-        NestedTypeUpdates nestedTypeUpdates = createNestedTypeUpdates(doc, nested);
         nestedTypeUpdates.setNoDeltaMapOfCustomType(map);
         testDocumentUpdates.setNestedObjectUpdates(nestedTypeUpdates);
         TestDocument updated = dynamap.update(new UpdateParams<>(testDocumentUpdates));
@@ -297,7 +276,7 @@ public class DynamapTest {
         doc = dynamap.getObject(createGetObjectParams(doc));
         Assert.assertEquals(doc.getSetOfString().size(), 2);
         Assert.assertTrue(doc.getSetOfString().containsAll(Sets.newHashSet("test1", "test2")));
-        TestDocumentUpdates updates = createTestDocumentUpdates(doc);
+        TestDocumentUpdates updates = doc.createUpdates();
         updates.setSetOfStringItem("test3");
         Assert.assertTrue(updates.getSetOfString().contains("test3"));
         TestDocument updated = dynamap.update(new UpdateParams<>(updates));
@@ -402,7 +381,7 @@ public class DynamapTest {
         dynamap.save(new SaveParams<>(doc));
 
         doc = dynamap.getObject(createGetObjectParams(doc));
-        TestDocumentUpdates testDocumentUpdates = new TestDocumentUpdates(doc, docId1, 1);
+        TestDocumentUpdates testDocumentUpdates = doc.createUpdates();
         Assert.assertEquals(testDocumentUpdates.getMapOfLongValue("a").longValue(), 1);
         testDocumentUpdates.incrementMapOfLongAmount("a", 1L);
         Assert.assertEquals(testDocumentUpdates.getMapOfLongValue("a").longValue(), 2);
@@ -412,7 +391,7 @@ public class DynamapTest {
         Assert.assertEquals(doc.getMapOfLongValue("a").longValue(), 2);
         Assert.assertEquals(doc.getMapOfLong().get("a").longValue(), 2);
 
-        testDocumentUpdates = new TestDocumentUpdates(doc, docId1, 1);
+        testDocumentUpdates = doc.createUpdates();
         testDocumentUpdates.setMapOfLongValue("a", 1L);
         Assert.assertEquals(testDocumentUpdates.getMapOfLongValue("a").longValue(), 1);
         dynamap.update(new UpdateParams<>(testDocumentUpdates));
@@ -421,7 +400,7 @@ public class DynamapTest {
         Assert.assertEquals(doc.getMapOfLong().get("a").longValue(), 1);
 
         // Set value then increment - only the set value is considered. Once set value is used, deltas are ignored.
-        testDocumentUpdates = new TestDocumentUpdates(doc, docId1, 1);
+        testDocumentUpdates = doc.createUpdates();
         testDocumentUpdates.setMapOfLongValue("a", 10L);
         testDocumentUpdates.incrementMapOfLongAmount("a", 1L);
         Assert.assertEquals(testDocumentUpdates.getMapOfLongValue("a").longValue(), 10L);
@@ -440,7 +419,7 @@ public class DynamapTest {
         Assert.assertNull(doc.getNotPersistedString());
         Assert.assertNull(doc.getNestedObject().getNotPersistedString());
 
-        TestDocumentUpdates testDocumentUpdates = new TestDocumentUpdates(doc, doc.getId(), doc.getRangeKeyValue());
+        TestDocumentUpdates testDocumentUpdates = doc.createUpdates();
         testDocumentUpdates.setString("newString");
         dynamap.update(new UpdateParams<>(testDocumentUpdates));
         doc = dynamap.getObject(createGetObjectParams(doc));
@@ -487,7 +466,7 @@ public class DynamapTest {
 
         Assert.assertEquals(savedDoc.getRevision().intValue(), 1);
 
-        DummyDocUpdates docUpdates = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue());
+        DummyDocUpdates docUpdates = savedDoc.createUpdates();
         docUpdates.setWeight(100);
         dynamap.update(new UpdateParams<>(docUpdates));
 
@@ -497,8 +476,8 @@ public class DynamapTest {
 
 
         // two simultaneous updates, second one should fail
-        DummyDocUpdates docUpdates1 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue());
-        DummyDocUpdates docUpdates2 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue());
+        DummyDocUpdates docUpdates1 = savedDoc.createUpdates();
+        DummyDocUpdates docUpdates2 = savedDoc.createUpdates();
 
         dynamap.update(new UpdateParams<>(docUpdates1));
 
@@ -513,8 +492,8 @@ public class DynamapTest {
         }
 
         // optimist locking disabled
-        DummyDocUpdates docUpdates3 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue()).setDisableOptimisticLocking(true);
-        DummyDocUpdates docUpdates4 = new DummyDocUpdates(savedDoc, savedDoc.getHashKeyValue()).setDisableOptimisticLocking(true);
+        DummyDocUpdates docUpdates3 = savedDoc.createUpdates().setDisableOptimisticLocking(true);
+        DummyDocUpdates docUpdates4 = savedDoc.createUpdates().setDisableOptimisticLocking(true);
         dynamap.update(new UpdateParams<>(docUpdates3));
         dynamap.update(new UpdateParams<>(docUpdates4));
 
@@ -536,19 +515,22 @@ public class DynamapTest {
         dynamap.save(new SaveParams<>(doc));
 
         // add 1 to dollars and a check to ensure it is less than 2
-        NestedTypeUpdates nestedTypeUpdates = new NestedTypeUpdates(new NestedTypeBean(), docId1, 1);
+        NestedTypeUpdates nestedTypeUpdates = new NestedTypeBean().createUpdates();
         nestedTypeUpdates.incrementMapOfLongAmount("dollars", 1L);
         nestedTypeUpdates.getExpressionBuilder().addCheckMapValuesCondition(TestDocumentBean.NESTEDOBJECT_FIELD, NestedTypeBean.MAPOFLONG_FIELD,
                 ImmutableMap.of("dollars", 2L), DynamoExpressionBuilder.ComparisonOperator.LESS_THAN);
-        dynamap.update(new UpdateParams<>(nestedTypeUpdates));
+        TestDocumentUpdates testDocumentUpdates = doc.createUpdates();
+        testDocumentUpdates.setNestedObjectUpdates(nestedTypeUpdates);
+        dynamap.update(new UpdateParams<>(testDocumentUpdates));
         // increment again and check that conditional exception is thrown
-        nestedTypeUpdates = new NestedTypeUpdates(new NestedTypeBean(), docId1, 1);
+        nestedTypeUpdates = new NestedTypeBean().createUpdates();
+        testDocumentUpdates = doc.createUpdates().setNestedObjectUpdates(nestedTypeUpdates);
         nestedTypeUpdates.incrementMapOfLongAmount("dollars", 1L);
         nestedTypeUpdates.getExpressionBuilder().addCheckMapValuesCondition(TestDocumentBean.NESTEDOBJECT_FIELD, NestedTypeBean.MAPOFLONG_FIELD,
                 ImmutableMap.of("dollars", 2L), DynamoExpressionBuilder.ComparisonOperator.LESS_THAN);
         boolean errorThrown = false;
         try {
-            dynamap.update(new UpdateParams<>(nestedTypeUpdates));
+            dynamap.update(new UpdateParams<>(testDocumentUpdates));
         } catch (ConditionalCheckFailedException e) {
             errorThrown = true;
         }
@@ -701,7 +683,7 @@ public class DynamapTest {
         DummyDocBean dummyDocBean = dummyDocBeans.get(0);
         String docId = dummyDocBean.getId();
 
-        DummyDocUpdates docUpdates = new DummyDocUpdates(dummyDocBean, dummyDocBean.getHashKeyValue());
+        DummyDocUpdates docUpdates = dummyDocBean.createUpdates();
         String updatedName = "updated name";
         docUpdates.setName(updatedName);
         // deduct table suffix by the id
@@ -801,9 +783,9 @@ public class DynamapTest {
         doc.setIntegerField(1);
         dynamap.save(new SaveParams<>(doc));
 
-        TestDocumentUpdates testDocumentUpdates = createTestDocumentUpdates(doc);
+        NestedTypeUpdates nestedTypeUpdates = nested.createUpdates();
+        TestDocumentUpdates testDocumentUpdates = doc.createUpdates().setNestedObjectUpdates(nestedTypeUpdates);
         doc.setString("string2");
-        NestedTypeUpdates nestedTypeUpdates = createNestedTypeUpdates(doc, nested);
         testDocumentUpdates.setString("string2");
         nestedTypeUpdates.setString("string2");
         testDocumentUpdates.setNestedObjectUpdates(nestedTypeUpdates);
@@ -814,7 +796,7 @@ public class DynamapTest {
         Assert.assertEquals(updated.getString(), "string2");
         Assert.assertEquals(updated.getNestedObject().getString(), "string2");
 
-        testDocumentUpdates = createTestDocumentUpdates(updated);
+        testDocumentUpdates = new TestDocumentBean(updated).createUpdates();
         testDocumentUpdates.setString("string3");
         updated = dynamap.update(new UpdateParams<>(testDocumentUpdates).withReturnValue(DynamapReturnValue.UPDATED_OLD));
         Assert.assertEquals(updated.getString(), "string2");
@@ -834,12 +816,5 @@ public class DynamapTest {
         return new GetObjectParams<>(new GetObjectRequest<>(TestDocumentBean.class).withHashKeyValue(testDocument.getId()).withRangeKeyValue(testDocument.getRangeKeyValue()));
     }
 
-    private TestDocumentUpdates createTestDocumentUpdates(TestDocument testDocument) {
-        return new TestDocumentUpdates(testDocument, testDocument.getId(), testDocument.getSequence());
-    }
-
-    private NestedTypeUpdates createNestedTypeUpdates(TestDocument testDocument, NestedType nestedType) {
-        return new NestedTypeUpdates(nestedType, testDocument.getId(), testDocument.getSequence());
-    }
 
 }

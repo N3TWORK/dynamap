@@ -511,7 +511,7 @@ public class Dynamap {
     }
 
     public <T extends DynamapPersisted> T update(UpdateParams<T> updateParams) {
-        Updates<T> updates = updateParams.getUpdates();
+        RecordUpdates<T> updates = updateParams.getUpdates();
         DynamoRateLimiter writeLimiter = updateParams.getWriteLimiter();
         String suffix = updateParams.getSuffix();
 
@@ -567,12 +567,12 @@ public class Dynamap {
     }
 
     @Deprecated
-    public <T extends DynamapPersisted> T update(Updates<T> updates, DynamoRateLimiter writeLimiter) {
+    public <T extends DynamapPersisted> T update(RecordUpdates<T> updates, DynamoRateLimiter writeLimiter) {
         return (T) update(new UpdateParams<>(updates).withWriteLimiter(writeLimiter));
     }
 
     @Deprecated
-    public <T extends DynamapPersisted> T update(Updates<T> updates, DynamoRateLimiter writeLimiter, String suffix) {
+    public <T extends DynamapPersisted> T update(RecordUpdates<T> updates, DynamoRateLimiter writeLimiter, String suffix) {
         return (T) update(new UpdateParams(updates).withWriteLimiter(writeLimiter).withSuffix(suffix));
     }
 
@@ -821,7 +821,7 @@ public class Dynamap {
         return attributeDefinitions.stream().anyMatch(d -> d.getAttributeName().equals(name));
     }
 
-    private UpdateItemSpec getUpdateItemSpec(Updates updates, TableDefinition tableDefinition, DynamapReturnValue returnValue) {
+    private UpdateItemSpec getUpdateItemSpec(RecordUpdates updates, TableDefinition tableDefinition, DynamapReturnValue returnValue) {
         DynamoExpressionBuilder expressionBuilder = updates.getExpressionBuilder();
         expressionBuilder.setObjectMapper(objectMapper);
         updates.processUpdateExpression();

@@ -32,13 +32,15 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Maps;
 
-public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
+public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Updates<${type.name}> {
 
     protected final DynamoExpressionBuilder expression = new DynamoExpressionBuilder(${typeSequence});
     protected boolean updatesApplied = false;
     protected final ${type.name} ${currentState};
+    <#if isRoot>
     protected final String hashKeyValue;
     protected final Object rangeKeyValue;
+    </#if>
 <#if isRoot && optimisticLocking>
     protected final Integer _revision;
 </#if>
@@ -76,11 +78,13 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
     @Deprecated
     public ${updatesName}(${type.name} ${currentState}, String hashKeyValue, <#if tableDefinition.rangeKey??>Object rangeKeyValue,</#if> boolean disableOptimisticLocking) {
         this.${currentState} = ${currentState};
-        this.hashKeyValue = hashKeyValue;
-        <#if tableDefinition.rangeKey??>
-        this.rangeKeyValue = rangeKeyValue;
-        <#else>
-        this.rangeKeyValue = null;
+        <#if isRoot>
+            this.hashKeyValue = hashKeyValue;
+            <#if tableDefinition.rangeKey??>
+            this.rangeKeyValue = rangeKeyValue;
+            <#else>
+            this.rangeKeyValue = null;
+            </#if>
         </#if>
         this.disableOptimisticLocking = disableOptimisticLocking;
 <#if isRoot && optimisticLocking>
@@ -88,31 +92,58 @@ public class ${updatesName} implements ${type.name}, Updates<${type.name}> {
 </#if>
     }
 
-    <#if optimisticLocking>
-    public ${updatesName} setDisableOptimisticLocking(boolean disableOptimisticLocking) {
-        this.disableOptimisticLocking = disableOptimisticLocking;
-        return this;
-    }
+    <#if isRoot>
+        ${updatesName}(${type.name} ${currentState}, String hashKeyValue<#if tableDefinition.rangeKey??>,Object rangeKeyValue</#if>) {
+            this.${currentState} = ${currentState};
+            this.hashKeyValue = hashKeyValue;
+            <#if tableDefinition.rangeKey??>
+            this.rangeKeyValue = rangeKeyValue;
+            <#else>
+            this.rangeKeyValue = null;
+            </#if>
+            <#if isRoot && optimisticLocking>
+            this._revision = ${currentState}.getRevision();
+            </#if>
+        }
+
+        public ${updatesName} createUpdates() {
+            return new ${updatesName}(this, getHashKeyValue()<#if tableDefinition.rangeKey??>, getRangeKeyValue()</#if>);
+        }
+
+        @Override
+        public String getTableName() {
+            return "${tableName}";
+        }
+
+        @Override
+        public String getHashKeyValue() {
+            return hashKeyValue;
+        }
+
+        @Override
+        public Object getRangeKeyValue() {
+            return rangeKeyValue;
+        }
+
+        <#if optimisticLocking>
+        public ${updatesName} setDisableOptimisticLocking(boolean disableOptimisticLocking) {
+            this.disableOptimisticLocking = disableOptimisticLocking;
+            return this;
+        }
     </#if>
 
-    public ${updatesName}(${type.name} ${currentState}, String hashKeyValue<#if tableDefinition.rangeKey??>,Object rangeKeyValue</#if>) {
-        this(${currentState}, hashKeyValue, <#if tableDefinition.rangeKey??>rangeKeyValue,</#if> false);
-    }
+    <#else>
 
-    @Override
-    public String getTableName() {
-        return "${tableName}";
-    }
+         ${updatesName}(${type.name} ${currentState}) {
+            this.${currentState} = ${currentState};
+         }
 
-    @Override
-    public String getHashKeyValue() {
-        return hashKeyValue;
-    }
+         public ${updatesName} createUpdates() {
+            return new ${updatesName}(this);
+         }
 
-    @Override
-    public Object getRangeKeyValue() {
-        return rangeKeyValue;
-    }
+    </#if>
+
 
     ////// ${type.name} interface methods //////
 

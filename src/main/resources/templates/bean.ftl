@@ -267,8 +267,14 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     }
     </#if>
 
-    public ${updatesName} createUpdates(String hashKeyValue<#if tableDefinition.rangeKey??>,Object rangeKeyValue</#if>) {
-        return new ${updatesName}(this, hashKeyValue<#if tableDefinition.rangeKey??>, rangeKeyValue</#if>);
+    @Override
+    public ${updatesName} createUpdates() {
+        <#if isRoot>
+        return new ${updatesName}(this, getHashKeyValue()<#if tableDefinition.rangeKey??>, getRangeKeyValue()</#if>);
+        <#else>
+        return new ${updatesName}(this);
+        </#if>
     }
+
 
 }

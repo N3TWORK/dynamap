@@ -18,7 +18,7 @@ package com.n3twork.dynamap;
 
 public class UpdateParams<T extends DynamapPersisted> {
 
-    private Updates<T> updates;
+    private RecordUpdates<T> updates;
     private DynamoRateLimiter writeLimiter;
     private String suffix;
     private DynamapReturnValue dynamapReturnValue = DynamapReturnValue.ALL_NEW;
@@ -26,7 +26,7 @@ public class UpdateParams<T extends DynamapPersisted> {
     private UpdateParams() {
     }
 
-    public UpdateParams(Updates<T> updates) {
+    public UpdateParams(RecordUpdates<T> updates) {
         this.updates = updates;
     }
 
@@ -48,7 +48,7 @@ public class UpdateParams<T extends DynamapPersisted> {
     ////////
 
 
-    public Updates<T> getUpdates() {
+    public RecordUpdates<T> getUpdates() {
         return updates;
     }
 

@@ -22,12 +22,6 @@ public interface Updates<T extends DynamapPersisted> {
 
     void processUpdateExpression();
 
-    String getTableName();
-
-    String getHashKeyValue();
-
-    Object getRangeKeyValue();
-
     /**
      *
      * @return true if any of the persisted fields have been modified
