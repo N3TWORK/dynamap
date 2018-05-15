@@ -409,6 +409,23 @@ public class DynamapTest {
     }
 
     @Test
+    public void testIncrementIntegerField() {
+        String docId = UUID.randomUUID().toString();
+        TestDocumentBean doc = new TestDocumentBean(docId, 1);
+
+        dynamap.save(new SaveParams<>(doc));
+
+        TestDocumentUpdates updates = doc.createUpdates();
+        updates.incrementIntegerField(1);
+
+        dynamap.update(new UpdateParams<>(updates));
+
+        TestDocument saved = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(TestDocumentBean.class).withHashKeyValue(docId).withRangeKeyValue(1)));
+
+        Assert.assertEquals((int) saved.getIntegerField(), 1);
+    }
+
+    @Test
     public void testPersistDisabled() {
         NestedTypeBean nestedTypeBean = createNestedTypeBean();
         nestedTypeBean.setNotPersistedString("foo");
