@@ -40,7 +40,7 @@ dynamap.update(new UpdateParams(updates));
 
 ## Quick Start
 
-[Check out the quick start guide](http://dynamap.n3twork.com/quickstart)
+[Check out the quick start guide](https://dynamap.n3twork.com/quickstart)
 
-or consult the full documentation on the official site: http://dynamap.n3twork.com
+or consult the full documentation on the official site: https://dynamap.n3twork.com
 
