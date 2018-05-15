@@ -6,19 +6,19 @@ It generates strongly typed Java classes that represent your schema and indexes,
 
 **Creating and persisting an object is as simple as:**
 ```java
- UserBean user = new UserBean().setId("mark").setCurrencyBalancesAmount("gold",10);
- dynamap.save(user);
+ UserBean user = new UserBean("mark").setCurrencyBalancesAmount("gold",10);
+ dynamap.save(new SaveParams(user));
 ```
 
 **Reading an object:**
 
 ```java
-UserBean user = dynamap.getObject(new GetObjectRequest<>(UserBean.class).withHashKeyValue("mark"));
+UserBean user = dynamap.getObject(new GetObjectParams(new GetObjectRequest<>(UserBean.class).withHashKeyValue("mark")));
 ```
 
 **Updating an object:**
 ```java
-UserBeanUpdates updates = new UserBeanUpdates(user);
+UserBeanUpdates updates = user.createUpdates()
 updates.incrementCurrencyBalancesAmount(2).setStatus("away");
 dynamap.update(new UpdateParams(updates));
 ```

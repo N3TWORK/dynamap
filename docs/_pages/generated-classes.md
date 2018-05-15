@@ -20,9 +20,11 @@ The interface can be useful in passing an immutable object.
 ## Bean class
 
 The bean class serves as the container for holding current state. In addition to the getter methods is also provides setter method to set state. The setter methods return the object instance so they can be changed together.
+It provides a `createUpdates()` method that will return an `Updates` object that wraps the current state.
 
 ```java
-UserBean user = new UserBean().setId("id1").setUserName("mark");
+UserBean user = new UserBean("id1").setUserName("mark");
+UserUpdates = user.createUpdates(); // create the updates object for making changes
 ```
 
 The class has annotations so that it can easily be serialized to and from JSON using [Jackson](https://github.com/FasterXML/jackson)

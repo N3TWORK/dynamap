@@ -156,10 +156,10 @@ Create some new data using the generated bean class and save it
  Map<String,Long> balances = new HashMap();
  balances.put("gold", 2);
  balances.put("silver", 2);
- UserBean user = new UserBean().setUserId("userId1")
+ UserBean user = new UserBean("userId1")
                                .setUserName("mark")
                                .setBalances(balances);
- dynamap.save(user);
+ dynamap.save(new SaveParams(user));
  
 ```
 
@@ -167,23 +167,23 @@ Get the user object
 
 ```java
  GetObjectRequest<User> getObjectRequest = new GetObjectRequest(UserBean.class).withHashKeyValue("userId1");
- User user = dynamap.getObject(getObjectRequest);
+ User user = dynamap.getObject(new GetObjectParams(getObjectRequest));
 ```
  
 Update the user, by incrementing a balance
 
 ```java
-UserUpdates updates = new UserUpdates(user, "userId1");
+UserUpdates updates = user.createUpdates();
 updates.incrementBalanceAmount("gold", 3);
-dynamap.update(updates);
+dynamap.update(new UpdateParams(updates));
 
 ```
 
 Increment the user's balance without having to read the existing user object first
 
 ```java
-UserUpdates updates = new UserUpdates(new UserBean(), "userId1");
+UserUpdates updates = new UserBean("userId1").createUpdates();
 updates.incrementBalanceAmount("gold", 3);
-dynamap.update(updates);
+dynamap.update(new UpdateParams(updates));
 
 ```
