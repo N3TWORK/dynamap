@@ -420,14 +420,14 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
     }
     <#if field.isNumber()>
     public ${updatesName} increment${field.name?cap_first}(${field.elementType} amount) {
-        ${field.name}Delta = (${field.name}Delta == null ? amount: ${field.name}Delta) + amount;
+        ${field.name}Delta = ${field.name}Delta == null ? amount : (${field.name}Delta + amount);
         modified = true;
         ${field.name}Modified = true;
         <@persisted_modified field/>
         return this;
     }
     public ${updatesName} decrement${field.name?cap_first}(${field.elementType} amount) {
-        ${field.name}Delta = (${field.name}Delta == null ? amount : ${field.name}Delta) - amount;
+        ${field.name}Delta = ${field.name}Delta == null ? amount : (${field.name}Delta - amount);
         modified = true;
         ${field.name}Modified = true;
         <@persisted_modified field/>
