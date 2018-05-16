@@ -202,18 +202,6 @@ public class Dynamap {
         return TableUtils.createTableIfNotExists(amazonDynamoDB, createTableRequest);
     }
 
-    @Deprecated
-    public <T extends DynamapRecordBean> T getObject(GetObjectRequest<T> getObjectRequest, Object migrationContext) {
-        GetObjectParams getObjectParams = new GetObjectParams(getObjectRequest).withMigrationContext(migrationContext);
-        return (T) getObject(getObjectParams);
-    }
-
-    @Deprecated
-    public <T extends DynamapRecordBean> T getObject(GetObjectRequest<T> getObjectRequest, ReadWriteRateLimiterPair rateLimiters, Object migrationContext) {
-        GetObjectParams<T> getObjectParams = new GetObjectParams<>(getObjectRequest).withRateLimiters(rateLimiters).withMigrationContext(migrationContext);
-        return (T) getObject(getObjectParams);
-    }
-
     public <T extends DynamapRecordBean> T getObject(GetObjectParams<T> getObjectParams) {
         BatchGetObjectParams<T> batchGetObjectParams = new BatchGetObjectParams<T>()
                 .withGetObjectRequests(Arrays.asList(getObjectParams.getGetObjectRequest()))
@@ -229,18 +217,6 @@ public class Dynamap {
         }
         return null;
     }
-
-    @Deprecated
-    public Map<Class, List<Object>> batchGetObject(BatchGetObjectRequest batchGetObjectRequest) {
-        BatchGetObjectParams batchGetObjectParams = new BatchGetObjectParams()
-                .withGetObjectRequests(batchGetObjectRequest.getGetObjectRequests())
-                .withMigrationContext(batchGetObjectRequest.getMigrationContext())
-                .withProgressCallback(batchGetObjectRequest.getProgressCallback())
-                .withRateLimiters(batchGetObjectRequest.getRateLimiters())
-                .withWriteMigrationChange(batchGetObjectRequest.isWriteMigrationChange());
-        return batchGetObject(batchGetObjectParams);
-    }
-
 
     public Map<Class, List<Object>> batchGetObject(BatchGetObjectParams batchGetObjectParams) {
         Map<String, ReadWriteRateLimiterPair> rateLimitersByTable = new HashMap<>();
@@ -309,19 +285,6 @@ public class Dynamap {
             }
         }
         return results;
-    }
-
-    @Deprecated
-    @SuppressWarnings("unchecked")
-    public <T extends DynamapRecordBean> List<T> batchGetObjectSingleCollection(BatchGetObjectRequest<T> batchGetObjectRequest) {
-        BatchGetObjectParams batchGetObjectParams = new BatchGetObjectParams()
-                .withGetObjectRequests(batchGetObjectRequest.getGetObjectRequests())
-                .withMigrationContext(batchGetObjectRequest.getMigrationContext())
-                .withProgressCallback(batchGetObjectRequest.getProgressCallback())
-                .withRateLimiters(batchGetObjectRequest.getRateLimiters())
-                .withWriteMigrationChange(batchGetObjectRequest.isWriteMigrationChange());
-        return batchGetObjectSingleCollection(batchGetObjectParams);
-
     }
 
     @SuppressWarnings("unchecked")
@@ -484,32 +447,6 @@ public class Dynamap {
                 saveParams.isDisableOptimisticLocking(), saveParams.getWriteLimiter(), saveParams.getSuffix());
     }
 
-    @Deprecated
-    public void save(DynamapRecordBean object, DynamoRateLimiter writeLimiter) {
-        SaveParams saveParams = new SaveParams(object).withWriteLimiter(writeLimiter);
-        save(saveParams);
-    }
-
-    @Deprecated
-    public void save(DynamapRecordBean object, boolean overwrite, DynamoRateLimiter writeLimiter) {
-        SaveParams saveParams = new SaveParams(object).withDisableOverwrite(!overwrite).withWriteLimiter(writeLimiter);
-        save(saveParams);
-    }
-
-    @Deprecated
-    public void save(DynamapRecordBean object, boolean overwrite, boolean disableOptimisticLocking, DynamoRateLimiter writeLimiter) {
-        SaveParams saveParams = new SaveParams(object).withDisableOverwrite(!overwrite)
-                .withDisableOptimisticLocking(disableOptimisticLocking).withWriteLimiter(writeLimiter);
-        save(saveParams);
-    }
-
-    @Deprecated
-    public void save(DynamapRecordBean object, boolean overwrite, boolean disableOptimisticLocking, DynamoRateLimiter writeLimiter, String suffix) {
-        SaveParams saveParams = new SaveParams(object).withDisableOverwrite(!overwrite)
-                .withDisableOptimisticLocking(disableOptimisticLocking).withWriteLimiter(writeLimiter).withSuffix(suffix);
-        save(saveParams);
-    }
-
     public <T extends DynamapPersisted> T update(UpdateParams<T> updateParams) {
         RecordUpdates<T> updates = updateParams.getUpdates();
         DynamoRateLimiter writeLimiter = updateParams.getWriteLimiter();
@@ -564,16 +501,6 @@ public class Dynamap {
             logger.debug("Error updating item: Key: " + keyComponents + " Update expression:" + updateItemSpec.getUpdateExpression() + " Conditional expression: " + updateItemSpec.getConditionExpression() + " Values: " + updateItemSpec.getValueMap() + " Names: " + updateItemSpec.getNameMap());
             throw e;
         }
-    }
-
-    @Deprecated
-    public <T extends DynamapPersisted> T update(RecordUpdates<T> updates, DynamoRateLimiter writeLimiter) {
-        return (T) update(new UpdateParams<>(updates).withWriteLimiter(writeLimiter));
-    }
-
-    @Deprecated
-    public <T extends DynamapPersisted> T update(RecordUpdates<T> updates, DynamoRateLimiter writeLimiter, String suffix) {
-        return (T) update(new UpdateParams(updates).withWriteLimiter(writeLimiter).withSuffix(suffix));
     }
 
     private static class GetItemInfo {
@@ -923,16 +850,6 @@ public class Dynamap {
 
             doBatchWriteItem(batchSaveParams.getWriteLimiters(), tableWriteItems);
         }
-    }
-
-    @Deprecated
-    public <T extends DynamapRecordBean> void batchSave(List<T> objects, Map<Class, DynamoRateLimiter> writeLimiterMap) {
-        batchSave(objects, writeLimiterMap, null);
-    }
-
-    @Deprecated
-    public <T extends DynamapRecordBean> void batchSave(List<T> objects, Map<Class, DynamoRateLimiter> writeLimiterMap, String suffix) {
-        batchSave(new BatchSaveParams<>(objects).withWriteLimiters(writeLimiterMap).withSuffix(suffix));
     }
 
     private void doBatchWriteItem(Map<Class, DynamoRateLimiter> writeLimiterMap, Map<String, TableWriteItems> tableWriteItems) {

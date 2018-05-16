@@ -75,23 +75,6 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
 </#list>
     protected boolean disableOptimisticLocking;
 
-    @Deprecated
-    public ${updatesName}(${type.name} ${currentState}, String hashKeyValue, <#if tableDefinition.rangeKey??>Object rangeKeyValue,</#if> boolean disableOptimisticLocking) {
-        this.${currentState} = ${currentState};
-        <#if isRoot>
-            this.hashKeyValue = hashKeyValue;
-            <#if tableDefinition.rangeKey??>
-            this.rangeKeyValue = rangeKeyValue;
-            <#else>
-            this.rangeKeyValue = null;
-            </#if>
-        </#if>
-        this.disableOptimisticLocking = disableOptimisticLocking;
-<#if isRoot && optimisticLocking>
-        this._revision = ${currentState}.getRevision();
-</#if>
-    }
-
     <#if isRoot>
         ${updatesName}(${type.name} ${currentState}, String hashKeyValue<#if tableDefinition.rangeKey??>,Object rangeKeyValue</#if>) {
             this.${currentState} = ${currentState};
