@@ -51,6 +51,9 @@ public interface ${type.name} extends DynamapPersisted<${updatesName}> {
     Map<String,${field.elementType}> get${field.name?cap_first}();
     <#else>
     <@field_type field=field /> get${field.name?cap_first}();
+    <#if !field.isCollection()>
+    boolean is${field.name?cap_first}Set();
+    </#if>
     </#if>
 </#list>
 <#if isRoot && optimisticLocking>

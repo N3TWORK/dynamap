@@ -94,12 +94,20 @@ public class DynamoExpressionBuilder {
     }
 
 
-    public DynamoExpressionBuilder incrementNumber(String parentField, String fieldName, Number amount) {
+    public DynamoExpressionBuilder incrementNumber(String parentField, String fieldName, Number amount, Boolean isValueSet, Number defaultValue) {
         String alias = vals.next();
         if (amount instanceof Integer) {
-            valueMap = valueMap.withInt(alias, (Integer) amount);
+            if (defaultValue != null && (isValueSet != null && isValueSet)) {
+                valueMap = valueMap.withInt(alias, (Integer) amount + defaultValue.intValue());
+            } else {
+                valueMap = valueMap.withInt(alias, (Integer) amount);
+            }
         } else if (amount instanceof Long) {
-            valueMap = valueMap.withLong(alias, (Long) amount);
+            if (defaultValue != null && (isValueSet != null && isValueSet)) {
+                valueMap = valueMap.withLong(alias, (Long) amount + defaultValue.longValue());
+            } else {
+                valueMap = valueMap.withLong(alias, (Long) amount);
+            }
         }
         addSection.add(String.format("%s %s", joinFields(parentField, fieldName), alias));
         return this;
@@ -107,6 +115,14 @@ public class DynamoExpressionBuilder {
 
     public DynamoExpressionBuilder setValue(String parentField, String fieldName, Object value) {
         setSection.add(String.format("%s=%s", joinFields(parentField, fieldName), processValueAlias(vals, value)));
+        return this;
+    }
+
+    public DynamoExpressionBuilder addValuesToList(String parentField, String fieldName, List adds, Class type) {
+        if (adds.size() > 0) {
+            String fieldAlias = joinFields(parentField, fieldName);
+            setSection.add(String.format("%s=list_append(%s,%s)", fieldAlias, fieldAlias, processValueAlias(vals, adds, type)));
+        }
         return this;
     }
 

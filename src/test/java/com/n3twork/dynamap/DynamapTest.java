@@ -283,6 +283,28 @@ public class DynamapTest {
         Assert.assertTrue(updated.getSetOfString().containsAll(Sets.newHashSet("test1", "test2", "test3")));
     }
 
+    @Test
+    public void testListOfInteger() {
+        NestedTypeBean nested = createNestedTypeBean();
+        TestDocumentBean doc = createTestDocumentBean(nested);
+        dynamap.save(new SaveParams<>(doc));
+
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(doc.getListOfInteger().size(),0);
+        TestDocumentUpdates updates = doc.createUpdates();
+        updates.addListOfIntegerValue(1);
+        dynamap.update(new UpdateParams<>(updates));
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(doc.getListOfInteger().size(), 1);
+        updates = doc.createUpdates();
+        updates.addListOfIntegerValue(1);
+        updates.addListOfIntegerValue(2);
+        Assert.assertEquals(updates.getListOfInteger().size(), 3);
+        dynamap.update(new UpdateParams<>(updates));
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(doc.getListOfInteger().size(), 3);
+    }
+
 
     @Test
     public void testQuery() {
@@ -369,6 +391,52 @@ public class DynamapTest {
         } catch (RuntimeException ex) {
             Assert.assertNotNull(ex);
         }
+    }
+
+    @Test
+    public void testIncrementDecrementInteger() {
+
+        TestDocumentBean doc = createTestDocumentBean(null);
+        dynamap.save(new SaveParams<>(doc));
+
+        TestDocumentUpdates documentUpdates = doc.createUpdates();
+        documentUpdates.incrementIntegerField(1);
+        Assert.assertEquals(documentUpdates.getIntegerField().intValue(), 1);
+        dynamap.update(new UpdateParams<>(documentUpdates));
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(doc.getIntegerField().intValue(), 1);
+
+        doc = createTestDocumentBean(null);
+        dynamap.save(new SaveParams<>(doc));
+        documentUpdates = doc.createUpdates();
+        documentUpdates.decrementIntegerField(1);
+        Assert.assertEquals(documentUpdates.getIntegerField().intValue(), -1);
+        dynamap.update(new UpdateParams<>(documentUpdates));
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(doc.getIntegerField().intValue(), -1);
+    }
+
+    @Test
+    public void testIncrementDecrementIntegerWithNonZeroDefault() {
+
+        TestDocumentBean doc = createTestDocumentBean(null);
+        dynamap.save(new SaveParams<>(doc));
+
+        TestDocumentUpdates documentUpdates = doc.createUpdates();
+        documentUpdates.incrementIntegerFieldNonZeroDefault(1);
+        Assert.assertEquals(documentUpdates.getIntegerFieldNonZeroDefault().intValue(), 3);
+        dynamap.update(new UpdateParams<>(documentUpdates));
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(doc.getIntegerFieldNonZeroDefault().intValue(), 3);
+
+        doc = createTestDocumentBean(null);
+        dynamap.save(new SaveParams<>(doc));
+        documentUpdates = doc.createUpdates();
+        documentUpdates.decrementIntegerFieldNonZeroDefault(1);
+        Assert.assertEquals(documentUpdates.getIntegerFieldNonZeroDefault().intValue(), 1);
+        dynamap.update(new UpdateParams<>(documentUpdates));
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(doc.getIntegerFieldNonZeroDefault().intValue(), 1);
     }
 
     @Test

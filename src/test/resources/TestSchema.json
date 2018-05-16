@@ -91,6 +91,12 @@
               "type": "Integer"
             },
             {
+              "name": "integerFieldNonZeroDefault",
+              "dynamoName": "intfnzd",
+              "type": "Integer",
+              "default": "2"
+            },
+            {
               "name": "listOfString",
               "dynamoName": "strList",
               "type": "List",

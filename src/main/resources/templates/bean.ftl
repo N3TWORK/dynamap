@@ -84,7 +84,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
             this.${field.name} = ${field.name} == null ? Collections.emptySet() : ${field.name};
             </#if>
             <#else>
-            this.${field.name} = ${field.name} == null ? <@defaultValue field false /> : ${field.name};
+            this.${field.name} = ${field.name};
             </#if>
         <#else>
            <#if field.isCollection()>
@@ -233,7 +233,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     </#if>
     @Override
     public <@field_type field=field /> get${field.name?cap_first}() {
-        return this.${field.name};
+        return this.${field.name} == null ? <@defaultValue field=field elementOnly=false /> : ${field.name};
     }
     public ${beanName} set${field.name?cap_first}(<@field_type field=field /> value) {
         this.${field.name} = value;
@@ -284,6 +284,16 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
         return new ${updatesName}(this);
         </#if>
     }
+
+    <#list type.fields as field>
+    <#if !field.isCollection()>
+    @Override
+    public boolean is${field.name?cap_first}Set() {
+        return ${field.name} != null;
+    }
+    </#if>
+    </#list>
+
 
 
 }
