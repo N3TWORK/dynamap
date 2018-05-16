@@ -30,12 +30,12 @@
 
     <distributionManagement>
         <snapshotRepository>
-            <id>snapshot.maven.n3twork.com</id>
-            <url>https://nexus.n3twork.com/repository/maven-snapshots/</url>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
         <repository>
-            <id>release.maven.n3twork.com</id>
-            <url>https://nexus.n3twork.com/repository/maven-releases/</url>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
 
