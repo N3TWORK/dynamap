@@ -666,8 +666,8 @@ public class Dynamap {
                 }
             }
             // Jackson converts all collections to array lists, which in turn are treated as lists
-            // Need to handle string sets specifically. String sets can also not be empty
-            if (field.getType().equals("Set") && field.getElementType().equals("String")) {
+            // Need to handle Sets specifically. Sets can also not be empty
+            if (field.getType().equals("Set")) {
                 List list = (List) map.get(field.getDynamoName());
                 if (list.size() > 0) {
                     item.with(field.getDynamoName(), new HashSet<>((List) map.get(field.getDynamoName())));

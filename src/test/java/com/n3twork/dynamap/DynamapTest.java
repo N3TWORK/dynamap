@@ -270,17 +270,68 @@ public class DynamapTest {
     public void testStringSet() {
         NestedTypeBean nested = createNestedTypeBean();
         TestDocumentBean doc = createTestDocumentBean(nested);
+        dynamap.save(new SaveParams<>(doc));
+        // test adding from empty
+        TestDocumentUpdates updates = doc.createUpdates();
+        updates.setSetOfStringItem("test1");
+        dynamap.update(new UpdateParams<>(updates));
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(doc.getSetOfString().size(), 1);
+        updates = doc.createUpdates();
+
+        // delete the item so that it becomes an empty set
+        updates.deleteSetOfStringItem("test1");
+        dynamap.update(new UpdateParams<>(updates));
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        updates = doc.createUpdates();
+        updates.setSetOfStringItem("test1");
+        dynamap.update(new UpdateParams<>(updates));
+
+
         doc.setSetOfString(Sets.newHashSet("test1", "test2"));
         dynamap.save(new SaveParams<>(doc));
-
         doc = dynamap.getObject(createGetObjectParams(doc));
         Assert.assertEquals(doc.getSetOfString().size(), 2);
         Assert.assertTrue(doc.getSetOfString().containsAll(Sets.newHashSet("test1", "test2")));
-        TestDocumentUpdates updates = doc.createUpdates();
+        updates = doc.createUpdates();
         updates.setSetOfStringItem("test3");
         Assert.assertTrue(updates.getSetOfString().contains("test3"));
         TestDocument updated = dynamap.update(new UpdateParams<>(updates));
         Assert.assertTrue(updated.getSetOfString().containsAll(Sets.newHashSet("test1", "test2", "test3")));
+    }
+
+    @Test
+    public void testStringSetNoDeltas() {
+        NestedTypeBean nested = createNestedTypeBean();
+        TestDocumentBean doc = createTestDocumentBean(nested);
+        dynamap.save(new SaveParams<>(doc));
+        TestDocumentUpdates updates = doc.createUpdates();
+        updates.setSetOfStringNoDeltas(Sets.newHashSet("test1"));
+        dynamap.update(new UpdateParams<>(updates));
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(doc.getSetOfStringNoDeltas().size(), 1);
+        updates = doc.createUpdates();
+        updates.setSetOfStringNoDeltas(Collections.emptySet());
+        dynamap.update(new UpdateParams<>(updates));
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(doc.getSetOfStringNoDeltas().size(), 0);
+    }
+
+    @Test
+    public void testNumberSet() {
+        NestedTypeBean nested = createNestedTypeBean();
+        TestDocumentBean doc = createTestDocumentBean(nested);
+        doc.setSetOfLong(Sets.newHashSet(1L, 2L));
+        dynamap.save(new SaveParams<>(doc));
+
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(doc.getSetOfLong().size(), 2);
+        Assert.assertTrue(doc.getSetOfLong().containsAll(Sets.newHashSet(1L, 2L)));
+        TestDocumentUpdates updates = doc.createUpdates();
+        updates.setSetOfLongValue(3L);
+        Assert.assertTrue(updates.getSetOfLong().contains(3L));
+        TestDocument updated = dynamap.update(new UpdateParams<>(updates));
+        Assert.assertTrue(updated.getSetOfLong().containsAll(Sets.newHashSet(1L, 2L, 3L)));
     }
 
     @Test
@@ -290,7 +341,7 @@ public class DynamapTest {
         dynamap.save(new SaveParams<>(doc));
 
         doc = dynamap.getObject(createGetObjectParams(doc));
-        Assert.assertEquals(doc.getListOfInteger().size(),0);
+        Assert.assertEquals(doc.getListOfInteger().size(), 0);
         TestDocumentUpdates updates = doc.createUpdates();
         updates.addListOfIntegerValue(1);
         dynamap.update(new UpdateParams<>(updates));

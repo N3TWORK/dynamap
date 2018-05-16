@@ -290,7 +290,7 @@ public class DynamoExpressionBuilder {
                 valueMap = valueMap.withNumberSet(alias, (Set) value);
             else if (type.getName().equals("java.lang.String")) {
                 if (((Set) value).size() == 0) {
-                    valueMap = valueMap.withList(alias, Collections.emptyList());
+                    valueMap = valueMap.withNull(alias);
                 } else {
                     valueMap = valueMap.withStringSet(alias, (Set) value);
                 }

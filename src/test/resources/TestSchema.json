@@ -119,6 +119,19 @@
               "dynamoName": "setOfString",
               "type": "Set",
               "elementType": "String"
+            },
+            {
+              "name": "setOfStringNoDeltas",
+              "dynamoName": "setOfStringND",
+              "type": "Set",
+              "elementType": "String",
+              "deltas": false
+            },
+            {
+              "name": "setOfLong",
+              "dynamoName": "setOfLong",
+              "type": "Set",
+              "elementType": "Long"
             }
           ]
         },
