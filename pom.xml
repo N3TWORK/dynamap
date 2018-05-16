@@ -3,17 +3,34 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.n3twork</groupId>
+    <groupId>com.n3twork.dynamap</groupId>
     <artifactId>dynamap</artifactId>
     <packaging>jar</packaging>
     <name>Dynamap</name>
+    <description>A Java object model and mapping library for Amazon's DynamoDB database.</description>
+    <url>https://dynamap.n3twork.com</url>
     <version>0.9.37-SNAPSHOT</version>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Mark Williams</name>
+            <email>mark@n3twork.com</email>
+            <organization>N3TWORK</organization>
+            <organizationUrl>https://www.n3twork.com</organizationUrl>
+        </developer>
+    </developers>
 
     <scm>
         <url>https://github.com/N3TWORK/dynamap.git</url>
         <connection>scm:git:git://github.com:N3TWORK/dynamap.git</connection>
         <developerConnection>scm:git:git@github.com:N3TWORK/dynamap.git</developerConnection>
-        <tag>HEAD</tag>
     </scm>
 
     <properties>
