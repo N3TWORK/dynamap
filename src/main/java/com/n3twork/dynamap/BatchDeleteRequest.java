@@ -19,26 +19,45 @@ package com.n3twork.dynamap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Contains the parameters required for making batch deletes
+ * @param <T> The record bean type that is being deleted
+ */
 public class BatchDeleteRequest<T extends DynamapRecordBean> {
 
     private List<DeleteRequest> deleteRequests;
     private Map<Class, DynamoRateLimiter> rateLimiters;
 
-
+    /**
+     * Sets the list of invidual item delete requests
+     * @param deleteRequests
+     * @return
+     */
     public BatchDeleteRequest withDeleteRequests(List<DeleteRequest> deleteRequests) {
         this.deleteRequests = deleteRequests;
         return this;
     }
 
+    /**
+     * Sets the rate limiters for each type being deleted
+     * @param rateLimiters
+     * @return
+     */
     public BatchDeleteRequest withRateLimiters(Map<Class, DynamoRateLimiter> rateLimiters) {
         this.rateLimiters = rateLimiters;
         return this;
     }
 
+    /**
+     * @return list of the individual delete requests
+     */
     public List<DeleteRequest> getDeleteRequests() {
         return deleteRequests;
     }
 
+    /**
+     * @return a map of the rate limiters for each type being deleted
+     */
     public Map<Class, DynamoRateLimiter> getRateLimiters() {
         return rateLimiters;
     }
