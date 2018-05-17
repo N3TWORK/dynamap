@@ -267,6 +267,7 @@ defaults:
       author_profile: false
       share: false
       comments: false
+      dynamap_version: 0.9.38
       sidebar:
         nav: "nav"
   # _posts

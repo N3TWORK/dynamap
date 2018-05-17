@@ -3,6 +3,21 @@ title: "Code Generation"
 permalink: /code-generation/
 ---
 
+## Adding Dynamap as a dependency
+
+Dynamap is available on the central maven repository.
+
+In your Maven project file add the following dependency:
+
+```xml
+<dependency>
+    <groupId>com.n3twork.dynamap</groupId>
+    <artifactId>dynamap</artifactId>
+    <version>{{ page.dynamap_version }}</version>
+</dependency>
+```
+
+
 ## Calling the code generator directly from command line
 
 Dynamap provides a class, `com.n3twork.dynamap.CodeGenerator` that generates the code. 
