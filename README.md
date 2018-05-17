@@ -44,3 +44,14 @@ dynamap.update(new UpdateParams(updates));
 
 or consult the full documentation on the official site: https://dynamap.n3twork.com
 
+## Available on Maven Central
+
+Dynamap is published on Maven central
+
+```xml
+<dependency>
+    <groupId>com.n3twork.dynamap</groupId>
+    <artifactId>dynamap</artifactId>
+    <version>0.9.38</version>
+</dependency>
+```
