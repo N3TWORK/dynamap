@@ -24,6 +24,8 @@ nav:
         url: /saving-objects/
       - title: "Loading Objects"
         url: /loading-objects/
+      - title: "Updating Objects"
+        url: /updating-objects/
       - title: "Queries"
         url: /queries/
       - title: "Using Rate Limiters"

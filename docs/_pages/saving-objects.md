@@ -10,7 +10,7 @@ The save method executes a DynamoDB `putObject` beneath the hood.
 By default save will overwrite any existing document. If you want safer behavior then you can specify `disableOverwrite` on the SaveParams object which will result in an Exception being thrown if a document with the key already exists.
 
 ```java
-User userBean = new UserBean().setId("id");
+User userBean = new UserBean().setId("userId1");
 dynamap.save(new SaveParams(userBean).withDisableOverwrite(true));
 ```
 
