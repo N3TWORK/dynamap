@@ -24,7 +24,7 @@ UserUpdates userUpdates = userBean.createUpdates(new UserBean("userId1"));
 
 ## Update methods
 
-For a full list of the types of update methods provides consult the [schema guide](/schema/).
+For a full list of the types of update methods provides consult [Generated classes](/generated-classes/).
 
 ### Setting a value
 
