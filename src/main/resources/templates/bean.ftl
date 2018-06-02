@@ -287,6 +287,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
 
     <#list type.fields as field>
     <#if !field.isCollection()>
+    @JsonIgnore
     @Override
     public boolean is${field.name?cap_first}Set() {
         return ${field.name} != null;
