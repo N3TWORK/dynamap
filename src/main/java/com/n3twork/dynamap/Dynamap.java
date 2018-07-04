@@ -477,7 +477,7 @@ public class Dynamap {
             if (updateParams.getDynamapReturnValue() == DynamapReturnValue.ALL_NEW ||
                     updateParams.getDynamapReturnValue() == DynamapReturnValue.ALL_OLD) {
                 Class beanClass = Class.forName(tableDefinition.getPackageName() + "." + tableDefinition.getType() + "Bean");
-                return (T) objectMapper.convertValue(updateItemOutcome.getItem().asMap(), beanClass);
+                return (T) convertMapToObject(tableDefinition, updateItemOutcome.getItem().asMap(), beanClass);
             }
 
             // Merge updated values with existing
@@ -487,7 +487,9 @@ public class Dynamap {
                 Object updatesAsBean = beanClass.getDeclaredConstructor(interfaceClass).newInstance(updateParams.getUpdates());
                 Map<String, Object> updatesAsMap = objectMapper.convertValue(updatesAsBean, new TypeReference<Map<String, Object>>() {
                 });
-                updatesAsMap.putAll(updateItemOutcome.getItem().asMap());
+                Map<String, Object> returnedUpdates = updateItemOutcome.getItem().asMap();
+                processDeserializationConversions(tableDefinition, returnedUpdates);
+                updatesAsMap.putAll(returnedUpdates);
                 return (T) objectMapper.convertValue(updatesAsMap, beanClass);
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -626,16 +628,115 @@ public class Dynamap {
                 }
             }
             item = item.withInt(schemaField, tableDefinition.getVersion());
-            result = objectMapper.convertValue(item.asMap(), resultClass);
+            result = convertMapToObject(tableDefinition, item.asMap(), resultClass);
             if (writeBack) {
                 putObject(result, tableDefinition, true, false, writeRateLimiter, suffix);
             }
         } else {
-            result = objectMapper.convertValue(item.asMap(), resultClass);
+            result = convertMapToObject(tableDefinition, item.asMap(), resultClass);
         }
 
         return result;
     }
+
+    private <T extends DynamapRecordBean> T convertMapToObject(TableDefinition tableDefinition, Map<String, Object> map, Class<T> resultClass) {
+        processDeserializationConversions(tableDefinition, map);
+        return objectMapper.convertValue(map, resultClass);
+    }
+
+    private void processDeserializationConversions(TableDefinition tableDefinition, Map<String, Object> map) {
+        // decompress gzip byte arrays
+        for (TableDefinition.CompressCollectionItem compressCollectionItem : tableDefinition.getCompressCollectionItems()) {
+            byte[] bytes = null;
+            if (compressCollectionItem.parentKey != null) {
+                Map<String, Object> parent = (Map<String, Object>) map.get(compressCollectionItem.parentKey);
+                if (parent != null) {
+                    bytes = (byte[]) parent.get(compressCollectionItem.itemKey);
+                }
+            } else {
+                bytes = (byte[]) map.get(compressCollectionItem.itemKey);
+            }
+            if (bytes != null) {
+                Object object = GZipUtil.deSerialize(bytes, objectMapper, Object.class);
+                if (compressCollectionItem.parentKey != null) {
+                    ((Map) map.get(compressCollectionItem.parentKey)).put(compressCollectionItem.itemKey, object);
+                } else {
+                    map.put(compressCollectionItem.itemKey, object);
+                }
+            }
+        }
+
+        // convert lists to map for persistAsList fields
+        for (TableDefinition.PersistAsFieldItem persistAsFieldItem : tableDefinition.getPersistAsFieldItems()) {
+            List<Map<String, Object>> list = null;
+            if (persistAsFieldItem.parentKey != null) {
+                Map<String, Object> parent = (Map<String, Object>) map.get(persistAsFieldItem.parentKey);
+                if (parent != null) {
+                    list = (List<Map<String, Object>>) parent.get(persistAsFieldItem.itemKey);
+                }
+            } else {
+                list = (List<Map<String, Object>>) map.get(persistAsFieldItem.itemKey);
+            }
+            if (list != null) {
+                Map<String, Object> converted = new HashMap<>();
+                for (Map<String, Object> item : list) {
+                    converted.put((String) item.get(persistAsFieldItem.idKey), item);
+                }
+                if (persistAsFieldItem.parentKey != null) {
+                    ((Map) map.get(persistAsFieldItem.parentKey)).put(persistAsFieldItem.itemKey, converted);
+                } else {
+                    map.put(persistAsFieldItem.itemKey, converted);
+                }
+            }
+        }
+    }
+
+    private void processSerializationConversions(TableDefinition tableDefinition, Item item) {
+        // convert maps to list for persistAsList fields
+        for (TableDefinition.PersistAsFieldItem persistAsFieldItem : tableDefinition.getPersistAsFieldItems()) {
+            Map<String, Object> map = null;
+            if (persistAsFieldItem.parentKey != null) {
+                Map<String, Object> parent = (Map<String, Object>) item.get(persistAsFieldItem.parentKey);
+                if (parent != null) {
+                    map = (Map<String, Object>) parent.get(persistAsFieldItem.itemKey);
+                }
+            } else {
+                map = (Map<String, Object>) item.get(persistAsFieldItem.itemKey);
+            }
+            if (map != null) {
+                List converted = new ArrayList(map.values());
+                if (persistAsFieldItem.parentKey != null) {
+                    ((Map) item.get(persistAsFieldItem.parentKey)).put(persistAsFieldItem.itemKey, converted);
+                } else {
+                    item.withList(persistAsFieldItem.itemKey, converted);
+                }
+            }
+        }
+
+        // compress json to byte array
+        for (TableDefinition.CompressCollectionItem compressCollectionItem : tableDefinition.getCompressCollectionItems()) {
+            Object object = null;
+            if (compressCollectionItem.parentKey != null) {
+                Map<String, Object> parent = (Map<String, Object>) item.get(compressCollectionItem.parentKey);
+                if (parent != null) {
+                    object = parent.get(compressCollectionItem.itemKey);
+                }
+            } else {
+                object = item.get(compressCollectionItem.itemKey);
+            }
+            if (object != null) {
+                byte[] bytes = GZipUtil.serialize(object, objectMapper);
+                if (compressCollectionItem.parentKey != null) {
+                    ((Map) item.get(compressCollectionItem.parentKey)).put(compressCollectionItem.itemKey, bytes);
+                } else {
+                    item.withBinary(compressCollectionItem.itemKey, bytes);
+                }
+            }
+
+        }
+
+    }
+
 
     private <T extends DynamapRecordBean> Item buildDynamoItemFromObject(T object, TableDefinition tableDefinition, boolean disableOptimisticLocking) {
         Map<String, Object> map = objectMapper.convertValue(object, new TypeReference<Map<String, Object>>() {
@@ -676,6 +777,8 @@ public class Dynamap {
                 item.with(field.getDynamoName(), map.get(field.getDynamoName()));
             }
         }
+
+        processSerializationConversions(tableDefinition, item);
 
         String hashKeyFieldName = tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName();
         if (object.getRangeKeyValue() != null) {

@@ -35,6 +35,8 @@ public class Field {
     private final Boolean persist;
     private final Boolean serialize;
     private final Boolean deltas;
+    private final String serializeAsListElementId;
+    private final String compressCollection;
     private final boolean isCollection;
 
     private boolean generatedType;
@@ -42,7 +44,9 @@ public class Field {
     @JsonCreator
     public Field(@JsonProperty("name") String name, @JsonProperty("description") String description, @JsonProperty("dynamoName") String dynamoName,
                  @JsonProperty("type") String type, @JsonProperty("elementType") String elementType, @JsonProperty("default") String defaultValue,
-                 @JsonProperty("useDefaultForNulls") Boolean useDefaultForNulls, @JsonProperty("replace") Boolean replace, @JsonProperty("persist") Boolean persist, @JsonProperty("serialize") Boolean serialize, @JsonProperty("deltas") Boolean deltas) {
+                 @JsonProperty("useDefaultForNulls") Boolean useDefaultForNulls, @JsonProperty("replace") Boolean replace,
+                 @JsonProperty("persist") Boolean persist, @JsonProperty("serialize") Boolean serialize, @JsonProperty("deltas") Boolean deltas,
+                 @JsonProperty("serializeAsListElementId") String serializeAsListElementId, @JsonProperty("compressCollection") String compressCollection) {
         this.name = name;
         this.description = description;
         this.dynamoName = dynamoName;
@@ -55,33 +59,18 @@ public class Field {
         if (defaultValue == null && (useDefaultForNulls != null && useDefaultForNulls)) {
             throw new RuntimeException("Invalid field definition for :" + name + ". Must specify a default value if useDefaultForNulls is set.");
         }
-//        if (isNumber() && defaultValue != null) {
-//            boolean invalid = false;
-//            try {
-//                if (type.equals("Float") || type.equals("Double")) {
-//                    Double d = Double.valueOf(defaultValue);
-//                    if (!d.equals(0.0)) {
-//                        invalid = true;
-//                    }
-//                } else {
-//                    Long l = Long.valueOf(defaultValue);
-//                    if (!l.equals(0)) {
-//                        invalid = true;
-//                    }
-//                }
-//            } catch (Exception e) {
-//                throw new RuntimeException("Cannot parse default value for field " + name);
-//            }
-//            if (invalid) {
-//                throw new RuntimeException("Invalid field definition for : " + name + ". You cannot specify a default value other than zero for numbers or collections of numbers");
-//            }
-//        }
+
         this.defaultValue = defaultValue;
 
         this.replace = replace == null ? Boolean.FALSE : replace;
         this.persist = persist == null ? Boolean.TRUE : persist;
         this.serialize = serialize == null ? Boolean.TRUE : serialize;
         this.deltas = deltas == null ? Boolean.TRUE : deltas;
+        this.serializeAsListElementId = serializeAsListElementId;
+        if (compressCollection != null && !isCollection) {
+            throw new IllegalArgumentException("Cannot use compressCollection with scalar fields");
+        }
+        this.compressCollection = compressCollection;
     }
 
 
@@ -127,6 +116,24 @@ public class Field {
 
     public Boolean isReplace() {
         return replace;
+    }
+
+    public String getSerializeAsListElementId() {
+        return serializeAsListElementId;
+    }
+
+    public String getCompressCollection() {
+        return compressCollection;
+    }
+
+    @JsonIgnore
+    public boolean isCompressCollection() {
+        return compressCollection != null;
+    }
+
+    @JsonIgnore
+    public boolean isSerializeAsList() {
+        return serializeAsListElementId != null;
     }
 
     @JsonIgnore

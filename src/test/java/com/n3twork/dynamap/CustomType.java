@@ -19,6 +19,8 @@ package com.n3twork.dynamap;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Objects;
+
 public class CustomType {
 
     public enum CustomTypeEnum {
@@ -46,5 +48,18 @@ public class CustomType {
 
     public CustomTypeEnum getCustomTypeEnum() {
         return customTypeEnum;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CustomType that = (CustomType) o;
+        return Objects.equals(name, that.name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name);
     }
 }

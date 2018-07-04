@@ -200,6 +200,52 @@ public class DynamapTest {
     }
 
     @Test
+    public void testPersistMapAsList() {
+
+        NestedTypeBean nested = createNestedTypeBean();
+        TestDocumentBean doc = createTestDocumentBean(nested);
+        dynamap.save(new SaveParams<>(doc));
+
+        NestedTypeUpdates nestedTypeUpdates = nested.createUpdates();
+        TestDocumentUpdates testDocumentUpdates = doc.createUpdates().setNestedObjectUpdates(nestedTypeUpdates);
+        Assert.assertEquals(testDocumentUpdates.getListMapOfCustomType().size(), 0);
+
+        CustomType customType1 = new CustomType("item1", "test", CustomType.CustomTypeEnum.VALUE_A);
+        CustomType customType2 = new CustomType("item2", "test", CustomType.CustomTypeEnum.VALUE_A);
+        testDocumentUpdates.setListMapOfCustomTypeItem(customType1.getName(), customType1);
+        testDocumentUpdates.setListMapOfCustomTypeItem(customType2.getName(), customType2);
+        nestedTypeUpdates.setListMapOfCustomTypeItem(customType1.getName(), customType1);
+        nestedTypeUpdates.setListMapOfCustomTypeItem(customType2.getName(), customType2);
+        dynamap.update(new UpdateParams<>(testDocumentUpdates));
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(doc.getListMapOfCustomTypeItem("item1").getName(), "item1");
+        Assert.assertEquals(doc.getListMapOfCustomTypeItem("item2").getName(), "item2");
+        Assert.assertEquals(doc.getNestedObject().getListMapOfCustomTypeItem("item1").getName(), "item1");
+        Assert.assertEquals(doc.getNestedObject().getListMapOfCustomTypeItem("item2").getName(), "item2");
+    }
+
+    @Test
+    public void testPersistGzipMapAsList() {
+
+        NestedTypeBean nested = createNestedTypeBean();
+        TestDocumentBean doc = createTestDocumentBean(nested);
+        dynamap.save(new SaveParams<>(doc));
+
+        NestedTypeUpdates nestedTypeUpdates = nested.createUpdates();
+        TestDocumentUpdates testDocumentUpdates = doc.createUpdates().setNestedObjectUpdates(nestedTypeUpdates);
+        Assert.assertEquals(testDocumentUpdates.getGzipListMapOfCustomType().size(), 0);
+
+        CustomType customType1 = new CustomType("item1", "test", CustomType.CustomTypeEnum.VALUE_A);
+        CustomType customType2 = new CustomType("item2", "test", CustomType.CustomTypeEnum.VALUE_A);
+        testDocumentUpdates.setGzipListMapOfCustomTypeItem(customType1.getName(), customType1);
+        testDocumentUpdates.setGzipListMapOfCustomTypeItem(customType2.getName(), customType2);
+        dynamap.update(new UpdateParams<>(testDocumentUpdates));
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(doc.getGzipListMapOfCustomTypeItem("item1").getName(), "item1");
+        Assert.assertEquals(doc.getGzipListMapOfCustomTypeItem("item2").getName(), "item2");
+    }
+
+    @Test
     public void testMapOfCustomObjectReplace() {
 
         NestedTypeBean nested = createNestedTypeBean();
@@ -335,6 +381,26 @@ public class DynamapTest {
     }
 
     @Test
+    public void testGzipSet() {
+
+        NestedTypeBean nested = createNestedTypeBean();
+        TestDocumentBean doc = createTestDocumentBean(nested);
+        dynamap.save(new SaveParams<>(doc));
+
+        TestDocumentUpdates testDocumentUpdates = doc.createUpdates();
+        Assert.assertEquals(testDocumentUpdates.getGzipSetOfCustomType().size(), 0);
+
+        CustomType customType1 = new CustomType("item1", "test", CustomType.CustomTypeEnum.VALUE_A);
+        CustomType customType2 = new CustomType("item2", "test", CustomType.CustomTypeEnum.VALUE_A);
+        testDocumentUpdates.setGzipSetOfCustomTypeItem(customType1);
+        testDocumentUpdates.setGzipSetOfCustomTypeItem(customType2);
+        dynamap.update(new UpdateParams<>(testDocumentUpdates));
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertTrue(doc.getGzipSetOfCustomType().contains(customType1));
+        Assert.assertTrue(doc.getGzipSetOfCustomType().contains(customType2));
+    }
+
+    @Test
     public void testListOfInteger() {
         NestedTypeBean nested = createNestedTypeBean();
         TestDocumentBean doc = createTestDocumentBean(nested);
@@ -354,6 +420,25 @@ public class DynamapTest {
         dynamap.update(new UpdateParams<>(updates));
         doc = dynamap.getObject(createGetObjectParams(doc));
         Assert.assertEquals(doc.getListOfInteger().size(), 3);
+    }
+
+    @Test
+    public void testGzipList() {
+
+        NestedTypeBean nested = createNestedTypeBean();
+        TestDocumentBean doc = createTestDocumentBean(nested);
+        dynamap.save(new SaveParams<>(doc));
+
+        TestDocumentUpdates testDocumentUpdates = doc.createUpdates();
+        Assert.assertEquals(testDocumentUpdates.getGzipListOfCustomType().size(), 0);
+
+        CustomType customType1 = new CustomType("item1", "test", CustomType.CustomTypeEnum.VALUE_A);
+        CustomType customType2 = new CustomType("item2", "test", CustomType.CustomTypeEnum.VALUE_A);
+        testDocumentUpdates.setGzipListOfCustomType(Arrays.asList(customType1, customType2));
+        dynamap.update(new UpdateParams<>(testDocumentUpdates));
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertTrue(doc.getGzipListOfCustomType().contains(customType1));
+        Assert.assertTrue(doc.getGzipListOfCustomType().contains(customType2));
     }
 
 
@@ -610,7 +695,7 @@ public class DynamapTest {
             Assert.assertNotNull(ex);
         }
 
-        // optimist locking disabled
+        // optimistic locking disabled
         DummyDocUpdates docUpdates3 = savedDoc.createUpdates().setDisableOptimisticLocking(true);
         DummyDocUpdates docUpdates4 = savedDoc.createUpdates().setDisableOptimisticLocking(true);
         dynamap.update(new UpdateParams<>(docUpdates3));

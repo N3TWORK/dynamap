@@ -132,6 +132,35 @@
               "dynamoName": "setOfLong",
               "type": "Set",
               "elementType": "Long"
+            },
+            {
+              "name": "listMapOfCustomType",
+              "dynamoName": "listMapOfCustomType",
+              "type": "Map",
+              "elementType": "com.n3twork.dynamap.CustomType",
+              "serializeAsListElementId": "name"
+            },
+            {
+              "name": "gzipListMapOfCustomType",
+              "dynamoName": "gzipListMapOfCustomType",
+              "type": "Map",
+              "elementType": "com.n3twork.dynamap.CustomType",
+              "serializeAsListElementId": "name",
+              "compressCollection": "gzip"
+            },
+            {
+              "name": "gzipListOfCustomType",
+              "dynamoName": "gzipListOfCustomType",
+              "type": "List",
+              "elementType": "com.n3twork.dynamap.CustomType",
+              "compressCollection": "gzip"
+            },
+            {
+              "name": "gzipSetOfCustomType",
+              "dynamoName": "gzipSetOfCustomType",
+              "type": "Set",
+              "elementType": "com.n3twork.dynamap.CustomType",
+              "compressCollection": "gzip"
             }
           ]
         },
@@ -235,6 +264,13 @@
               "dynamoName": "listOfCustomType",
               "type": "List",
               "elementType": "com.n3twork.dynamap.CustomType"
+            },
+            {
+              "name": "listMapOfCustomType",
+              "dynamoName": "listMapOfCustomType",
+              "type": "Map",
+              "elementType": "com.n3twork.dynamap.CustomType",
+              "serializeAsListElementId": "name"
             }
           ]
         }

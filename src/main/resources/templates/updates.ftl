@@ -507,9 +507,18 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
 
     <#list type.persistedFields as field>
         <#if field.type == 'Map'>
-            <#if field.useDeltas()>
-            <#if field.isReplace()>
-                expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.elementType}.class);
+            <#if field.useDeltas() || field.isSerializeAsList() || field.isCompressCollection()>
+            <#if field.isReplace() || field.isSerializeAsList() || field.isCompressCollection()>
+                <#if field.isSerializeAsList()>
+                    Object preprocess_${field.name?cap_first} = new ArrayList(get${field.name?cap_first}().values());
+                <#else>
+                    Object preprocess_${field.name?cap_first} = get${field.name?cap_first}();
+                </#if>
+                <#if field.isCompressCollection()>
+                    expression.setValue(parentDynamoFieldName, "${field.dynamoName}", GZipUtil.serialize(preprocess_${field.name?cap_first}, expression.getObjectMapper()));
+                <#else>
+                    expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", preprocess_${field.name?cap_first}, ${field.elementType}.class);
+                </#if>
             <#else>
                 <#if field.isNumber()>
                     expression.updateMap(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Deltas, ${currentState}.get${field.name?cap_first}Ids(), <@defaultValue field=field elementOnly=true />, ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear, ${field.elementType}.class);
@@ -522,17 +531,25 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
             </#if>
 
         <#elseif field.type == 'List'>
-            <#if field.useDeltas()>
+            <#if field.useDeltas() && !field.isCompressCollection()>
                 expression.addValuesToList(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Adds, ${field.elementType}.class);
             <#else>
+                <#if field.isCompressCollection()>
+                expression.setValue(parentDynamoFieldName, "${field.dynamoName}", GZipUtil.serialize(get${field.name?cap_first}(), expression.getObjectMapper()));
+                <#else>
                 expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.elementType}.class);
+                </#if>
             </#if>
 
         <#elseif field.type == 'Set'>
-            <#if field.useDeltas()>
+            <#if field.useDeltas()  && !field.isCompressCollection()>
                 expression.addSetValuesToSet(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Sets, ${field.elementType}.class);
             <#else>
+               <#if field.isCompressCollection()>
+                expression.setValue(parentDynamoFieldName, "${field.dynamoName}", GZipUtil.serialize(get${field.name?cap_first}(), expression.getObjectMapper()));
+               <#else>
                 expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.elementType}.class);
+                </#if>
             </#if>
         <#else>
             <#if field.isNumber()>

@@ -21,7 +21,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TableDefinition {
@@ -41,6 +44,8 @@ public class TableDefinition {
     private final boolean optimisticLocking;
     private final String schemaVersionField;
     private final boolean enableMigrations;
+    private final List<PersistAsFieldItem> persistAsFieldItems;
+    private final List<CompressCollectionItem> compressCollectionItems;
 
     @JsonCreator
     public TableDefinition(@JsonProperty("table") String tableName, @JsonProperty("description") String description, @JsonProperty("package") String packageName, @JsonProperty("type") String type, @JsonProperty("hashKey") String hashKey, @JsonProperty("rangeKey") String rangeKey,
@@ -59,6 +64,8 @@ public class TableDefinition {
         this.optimisticLocking = optimisticLocking;
         this.schemaVersionField = schemaVersionField == null ? DEFAULT_SCHEMA_VERSION_FIELD : schemaVersionField;
         this.enableMigrations = enableMigrations == null ? Boolean.TRUE : enableMigrations;
+        this.persistAsFieldItems = buildPersistAsListFields();
+        this.compressCollectionItems = buildCompressFields();
     }
 
     public String getTableName() {
@@ -139,5 +146,89 @@ public class TableDefinition {
     public Type getFieldType(String type) {
         return getTypes().stream().filter(t -> t.getName().equals(type)).findFirst().get();
 
+    }
+
+    @JsonIgnore
+    public List<PersistAsFieldItem> getPersistAsFieldItems() {
+        return persistAsFieldItems;
+    }
+
+    @JsonIgnore
+    public List<CompressCollectionItem> getCompressCollectionItems() {
+        return compressCollectionItems;
+    }
+
+    private List<PersistAsFieldItem> buildPersistAsListFields() {
+        List<PersistAsFieldItem> paths = new ArrayList<>();
+        Set<String> typeNames = getTypes().stream().map(t -> t.getName()).collect(Collectors.toSet());
+
+        Type rootType = getTypes().stream().filter(t -> t.getName().equals(getType())).findFirst().get();
+        paths.addAll(getPersistAsFieldItem(rootType, null));
+
+        for (Field field : rootType.getFields()) {
+            if (typeNames.contains(field.getType())) {
+                paths.addAll(getPersistAsFieldItem(getFieldType(field.getType()), field.getDynamoName()));
+            }
+        }
+        return paths;
+    }
+
+    private List<CompressCollectionItem> getCompressFieldItem(Type type, String parentKey) {
+        List<CompressCollectionItem> items = new ArrayList<>();
+        for (Field field : type.getFields()) {
+            if (field.isCompressCollection()) {
+                items.add(new CompressCollectionItem(parentKey, field.getDynamoName()));
+            }
+        }
+        return items;
+    }
+
+    private List<CompressCollectionItem> buildCompressFields() {
+        List<CompressCollectionItem> paths = new ArrayList<>();
+        Set<String> typeNames = getTypes().stream().map(t -> t.getName()).collect(Collectors.toSet());
+
+        Type rootType = getTypes().stream().filter(t -> t.getName().equals(getType())).findFirst().get();
+        paths.addAll(getCompressFieldItem(rootType, null));
+
+        for (Field field : rootType.getFields()) {
+            if (typeNames.contains(field.getType())) {
+                paths.addAll(getCompressFieldItem(getFieldType(field.getType()), field.getDynamoName()));
+            }
+        }
+        return paths;
+    }
+
+    private List<PersistAsFieldItem> getPersistAsFieldItem(Type type, String parentKey) {
+        List<PersistAsFieldItem> items = new ArrayList<>();
+        for (Field field : type.getFields()) {
+            if (field.isSerializeAsList()) {
+                items.add(new PersistAsFieldItem(parentKey, field.getDynamoName(), field.getSerializeAsListElementId()));
+            }
+        }
+        return items;
+    }
+
+    public static class PersistAsFieldItem {
+
+        public PersistAsFieldItem(String parentKey, String itemKey, String idKey) {
+            this.parentKey = parentKey;
+            this.itemKey = itemKey;
+            this.idKey = idKey;
+        }
+
+        public final String parentKey;
+        public final String itemKey;
+        public final String idKey;
+    }
+
+    public static class CompressCollectionItem {
+
+        public CompressCollectionItem(String parentKey, String itemKey) {
+            this.parentKey = parentKey;
+            this.itemKey = itemKey;
+        }
+
+        public final String parentKey;
+        public final String itemKey;
     }
 }
