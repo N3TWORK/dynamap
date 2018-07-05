@@ -25,7 +25,7 @@ public class GZipUtil {
         }
     }
 
-    public static <T> Object deSerialize(byte[] data, ObjectMapper objectMapper, Class<T> resultClass) {
+    public static <T> T deSerialize(byte[] data, ObjectMapper objectMapper, Class<T> resultClass) {
         try (ByteArrayInputStream bais = new ByteArrayInputStream(data); GZIPInputStream is = new GZIPInputStream(bais)) {
             byte[] json = IOUtils.toByteArray(is);
             return objectMapper.readValue(new String(json, UTF8), resultClass);
