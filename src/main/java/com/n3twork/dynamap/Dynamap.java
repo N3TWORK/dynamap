@@ -444,7 +444,7 @@ public class Dynamap {
     public void save(SaveParams saveParams) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(saveParams.getDynamapRecordBean().getClass());
         putObject(saveParams.getDynamapRecordBean(), tableDefinition, !saveParams.isDisableOverwrite(),
-                saveParams.isDisableOptimisticLocking(), saveParams.getWriteLimiter(), saveParams.getSuffix());
+                saveParams.isDisableOptimisticLocking(), false, saveParams.getWriteLimiter(), saveParams.getSuffix());
     }
 
     public <T extends DynamapPersisted> T update(UpdateParams<T> updateParams) {
@@ -613,7 +613,7 @@ public class Dynamap {
             }
         }
 
-        if (tableDefinition.isEnableMigrations() && !skipMigration && currentVersion != tableDefinition.getVersion()) {
+        if (tableDefinition.isEnableMigrations() && !skipMigration && currentVersion < tableDefinition.getVersion()) {
             List<Migration> migrations = schemaRegistry.getMigrations(resultClass);
             if (migrations != null) {
                 for (Migration migration : migrations) {
@@ -630,7 +630,7 @@ public class Dynamap {
             item = item.withInt(schemaField, tableDefinition.getVersion());
             result = convertMapToObject(tableDefinition, item.asMap(), resultClass);
             if (writeBack) {
-                putObject(result, tableDefinition, true, false, writeRateLimiter, suffix);
+                putObject(result, tableDefinition, true, false, true, writeRateLimiter, suffix);
             }
         } else {
             result = convertMapToObject(tableDefinition, item.asMap(), resultClass);
@@ -795,7 +795,7 @@ public class Dynamap {
         return buildDynamoItemFromObject(object, tableDefinition, false);
     }
 
-    private <T extends DynamapRecordBean> void putObject(T object, TableDefinition tableDefinition, boolean overwrite, boolean disableOptimisticLocking, DynamoRateLimiter writeLimiter, String suffix) {
+    private <T extends DynamapRecordBean> void putObject(T object, TableDefinition tableDefinition, boolean overwrite, boolean disableOptimisticLocking, boolean isMigration, DynamoRateLimiter writeLimiter, String suffix) {
 
         Item item = buildDynamoItemFromObject(object, tableDefinition, disableOptimisticLocking);
         PutItemSpec putItemSpec = new PutItemSpec()
@@ -817,6 +817,12 @@ public class Dynamap {
                 nameMap.with("#name0", Schema.REVISION_FIELD);
                 valueMap.withInt(":val0", revision);
             }
+        }
+
+        if (isMigration) {
+            conditionalExpressions.add("#namemigr < :valmigr");
+            nameMap.with("#namemigr", tableDefinition.getSchemaVersionField());
+            valueMap.withInt(":valmigr", tableDefinition.getVersion());
         }
 
         if (conditionalExpressions.size() > 0) {

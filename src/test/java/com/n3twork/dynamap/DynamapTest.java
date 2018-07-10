@@ -487,10 +487,25 @@ public class DynamapTest {
             }
         });
 
-        dynamap = new Dynamap(ddb, schemaRegistry).withPrefix("test").withObjectMapper(objectMapper);
-        doc = dynamap.getObject(createGetObjectParams(doc));
+        Dynamap dynamap2 = new Dynamap(ddb, schemaRegistry).withPrefix("test").withObjectMapper(objectMapper);
+        doc = dynamap2.getObject(createGetObjectParams(doc));
         Assert.assertEquals(doc.getString(), "newString");
         Assert.assertNull(doc.getNotPersistedString());
+
+        // Test that old code cannot write to migrated data
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(doc.getDynamapSchemaVersion(), 2);
+        TestDocumentUpdates testDocumentUpdates = doc.createUpdates();
+        testDocumentUpdates.setString("foobar");
+        boolean exceptionThrown = false;
+        try {
+            dynamap.update(new UpdateParams<>(testDocumentUpdates));
+        } catch (Exception e) {
+            exceptionThrown = true;
+            Assert.assertTrue(e.getMessage().contains("The conditional request failed"));
+        }
+        Assert.assertTrue(exceptionThrown);
+
     }
 
     @Test
