@@ -492,12 +492,20 @@ public class DynamapTest {
         Assert.assertEquals(doc.getString(), "newString");
         Assert.assertNull(doc.getNotPersistedString());
 
-        // Test that old code cannot write to migrated data
-        doc = dynamap.getObject(createGetObjectParams(doc));
-        Assert.assertEquals(doc.getDynamapSchemaVersion(), 2);
+        // Test that old code cannot load migrated data
+        boolean exceptionThrown = false;
+        try {
+            doc = dynamap.getObject(createGetObjectParams(doc));
+        } catch (Exception e) {
+            exceptionThrown = true;
+            Assert.assertTrue(e.getMessage().contains("Document schema has been migrated to a version later than this release supports"));
+        }
+        Assert.assertTrue(exceptionThrown);
+
+        // Test that old code cannot update migrated data
         TestDocumentUpdates testDocumentUpdates = doc.createUpdates();
         testDocumentUpdates.setString("foobar");
-        boolean exceptionThrown = false;
+        exceptionThrown = false;
         try {
             dynamap.update(new UpdateParams<>(testDocumentUpdates));
         } catch (Exception e) {

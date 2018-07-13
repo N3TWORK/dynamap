@@ -613,6 +613,10 @@ public class Dynamap {
             }
         }
 
+        if (tableDefinition.isEnableMigrations() && !skipMigration && currentVersion > tableDefinition.getVersion()) {
+            throw new RuntimeException("Document schema has been migrated to a version later than this release supports: Document version: " + currentVersion + ", Supported version: " + tableDefinition.getVersion());
+        }
+
         if (tableDefinition.isEnableMigrations() && !skipMigration && currentVersion < tableDefinition.getVersion()) {
             List<Migration> migrations = schemaRegistry.getMigrations(resultClass);
             if (migrations != null) {
