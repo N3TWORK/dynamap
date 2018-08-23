@@ -41,6 +41,7 @@ public class DynamoExpressionBuilder {
     private final List<String> conditions = new ArrayList<>();
 
     private NameMap nameMap = new NameMap();
+    private Map<String, String> nameAliasToName = new HashMap<>();
     private ValueMap valueMap = new ValueMap();
 
     public enum ComparisonOperator {
@@ -329,10 +330,11 @@ public class DynamoExpressionBuilder {
         }
         for (int index = 0; index < fields.length; index++) {
             if (fields[index] != null) {
-                String alias = nameMap.get(fields[index]);
+                String alias = nameAliasToName.get(fields[index]);
                 if (alias == null) {
                     alias = names.next();
                     nameMap = nameMap.with(alias, fields[index]);
+                    nameAliasToName.put(fields[index], alias);
                 }
                 fields[index] = alias;
             }
