@@ -35,14 +35,13 @@ public class DynamoExpressionBuilder {
     private final List<String> addSection = new ArrayList<>();
     private final List<String> setSection = new ArrayList<>();
     private final List<String> removeSection = new ArrayList<>();
+    private final Alias names;
+    private final Alias vals;
+    private final Alias condVals;
     private final List<String> conditions = new ArrayList<>();
 
-    // Alias handling
-    private Alias names;
-    private Alias vals;
-    private Alias condVals;
     private NameMap nameMap = new NameMap();
-    private Map<String, String> nameAliasToNameMap = new HashMap<>();
+    private Map<String, String> nameAliasToName = new HashMap<>();
     private ValueMap valueMap = new ValueMap();
 
     public enum ComparisonOperator {
@@ -67,20 +66,13 @@ public class DynamoExpressionBuilder {
         condVals = new Alias(":" + prefix + "condVal");
     }
 
-    public void setAliasGenerator(DynamoExpressionBuilder expressionBuilder) {
-        this.names = expressionBuilder.getNames();
-        this.vals = expressionBuilder.getVals();
-        this.condVals = expressionBuilder.getCondVals();
-        this.nameMap = expressionBuilder.getNameMap();
-        this.nameAliasToNameMap = expressionBuilder.getNameAliasToNameMap();
-        this.valueMap = expressionBuilder.getValueMap();
-    }
-
     public void merge(DynamoExpressionBuilder dynamoExpressionBuilder) {
         this.addSection.addAll(dynamoExpressionBuilder.addSection);
         this.setSection.addAll(dynamoExpressionBuilder.setSection);
         this.removeSection.addAll(dynamoExpressionBuilder.removeSection);
         this.conditions.addAll(dynamoExpressionBuilder.conditions);
+        nameMap.putAll(dynamoExpressionBuilder.nameMap);
+        valueMap.putAll(dynamoExpressionBuilder.valueMap);
     }
 
     public void setObjectMapper(ObjectMapper objectMapper) {
@@ -94,25 +86,8 @@ public class DynamoExpressionBuilder {
         return objectMapper;
     }
 
-
-    public Alias getNames() {
-        return names;
-    }
-
-    public Alias getVals() {
-        return vals;
-    }
-
-    public Alias getCondVals() {
-        return condVals;
-    }
-
     public NameMap getNameMap() {
         return nameMap;
-    }
-
-    public Map<String, String> getNameAliasToNameMap() {
-        return nameAliasToNameMap;
     }
 
     public ValueMap getValueMap() {
@@ -355,11 +330,11 @@ public class DynamoExpressionBuilder {
         }
         for (int index = 0; index < fields.length; index++) {
             if (fields[index] != null) {
-                String alias = nameAliasToNameMap.get(fields[index]);
+                String alias = nameAliasToName.get(fields[index]);
                 if (alias == null) {
                     alias = names.next();
                     nameMap = nameMap.with(alias, fields[index]);
-                    nameAliasToNameMap.put(fields[index], alias);
+                    nameAliasToName.put(fields[index], alias);
                 }
                 fields[index] = alias;
             }
