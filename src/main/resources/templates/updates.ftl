@@ -467,6 +467,7 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
             throw new IllegalStateException("Nested property: ${field.name}, should not be set when passing its Updates object");
         }
         this.${field.name}Updates = value;
+        expression.setAliasGenerator(value.getExpressionBuilder());
         modified = true;
         return this;
     }
@@ -573,7 +574,7 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
                 DynamoExpressionBuilder nestedExpression = this.${field.name}Updates.getExpressionBuilder();
                 nestedExpression.setObjectMapper(expression.getObjectMapper());
                 this.${field.name}Updates.processUpdateExpression();
-                expression.merge(this.${field.name}Updates.getExpressionBuilder());
+                expression.merge(nestedExpression);
             }
             </#if>
             </#if>
