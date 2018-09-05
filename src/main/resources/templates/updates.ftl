@@ -507,6 +507,7 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
 
     <#list type.persistedFields as field>
         <#if field.type == 'Map'>
+            if (${field.name}Modified) {
             <#if field.useDeltas() || field.isSerializeAsList() || field.isCompressCollection()>
             <#if field.isReplace() || field.isSerializeAsList() || field.isCompressCollection()>
                 <#if field.isSerializeAsList()>
@@ -529,8 +530,9 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
             <#else>
                 expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.elementType}.class);
             </#if>
-
+            }
         <#elseif field.type == 'List'>
+            if (${field.name}Modified) {
             <#if field.useDeltas() && !field.isCompressCollection()>
                 expression.addValuesToList(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Adds, ${field.elementType}.class);
             <#else>
@@ -540,8 +542,9 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
                 expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.elementType}.class);
                 </#if>
             </#if>
-
+            }
         <#elseif field.type == 'Set'>
+            if (${field.name}Modified) {
             <#if field.useDeltas()  && !field.isCompressCollection()>
                 expression.addSetValuesToSet(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Sets, ${field.elementType}.class);
                 expression.deleteValuesFromSet(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Deletes, ${field.elementType}.class);
@@ -552,6 +555,7 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
                 expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.elementType}.class);
                 </#if>
             </#if>
+            }
         <#else>
             <#if field.isNumber()>
             if (${field.name} != null) {
@@ -561,7 +565,7 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
                 expression.incrementNumber(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Delta, ${currentState}.is${field.name?cap_first}Set(), <@defaultValue field=field elementOnly=false />);
             }
             <#else>
-            if (${field.name}Modified == true) {
+            if (${field.name}Modified) {
                 if (${field.name} != null) {
                     expression.setValue(parentDynamoFieldName, "${field.dynamoName}", ${field.name});
                 }
