@@ -323,16 +323,13 @@ public class DynamapTest {
         dynamap.update(new UpdateParams<>(updates));
         doc = dynamap.getObject(createGetObjectParams(doc));
         Assert.assertEquals(doc.getSetOfString().size(), 1);
-        updates = doc.createUpdates();
 
         // delete the item so that it becomes an empty set
+        updates = doc.createUpdates();
         updates.deleteSetOfStringItem("test1");
         dynamap.update(new UpdateParams<>(updates));
         doc = dynamap.getObject(createGetObjectParams(doc));
-        updates = doc.createUpdates();
-        updates.setSetOfStringItem("test1");
-        dynamap.update(new UpdateParams<>(updates));
-
+        Assert.assertTrue(doc.getSetOfString().size() == 0);
 
         doc.setSetOfString(Sets.newHashSet("test1", "test2"));
         dynamap.save(new SaveParams<>(doc));

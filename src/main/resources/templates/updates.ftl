@@ -378,7 +378,7 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
         return this;
     }
     public ${updatesName} delete${field.name?cap_first}<@collection_item field=field />(${field.elementType} value) {
-        ${field.name}Deletes.remove(value);
+        ${field.name}Deletes.add(value);
         modified = true;
         ${field.name}Modified = true;
         <@persisted_modified field/>
@@ -544,6 +544,7 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
         <#elseif field.type == 'Set'>
             <#if field.useDeltas()  && !field.isCompressCollection()>
                 expression.addSetValuesToSet(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Sets, ${field.elementType}.class);
+                expression.deleteValuesFromSet(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Deletes, ${field.elementType}.class);
             <#else>
                <#if field.isCompressCollection()>
                 expression.setValue(parentDynamoFieldName, "${field.dynamoName}", GZipUtil.serialize(get${field.name?cap_first}(), expression.getObjectMapper()));

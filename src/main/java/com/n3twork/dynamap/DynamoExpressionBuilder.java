@@ -35,6 +35,7 @@ public class DynamoExpressionBuilder {
     private final List<String> addSection = new ArrayList<>();
     private final List<String> setSection = new ArrayList<>();
     private final List<String> removeSection = new ArrayList<>();
+    private final List<String> deleteSection = new ArrayList<>();
     private final Alias names;
     private final Alias vals;
     private final Alias condVals;
@@ -134,6 +135,13 @@ public class DynamoExpressionBuilder {
         return this;
     }
 
+    public DynamoExpressionBuilder deleteValuesFromSet(String parentField, String fieldName, Set values, Class type) {
+        if (values.size() > 0) {
+            deleteSection.add(String.format("%s %s", joinFields(parentField, fieldName), processValueAlias(vals, values, type)));
+        }
+        return this;
+    }
+
     public <V> DynamoExpressionBuilder setMultiValue(String parentField, String fieldName, Object collection, Class type) {
         setSection.add(String.format("%s=%s", joinFields(parentField, fieldName), processValueAlias(vals, collection, type)));
         return this;
@@ -170,6 +178,9 @@ public class DynamoExpressionBuilder {
         }
         if (!removeSection.isEmpty()) {
             updateExpressions.add("REMOVE " + Joiner.on(", ").join(removeSection));
+        }
+        if (!deleteSection.isEmpty()) {
+            updateExpressions.add("DELETE " + Joiner.on(", ").join(deleteSection));
         }
         if (updateExpressions.isEmpty()) {
             return "";
