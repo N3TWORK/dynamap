@@ -9,7 +9,7 @@
     <name>Dynamap</name>
     <description>A Java object model and mapping library for Amazon's DynamoDB database.</description>
     <url>https://dynamap.n3twork.com</url>
-    <version>0.9.44</version>
+    <version>0.9.45-SNAPSHOT</version>
 
     <licenses>
         <license>
@@ -31,7 +31,7 @@
         <url>https://github.com/N3TWORK/dynamap.git</url>
         <connection>scm:git:git://github.com:N3TWORK/dynamap.git</connection>
         <developerConnection>scm:git:git@github.com:N3TWORK/dynamap.git</developerConnection>
-      <tag>v0.9.44</tag>
+      <tag>HEAD</tag>
   </scm>
 
     <properties>
