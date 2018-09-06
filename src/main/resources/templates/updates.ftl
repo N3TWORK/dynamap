@@ -468,6 +468,7 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
         }
         this.${field.name}Updates = value;
         modified = true;
+        ${field.name}Modified = true;
         return this;
     }
     </#if>
@@ -506,6 +507,7 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
 </#if>
 
     <#list type.persistedFields as field>
+     if (${field.name}Modified) {
         <#if field.type == 'Map'>
             <#if field.useDeltas() || field.isSerializeAsList() || field.isCompressCollection()>
             <#if field.isReplace() || field.isSerializeAsList() || field.isCompressCollection()>
@@ -552,6 +554,15 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
                 expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", get${field.name?cap_first}(), ${field.elementType}.class);
                 </#if>
             </#if>
+
+       <#elseif field.isGeneratedType()>
+        if (${field.name}Updates != null) {
+            DynamoExpressionBuilder nestedExpression = this.${field.name}Updates.getExpressionBuilder();
+            nestedExpression.setObjectMapper(expression.getObjectMapper());
+            this.${field.name}Updates.processUpdateExpression();
+            expression.merge(this.${field.name}Updates.getExpressionBuilder());
+        }
+
         <#else>
             <#if field.isNumber()>
             if (${field.name} != null) {
@@ -561,24 +572,15 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
                 expression.incrementNumber(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Delta, ${currentState}.is${field.name?cap_first}Set(), <@defaultValue field=field elementOnly=false />);
             }
             <#else>
-            if (${field.name}Modified == true) {
-                if (${field.name} != null) {
-                    expression.setValue(parentDynamoFieldName, "${field.dynamoName}", ${field.name});
-                }
-                else {
-                    expression.removeField(parentDynamoFieldName, "${field.dynamoName}");
-                }
+            if (${field.name} != null) {
+                expression.setValue(parentDynamoFieldName, "${field.dynamoName}", ${field.name});
             }
-            <#if field.isGeneratedType()>
-            else if (${field.name}Updates != null) {
-                DynamoExpressionBuilder nestedExpression = this.${field.name}Updates.getExpressionBuilder();
-                nestedExpression.setObjectMapper(expression.getObjectMapper());
-                this.${field.name}Updates.processUpdateExpression();
-                expression.merge(this.${field.name}Updates.getExpressionBuilder());
+            else {
+                expression.removeField(parentDynamoFieldName, "${field.dynamoName}");
             }
-            </#if>
             </#if>
         </#if>
+      }
     </#list>
 
     // Conditional expression
