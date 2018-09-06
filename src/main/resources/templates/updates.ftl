@@ -562,6 +562,14 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
             this.${field.name}Updates.processUpdateExpression();
             expression.merge(this.${field.name}Updates.getExpressionBuilder());
         }
+        else {
+            if (${field.name} != null) {
+                expression.setValue(parentDynamoFieldName, "${field.dynamoName}", ${field.name});
+            }
+            else {
+                expression.removeField(parentDynamoFieldName, "${field.dynamoName}");
+            }
+        }
 
         <#else>
             <#if field.isNumber()>

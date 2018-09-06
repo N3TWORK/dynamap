@@ -55,6 +55,11 @@
               "type": "NestedType"
             },
             {
+              "name": "nestedObject2",
+              "dynamoName": "nested2",
+              "type": "NestedType2"
+            },
+            {
               "name": "mapOfLong",
               "dynamoName": "mol",
               "type": "Map",
@@ -273,6 +278,20 @@
               "serializeAsListElementId": "name"
             }
           ]
+        },
+        {
+          "name": "NestedType2",
+          "fields": [
+            {
+              "name": "id",
+              "dynamoName": "id",
+              "type": "String"
+            },
+            {
+              "name": "string",
+              "dynamoName": "str",
+              "type": "String"
+            }]
         }
       ]
     }

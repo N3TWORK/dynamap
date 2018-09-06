@@ -197,6 +197,17 @@ public class DynamapTest {
         Assert.assertFalse(testDocument.getNestedObject().getMapOfCustomTypeIds().contains("item1"));
         Assert.assertTrue(testDocument.getMapOfCustomTypeIds().contains("item2"));
         Assert.assertTrue(testDocument.getNestedObject().getMapOfCustomTypeIds().contains("item2"));
+
+        // Test overwrite entire nested object
+        //TODO: Currently overwriting nested generated objects that use compression or serialize as list is not supported
+        // Hence this test is using another generated type
+        NestedType2 nestedType2 = new NestedType2Bean().setId(UUID.randomUUID().toString());
+        testDocumentUpdates = doc.createUpdates().setNestedObject2(nestedType2);
+        dynamap.update(new UpdateParams<>(testDocumentUpdates));
+        testDocumentUpdates = doc.createUpdates().setNestedObject2(new NestedType2Bean().setId(UUID.randomUUID().toString()));
+        testDocument = dynamap.update(new UpdateParams<>(testDocumentUpdates));
+        Assert.assertFalse(testDocument.getNestedObject2().getId().equals(nestedType2.getId()));
+
     }
 
     @Test
