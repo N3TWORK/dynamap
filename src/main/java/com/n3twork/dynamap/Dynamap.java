@@ -306,59 +306,30 @@ public class Dynamap {
         return result == null ? Collections.emptyList() : result;
     }
 
-    public <T extends DynamapRecordBean> List<T> query(QueryRequest<T> queryRequest) {
-        List<T> results = new ArrayList<>();
+    public <T extends DynamapRecordBean> Iterator<T> queryIterator(QueryRequest<T> queryRequest) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(queryRequest.getResultClass());
-        Table table = getTable(tableDefinition.getTableName(prefix, queryRequest.getSuffix()));
-        QuerySpec querySpec = new QuerySpec().withHashKey(tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName(), queryRequest.getHashKeyValue())
-                .withRangeKeyCondition(queryRequest.getRangeKeyCondition())
-                .withConsistentRead(queryRequest.isConsistentRead())
-                .withQueryFilters(queryRequest.getQueryFilters())
-                .withScanIndexForward(queryRequest.isScanIndexForward())
-                .withMaxResultSize(queryRequest.getLimit());
-
-        ItemCollection<QueryOutcome> items;
-        if (queryRequest.getIndex() != null) {
-            com.n3twork.dynamap.model.Index indexDef = null;
-            if (tableDefinition.getGlobalSecondaryIndexes() != null) {
-                indexDef = tableDefinition.getGlobalSecondaryIndexes().stream().filter(i -> i.getIndexName().equals(queryRequest.getIndex().getName())).findFirst().get();
-            } else if (tableDefinition.getLocalSecondaryIndexes() != null) {
-                indexDef = tableDefinition.getLocalSecondaryIndexes().stream().filter(i -> i.getIndexName().equals(queryRequest.getIndex().getName())).findFirst().get();
+        Iterator<Item> iterator = queryItems(queryRequest);
+        return new Iterator<T>() {
+            @Override
+            public boolean hasNext() {
+                return iterator.hasNext();
             }
-            String indexName = indexDef.getIndexName();
-            Index index = table.getIndex(indexDef.getIndexName());
-            querySpec.withHashKey(tableDefinition.getField(indexDef.getHashKey()).getDynamoName(), queryRequest.getHashKeyValue());
-            initAndAcquire(queryRequest.getReadRateLimiter(), table, indexName);
-            items = index.query(querySpec);
-        } else {
-            querySpec.withHashKey(tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName(), queryRequest.getHashKeyValue());
-            initAndAcquire(queryRequest.getReadRateLimiter(), table, null);
-            items = table.query(querySpec);
-        }
-
-        items.registerLowLevelResultListener(new LowLevelResultListener<QueryOutcome>() {
-
-            private int totalProgress = 0;
 
             @Override
-            public void onLowLevelResult(QueryOutcome queryOutcome) {
-                DynamoRateLimiter dynamoRateLimiter = queryRequest.getReadRateLimiter();
-                totalProgress += queryOutcome.getQueryResult().getItems().size();
-                if (queryRequest.getProgressCallback() != null) {
-                    queryRequest.getProgressCallback().reportProgress(totalProgress);
-                }
-                if (dynamoRateLimiter != null) {
-                    dynamoRateLimiter.setConsumedCapacity(queryOutcome.getQueryResult().getConsumedCapacity());
-                    dynamoRateLimiter.acquire();
-                }
+            public T next() {
+                return buildObjectFromDynamoItem(iterator.next(), tableDefinition, queryRequest.getResultClass(),
+                        null, queryRequest.getMigrationContext(), queryRequest.isWriteMigrationChange(),
+                        false, queryRequest.getSuffix());
             }
-        });
-        Iterator<Item> iterator = items.iterator();
+        };
+    }
 
-        while (iterator.hasNext()) {
-            results.add(buildObjectFromDynamoItem(iterator.next(), tableDefinition, queryRequest.getResultClass(), null, queryRequest.getMigrationContext(), queryRequest.isWriteMigrationChange(), false, queryRequest.getSuffix()));
+    public <T extends DynamapRecordBean> List<T> query(QueryRequest<T> queryRequest) {
+        Iterator<T> queryIterator = queryIterator(queryRequest);
+        List<T> results = new ArrayList<>();
+        while (queryIterator.hasNext()) {
+            results.add(queryIterator.next());
         }
-
         return results;
     }
 
@@ -510,6 +481,55 @@ public class Dynamap {
         public TableDefinition tableDefinition;
         public GetObjectRequest getObjectRequest;
         public Table table;
+    }
+
+    public <T extends DynamapRecordBean> Iterator<Item> queryItems(QueryRequest<T> queryRequest) {
+        TableDefinition tableDefinition = schemaRegistry.getTableDefinition(queryRequest.getResultClass());
+        Table table = getTable(tableDefinition.getTableName(prefix, queryRequest.getSuffix()));
+        QuerySpec querySpec = new QuerySpec().withHashKey(tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName(), queryRequest.getHashKeyValue())
+                .withRangeKeyCondition(queryRequest.getRangeKeyCondition())
+                .withConsistentRead(queryRequest.isConsistentRead())
+                .withQueryFilters(queryRequest.getQueryFilters())
+                .withScanIndexForward(queryRequest.isScanIndexForward())
+                .withMaxResultSize(queryRequest.getLimit());
+
+        ItemCollection<QueryOutcome> items;
+        if (queryRequest.getIndex() != null) {
+            com.n3twork.dynamap.model.Index indexDef = null;
+            if (tableDefinition.getGlobalSecondaryIndexes() != null) {
+                indexDef = tableDefinition.getGlobalSecondaryIndexes().stream().filter(i -> i.getIndexName().equals(queryRequest.getIndex().getName())).findFirst().get();
+            } else if (tableDefinition.getLocalSecondaryIndexes() != null) {
+                indexDef = tableDefinition.getLocalSecondaryIndexes().stream().filter(i -> i.getIndexName().equals(queryRequest.getIndex().getName())).findFirst().get();
+            }
+            String indexName = indexDef.getIndexName();
+            Index index = table.getIndex(indexDef.getIndexName());
+            querySpec.withHashKey(tableDefinition.getField(indexDef.getHashKey()).getDynamoName(), queryRequest.getHashKeyValue());
+            initAndAcquire(queryRequest.getReadRateLimiter(), table, indexName);
+            items = index.query(querySpec);
+        } else {
+            querySpec.withHashKey(tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName(), queryRequest.getHashKeyValue());
+            initAndAcquire(queryRequest.getReadRateLimiter(), table, null);
+            items = table.query(querySpec);
+        }
+
+        items.registerLowLevelResultListener(new LowLevelResultListener<QueryOutcome>() {
+
+            private int totalProgress = 0;
+
+            @Override
+            public void onLowLevelResult(QueryOutcome queryOutcome) {
+                DynamoRateLimiter dynamoRateLimiter = queryRequest.getReadRateLimiter();
+                totalProgress += queryOutcome.getQueryResult().getItems().size();
+                if (queryRequest.getProgressCallback() != null) {
+                    queryRequest.getProgressCallback().reportProgress(totalProgress);
+                }
+                if (dynamoRateLimiter != null) {
+                    dynamoRateLimiter.setConsumedCapacity(queryOutcome.getQueryResult().getConsumedCapacity());
+                    dynamoRateLimiter.acquire();
+                }
+            }
+        });
+        return items.iterator();
     }
 
     private Multimap<String, Item> doBatchGetItem(Map<String, GetItemInfo> queryInfos, Map<String, ReadWriteRateLimiterPair> rateLimiters, int totalProgress, ProgressCallback progressCallback) {
