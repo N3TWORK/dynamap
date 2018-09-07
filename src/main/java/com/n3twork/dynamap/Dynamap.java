@@ -395,21 +395,57 @@ public class Dynamap {
 
         });
 
-        Iterator<Item> iterator = scanItems.iterator();
-        while (iterator.hasNext()) {
-            results.add(buildObjectFromDynamoItem(iterator.next(), tableDefinition, scanRequest.getResultClass(), null, scanRequest.getMigrationContext(), scanRequest.isWriteMigrationChange(), scanRequest.getProjectionExpression() != null, scanRequest.getSuffix()));
-        }
 
-        String lastHashKey = null;
-        Object lastRangeKey = null;
-        if (scanItems.getLastLowLevelResult().getScanResult().getLastEvaluatedKey() != null) {
-            Map<String, AttributeValue> lastEvaluated = scanItems.getLastLowLevelResult().getScanResult().getLastEvaluatedKey();
-            lastHashKey = lastEvaluated.get(tableDefinition.getHashKey()).getS();
-            if (tableDefinition.getRangeKey() != null) {
-                lastRangeKey = lastEvaluated.get(tableDefinition.getRangeKey());
+        ScanItemIterator<T> scanItemIterator = new ScanItemIterator<T>() {
+            ItemCollection<ScanOutcome> scanOutcomeItemCollection = scanItems;
+            String lastHashKey = null;
+            Object lastRangeKey = null;
+            Iterator<Item> iterator = scanOutcomeItemCollection.iterator();
+
+            @Override
+            public String getLastHashKey() {
+                return lastHashKey;
             }
-        }
-        return new ScanResult(lastHashKey, lastRangeKey, results, scanItems.getAccumulatedItemCount(), scanItems.getAccumulatedScannedCount());
+
+            @Override
+            public Object getLastRangeKey() {
+                return lastRangeKey;
+            }
+
+            @Override
+            public boolean hasNext() {
+                return iterator.hasNext();
+            }
+
+            @Override
+            public int getCount() {
+                return scanItems.getAccumulatedItemCount();
+            }
+
+            @Override
+            public int getScannedCount() {
+                return scanItems.getAccumulatedScannedCount();
+            }
+
+            @Override
+            public T next() {
+                T result = buildObjectFromDynamoItem(iterator.next(), tableDefinition, scanRequest.getResultClass(),
+                        null, scanRequest.getMigrationContext(), scanRequest.isWriteMigrationChange(),
+                        scanRequest.getProjectionExpression() != null, scanRequest.getSuffix());
+                if (!hasNext()) {
+                    if (scanItems.getLastLowLevelResult().getScanResult().getLastEvaluatedKey() != null) {
+                        Map<String, AttributeValue> lastEvaluated = scanItems.getLastLowLevelResult().getScanResult().getLastEvaluatedKey();
+                        lastHashKey = lastEvaluated.get(tableDefinition.getHashKey()).getS();
+                        if (tableDefinition.getRangeKey() != null) {
+                            lastRangeKey = lastEvaluated.get(tableDefinition.getRangeKey());
+                        }
+                    }
+                }
+                return result;
+            }
+        };
+
+        return new ScanResult(scanItemIterator);
     }
 
     public void save(SaveParams saveParams) {

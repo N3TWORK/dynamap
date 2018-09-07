@@ -16,41 +16,38 @@
 
 package com.n3twork.dynamap;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ScanResult<T> {
 
-    private final String lastEvaluatedHashKey;
-    private final Object lastEvaluatedRangeKey;
-    private final List<T> results;
-    private final int count;
-    private final int scannedCount;
+    private final ScanItemIterator<T> scanItemIterator;
 
-    public ScanResult(String lastEvaluatedHashKey, Object lastEvaluatedRangeKey, List<T> results, int count, int scannedCount) {
-        this.lastEvaluatedHashKey = lastEvaluatedHashKey;
-        this.lastEvaluatedRangeKey = lastEvaluatedRangeKey;
-        this.results = results;
-        this.count = count;
-        this.scannedCount = scannedCount;
+    public ScanResult(ScanItemIterator<T> scanItemIterator) {
+        this.scanItemIterator = scanItemIterator;
     }
 
     public String getLastEvaluatedHashKey() {
-        return lastEvaluatedHashKey;
+        return scanItemIterator.getLastHashKey();
     }
 
     public Object getLastEvaluatedRangeKey() {
-        return lastEvaluatedRangeKey;
+        return scanItemIterator.getLastRangeKey();
     }
 
     public List<T> getResults() {
+        List<T> results = new ArrayList<>();
+        while (scanItemIterator.hasNext()) {
+            results.add(scanItemIterator.next());
+        }
         return results;
     }
 
     public int getCount() {
-        return count;
+        return scanItemIterator.getCount();
     }
 
     public int getScannedCount() {
-        return scannedCount;
+        return scanItemIterator.getScannedCount();
     }
 }
