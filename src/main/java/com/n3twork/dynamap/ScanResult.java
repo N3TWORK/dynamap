@@ -17,6 +17,7 @@
 package com.n3twork.dynamap;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class ScanResult<T> {
@@ -41,6 +42,10 @@ public class ScanResult<T> {
             results.add(scanItemIterator.next());
         }
         return results;
+    }
+
+    public Iterator<T> getResultIterator() {
+        return scanItemIterator;
     }
 
     public int getCount() {
