@@ -404,11 +404,13 @@ public class Dynamap {
 
             @Override
             public String getLastHashKey() {
+                setLastKey();
                 return lastHashKey;
             }
 
             @Override
             public Object getLastRangeKey() {
+                setLastKey();
                 return lastRangeKey;
             }
 
@@ -432,16 +434,18 @@ public class Dynamap {
                 T result = buildObjectFromDynamoItem(iterator.next(), tableDefinition, scanRequest.getResultClass(),
                         null, scanRequest.getMigrationContext(), scanRequest.isWriteMigrationChange(),
                         scanRequest.getProjectionExpression() != null, scanRequest.getSuffix());
-                if (!hasNext()) {
-                    if (scanItems.getLastLowLevelResult().getScanResult().getLastEvaluatedKey() != null) {
-                        Map<String, AttributeValue> lastEvaluated = scanItems.getLastLowLevelResult().getScanResult().getLastEvaluatedKey();
-                        lastHashKey = lastEvaluated.get(tableDefinition.getHashKey()).getS();
-                        if (tableDefinition.getRangeKey() != null) {
-                            lastRangeKey = lastEvaluated.get(tableDefinition.getRangeKey());
-                        }
+                return result;
+            }
+
+            private void setLastKey() {
+                if (scanOutcomeItemCollection.getLastLowLevelResult() != null &&
+                        scanOutcomeItemCollection.getLastLowLevelResult().getScanResult().getLastEvaluatedKey() != null) {
+                    Map<String, AttributeValue> lastEvaluated = scanItems.getLastLowLevelResult().getScanResult().getLastEvaluatedKey();
+                    lastHashKey = lastEvaluated.get(tableDefinition.getHashKey()).getS();
+                    if (tableDefinition.getRangeKey() != null) {
+                        lastRangeKey = lastEvaluated.get(tableDefinition.getRangeKey());
                     }
                 }
-                return result;
             }
         };
 
