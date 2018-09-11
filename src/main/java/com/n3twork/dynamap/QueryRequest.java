@@ -29,6 +29,7 @@ public class QueryRequest<T> {
     private String hashKeyValue;
     private RangeKeyCondition rangeKeyCondition;
     private List<QueryFilter> queryFilters = new ArrayList();
+    private String projectionExpression;
     private DynamoRateLimiter readRateLimiter;
     private boolean consistentRead;
     private boolean scanIndexForward = true;
@@ -69,6 +70,11 @@ public class QueryRequest<T> {
 
     public QueryRequest<T> addQueryFilter(QueryFilter queryFilter) {
         this.queryFilters.add(queryFilter);
+        return this;
+    }
+
+    public QueryRequest<T> withProjectionExpression(String projectionExpression) {
+        this.projectionExpression = projectionExpression;
         return this;
     }
 
@@ -125,6 +131,10 @@ public class QueryRequest<T> {
 
     public QueryFilter[] getQueryFilters() {
         return queryFilters.toArray(new QueryFilter[queryFilters.size()]);
+    }
+
+    public String getProjectionExpression() {
+        return projectionExpression;
     }
 
     public boolean isConsistentRead() {

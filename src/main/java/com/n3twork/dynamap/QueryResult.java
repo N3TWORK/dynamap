@@ -20,11 +20,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class ScanResult<T> {
+public class QueryResult<T> {
 
     private final ItemIterator<T> itemIterator;
 
-    public ScanResult(ItemIterator<T> itemIterator) {
+    public QueryResult(ItemIterator<T> itemIterator) {
         this.itemIterator = itemIterator;
     }
 

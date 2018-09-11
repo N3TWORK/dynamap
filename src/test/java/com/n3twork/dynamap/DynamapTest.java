@@ -861,11 +861,6 @@ public class DynamapTest {
         Assert.assertTrue(savedTestDocsIds.containsAll(testDocsIds) && testDocsIds.containsAll(savedTestDocsIds));
         Assert.assertTrue(savedDummyDocsIds.containsAll(dummyDocsIds) && dummyDocsIds.containsAll(savedDummyDocsIds));
 
-        // Test start exclusive
-        ScanRequest<TestDocumentBean> scanRequest3 = new ScanRequest<>(TestDocumentBean.class).withStartExclusiveHashKeyValue(testDocsIds.get(3));
-        ScanResult<TestDocumentBean> scanResult3 = dynamap.scan(scanRequest3);
-        Assert.assertTrue(scanResult3.getResults().size() > 0);
-
 
     }
 

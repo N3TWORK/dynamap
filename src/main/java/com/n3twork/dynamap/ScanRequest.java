@@ -75,7 +75,7 @@ public class ScanRequest<T> {
     }
 
     public ScanRequest<T> withStartExclusiveHashKeyValue(String startExclusiveHashKeyValue) {
-        this.startExclusiveRangeKeyValue = startExclusiveHashKeyValue;
+        this.startExclusiveHashKeyValue = startExclusiveHashKeyValue;
         return this;
     }
 
