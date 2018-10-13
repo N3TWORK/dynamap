@@ -418,7 +418,10 @@ public class Dynamap {
             }
         }
         if (scanRequest.getMaxResultSize() != null) {
-            scanspec.withMaxPageSize(scanRequest.getMaxResultSize());
+            scanspec.withMaxResultSize(scanRequest.getMaxResultSize());
+        }
+        if (scanRequest.getMaxPageSize() != null) {
+            scanspec.withMaxPageSize(scanRequest.getMaxPageSize());
         }
 
         if (scanRequest.getReadRateLimiter() != null) {

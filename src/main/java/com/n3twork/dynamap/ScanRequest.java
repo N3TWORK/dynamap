@@ -31,6 +31,7 @@ public class ScanRequest<T> {
     private Object startExclusiveRangeKeyValue;
     private Object migrationContext;
     private Integer maxResultSize;
+    private Integer maxPageSize;
     private ProgressCallback progressCallback;
     private boolean writeMigrationChange;
     private String suffix;
@@ -150,6 +151,10 @@ public class ScanRequest<T> {
 
     public Integer getMaxResultSize() {
         return maxResultSize;
+    }
+
+    public Integer getMaxPageSize() {
+        return maxPageSize;
     }
 
     public boolean isWriteMigrationChange() {
