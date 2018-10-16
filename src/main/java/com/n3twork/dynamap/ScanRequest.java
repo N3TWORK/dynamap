@@ -90,6 +90,11 @@ public class ScanRequest<T> {
         return this;
     }
 
+    public ScanRequest<T> withMaxPageSize(Integer maxPageSize) {
+        this.maxPageSize = maxPageSize;
+        return this;
+    }
+
     public ScanRequest<T> withProgressCallback(ProgressCallback progressCallback) {
         this.progressCallback = progressCallback;
         return this;
