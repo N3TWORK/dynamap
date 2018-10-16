@@ -21,7 +21,7 @@ public interface ProgressCallback {
     /**
      * Report progress back to the caller. The caller can return a signal to cancel the request.
      * @param progressCount a number to indicate the progress made
-     * @return true if process should continue, false if the process should be cancelled
+     * @return When used with batchGetObject, true if process should continue, false if the process should be cancelled. Otherwise this value is not used.
      */
     boolean reportProgress(int progressCount);
 
