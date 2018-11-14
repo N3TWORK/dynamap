@@ -417,6 +417,12 @@ public class Dynamap {
                 scanspec.withExclusiveStartKey(tableDefinition.getHashKey(), scanRequest.getStartExclusiveHashKeyValue());
             }
         }
+
+        if (scanRequest.getTotalSegments() != null && scanRequest.getSegment() != null) {
+            scanspec.withSegment(scanRequest.getSegment());
+            scanspec.withTotalSegments(scanRequest.getTotalSegments());
+        }
+
         if (scanRequest.getMaxResultSize() != null) {
             scanspec.withMaxResultSize(scanRequest.getMaxResultSize());
         }
@@ -485,7 +491,7 @@ public class Dynamap {
             }
         };
 
-        return new ScanResult(itemIterator);
+        return new ScanResult<>(itemIterator);
     }
 
     public void save(SaveParams saveParams) {

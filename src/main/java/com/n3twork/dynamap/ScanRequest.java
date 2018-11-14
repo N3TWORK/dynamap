@@ -29,6 +29,8 @@ public class ScanRequest<T> {
     private DynamoRateLimiter readRateLimiter;
     private String startExclusiveHashKeyValue;
     private Object startExclusiveRangeKeyValue;
+    private Integer segment;
+    private Integer totalSegments;
     private Object migrationContext;
     private Integer maxResultSize;
     private Integer maxPageSize;
@@ -85,6 +87,16 @@ public class ScanRequest<T> {
         return this;
     }
 
+    public ScanRequest<T> withSegment(Integer segment) {
+        this.segment = segment;
+        return this;
+    }
+
+    public ScanRequest<T> withTotalSegments(Integer totalSegments) {
+        this.totalSegments = totalSegments;
+        return this;
+    }
+
     public ScanRequest<T> withMaxResultSize(Integer maxResultSize) {
         this.maxResultSize = maxResultSize;
         return this;
@@ -132,6 +144,14 @@ public class ScanRequest<T> {
 
     public Object getStartExclusiveRangeKeyValue() {
         return startExclusiveRangeKeyValue;
+    }
+
+    public Integer getSegment() {
+        return segment;
+    }
+
+    public Integer getTotalSegments() {
+        return totalSegments;
     }
 
     public Object getMigrationContext() {
