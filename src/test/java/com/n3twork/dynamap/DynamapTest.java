@@ -38,6 +38,7 @@ import java.io.ByteArrayInputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class DynamapTest {
 
@@ -862,6 +863,42 @@ public class DynamapTest {
         Assert.assertTrue(savedDummyDocsIds.containsAll(dummyDocsIds) && dummyDocsIds.containsAll(savedDummyDocsIds));
 
 
+    }
+
+    @Test
+    public void testParallelScan() {
+        final int TEST_DOCS_SIZE = 22;
+        List<DynamapRecordBean> docsToSave = new ArrayList<>();
+        List<String> testDocsIds = new ArrayList<>();
+
+        for (int i = 0; i < TEST_DOCS_SIZE; i++) {
+            TestDocumentBean testDocument = createTestDocumentBean(createNestedTypeBean());
+            testDocsIds.add(testDocument.getId());
+            docsToSave.add(testDocument);
+        }
+
+        dynamap.batchSave(new BatchSaveParams<>(docsToSave));
+
+        ScanRequest<TestDocumentBean> scanRequest = new ScanRequest<>(TestDocumentBean.class)
+                .withTotalSegments(2)
+                .withSegment(0);
+
+        ScanResult<TestDocumentBean> scanResult = dynamap.scan(scanRequest);
+        List<TestDocumentBean> savedTestDocs = scanResult.getResults();
+
+        ScanRequest<TestDocumentBean> scanRequest2 = new ScanRequest<>(TestDocumentBean.class)
+                .withTotalSegments(2)
+                .withSegment(1);
+
+        ScanResult<TestDocumentBean> scanResult2 = dynamap.scan(scanRequest2);
+        List<TestDocumentBean> savedTestDocs2 = scanResult2.getResults();
+
+        Assert.assertEquals(savedTestDocs.size() + savedTestDocs2.size(), TEST_DOCS_SIZE);
+
+        List<String> savedTestDocsIds = Stream.concat(savedTestDocs.stream(), savedTestDocs2.stream())
+                .map(TestDocumentBean::getId).collect(Collectors.toList());
+
+        Assert.assertTrue(savedTestDocsIds.containsAll(testDocsIds) && testDocsIds.containsAll(savedTestDocsIds));
     }
 
     @Test
