@@ -75,7 +75,7 @@ public class MergeUtil {
         return values;
     }
 
-    public static <V extends Number> V getLatestNumericValue(Class type, V orig, V delta, V update) {
+    public static <V extends Number> V getLatestNumericValue(Class type, V orig, V delta, V update, boolean modified, V defaultValue) {
         if (update != null) {
             return update;
         }
@@ -92,7 +92,11 @@ public class MergeUtil {
                 throw new RuntimeException("Unsupported type" + orig.getClass().getName());
             }
         }
-        return orig;
+        if (modified) {
+            return defaultValue;
+        } else {
+            return orig;
+        }
     }
 
     public static <K, V extends Number> V getLatestNumericValue(Class type, K key, V orig, Map<K, V> deltas, Map<K, V> setUpdates, Set<K> deletes, boolean clear) {

@@ -566,6 +566,7 @@ public class DynamapTest {
 
         TestDocumentBean doc = createTestDocumentBean(null);
         dynamap.save(new SaveParams<>(doc));
+        Assert.assertNull(doc.getIntegerField());
 
         TestDocumentUpdates documentUpdates = doc.createUpdates();
         documentUpdates.incrementIntegerField(1);
@@ -582,6 +583,14 @@ public class DynamapTest {
         dynamap.update(new UpdateParams<>(documentUpdates));
         doc = dynamap.getObject(createGetObjectParams(doc));
         Assert.assertEquals(doc.getIntegerField().intValue(), -1);
+
+        documentUpdates = doc.createUpdates();
+        documentUpdates.setIntegerField(null);
+        Assert.assertNull(documentUpdates.getIntegerField());
+        dynamap.update(new UpdateParams<>(documentUpdates));
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertNull(doc.getIntegerField());
+
     }
 
     @Test
@@ -589,6 +598,7 @@ public class DynamapTest {
 
         TestDocumentBean doc = createTestDocumentBean(null);
         dynamap.save(new SaveParams<>(doc));
+        Assert.assertEquals(doc.getIntegerFieldNonZeroDefault().intValue(), 2);
 
         TestDocumentUpdates documentUpdates = doc.createUpdates();
         documentUpdates.incrementIntegerFieldNonZeroDefault(1);
@@ -605,6 +615,14 @@ public class DynamapTest {
         dynamap.update(new UpdateParams<>(documentUpdates));
         doc = dynamap.getObject(createGetObjectParams(doc));
         Assert.assertEquals(doc.getIntegerFieldNonZeroDefault().intValue(), 1);
+
+        documentUpdates = doc.createUpdates();
+        documentUpdates.setIntegerFieldNonZeroDefault(null);
+        Assert.assertEquals(documentUpdates.getIntegerFieldNonZeroDefault().intValue(), 2);
+        dynamap.update(new UpdateParams<>(documentUpdates));
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(doc.getIntegerFieldNonZeroDefault().intValue(), 2);
+
     }
 
     @Test

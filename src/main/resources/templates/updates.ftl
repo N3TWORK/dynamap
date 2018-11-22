@@ -233,7 +233,7 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
     @Override
     public ${field.elementType} get${field.name?cap_first}() {
         <#if field.isNumber()>
-        return MergeUtil.getLatestNumericValue(${field.elementType}.class, ${currentState}.get${field.name?cap_first}(), ${field.name}Delta, ${field.name});
+        return MergeUtil.getLatestNumericValue(${field.elementType}.class, ${currentState}.get${field.name?cap_first}(), ${field.name}Delta, ${field.name}, ${field.name}Modified, <@defaultValue field=field elementOnly=false />);
         <#else>
         return this.${field.name} == null ? ${currentState}.get${field.name?cap_first}() : this.${field.name};
         </#if>
@@ -578,6 +578,9 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
             }
             else if (${field.name}Delta != null) {
                 expression.incrementNumber(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Delta, ${currentState}.is${field.name?cap_first}Set(), <@defaultValue field=field elementOnly=false />);
+            }
+            else {
+                expression.removeField(parentDynamoFieldName, "${field.dynamoName}");
             }
             <#else>
             if (${field.name} != null) {
