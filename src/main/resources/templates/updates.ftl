@@ -597,7 +597,7 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
     // Conditional expression
     expression.addCheckFieldValueCondition(null, "${schemaVersionFieldName}", ${rootType}.SCHEMA_VERSION, DynamoExpressionBuilder.ComparisonOperator.EQUALS);
     <#if isRoot && optimisticLocking>
-            if (!disableOptimisticLocking) {
+            if (!disableOptimisticLocking && ${currentState}.getRevision() > 0) {
                 expression.addCheckFieldValueCondition(null, "${revisionFieldName}", ${currentState}.getRevision(), DynamoExpressionBuilder.ComparisonOperator.EQUALS);
             }
     </#if>
