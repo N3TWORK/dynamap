@@ -37,6 +37,8 @@ import com.n3twork.dynamap.model.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -500,7 +502,7 @@ public class Dynamap {
                 saveParams.isDisableOptimisticLocking(), false, saveParams.getWriteLimiter(), saveParams.getSuffix());
     }
 
-    public <T extends DynamapPersisted> T update(UpdateParams<T> updateParams) {
+    public <T extends DynamapPersisted<U>, U extends RecordUpdates<T>, R extends UpdateResult<T, U>> R update(UpdateParams<T> updateParams) {
         RecordUpdates<T> updates = updateParams.getUpdates();
         DynamoRateLimiter writeLimiter = updateParams.getWriteLimiter();
         String suffix = updateParams.getSuffix();
@@ -517,6 +519,15 @@ public class Dynamap {
             }
             updateItemSpec.withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
             UpdateItemOutcome updateItemOutcome = table.updateItem(updateItemSpec);
+
+            Class updateResultClass = Class.forName(tableDefinition.getPackageName() + "." + tableDefinition.getType() + "UpdateResultBean");
+            Constructor<R> constructor = updateResultClass.getConstructors()[0];
+
+            if (updateParams.getDynamapReturnValue() == DynamapReturnValue.UPDATED_NEW && updateItemOutcome.getItem() == null) {
+                // nothing changed
+                return constructor.newInstance(updates, null);
+            }
+
             if (logger.isDebugEnabled()) {
                 logger.debug("UpdateItemOutcome: " + updateItemOutcome.getItem().toJSONPretty());
             }
@@ -527,29 +538,17 @@ public class Dynamap {
             if (updateParams.getDynamapReturnValue() == DynamapReturnValue.NONE) {
                 return null;
             }
-            if (updateParams.getDynamapReturnValue() == DynamapReturnValue.ALL_NEW ||
-                    updateParams.getDynamapReturnValue() == DynamapReturnValue.ALL_OLD) {
-                Class beanClass = Class.forName(tableDefinition.getPackageName() + "." + tableDefinition.getType() + "Bean");
-                return (T) convertMapToObject(tableDefinition, updateItemOutcome.getItem().asMap(), beanClass);
-            }
 
-            // Merge updated values with existing
-            try {
-                Class beanClass = Class.forName(tableDefinition.getPackageName() + "." + tableDefinition.getType() + "Bean");
-                Class interfaceClass = Class.forName(tableDefinition.getPackageName() + "." + tableDefinition.getType());
-                Object updatesAsBean = beanClass.getDeclaredConstructor(interfaceClass).newInstance(updateParams.getUpdates());
-                Map<String, Object> updatesAsMap = objectMapper.convertValue(updatesAsBean, new TypeReference<Map<String, Object>>() {
-                });
-                Map<String, Object> returnedUpdates = updateItemOutcome.getItem().asMap();
-                processDeserializationConversions(tableDefinition, returnedUpdates);
-                updatesAsMap.putAll(returnedUpdates);
-                return (T) objectMapper.convertValue(updatesAsMap, beanClass);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            Class beanClass = Class.forName(tableDefinition.getPackageName() + "." + tableDefinition.getType() + "Bean");
+            T bean = (T) convertMapToObject(tableDefinition, updateItemOutcome.getItem().asMap(), beanClass);
+            return constructor.newInstance(updates, bean);
+
 
         } catch (ClassNotFoundException e) {
             logger.error("Cannot find bean class " + tableDefinition.getPackageName() + "." + tableDefinition.getType() + "Bean");
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException | IllegalAccessException | InstantiationException e) {
+            logger.error("Cannot instantiate " + tableDefinition.getPackageName() + "." + tableDefinition.getType() + "UpdateResult");
             throw new RuntimeException(e);
         } catch (Exception e) {
             String keyComponents = updateItemSpec.getKeyComponents().stream().map(Object::toString).collect(Collectors.joining(","));
@@ -557,6 +556,12 @@ public class Dynamap {
             throw e;
         }
     }
+
+//    @Deprecated
+//    public <T extends DynamapPersisted<? extends RecordUpdates<T>>> T update(UpdateParams<T> updateParams) {
+//        UpdateParamsV2 updateParamsV2 = new UpdateParamsV2(updateParams);
+//        return (T) update(updateParamsV2);
+//    }
 
     private static class GetItemInfo {
         public TableKeysAndAttributes keysAndAttributes;

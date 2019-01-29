@@ -45,7 +45,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     </#list>
     <#if isRoot>
     @JsonProperty(SCHEMA_VERSION_FIELD)
-    private int _schemaVersion;
+    private Integer _schemaVersion;
     </#if>
     <#if isRoot && optimisticLocking>
     @JsonProperty(REVISION_FIELD)
@@ -75,17 +75,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
 
     <#list type.fields as field>
         <#if field.isPersist()>
-            <#if field.isCollection()>
-            <#if field.type == 'Map'>
-            this.${field.name} = ${field.name} == null ? Collections.emptyMap() : ${field.name};
-            <#elseif field.type == 'List'>
-            this.${field.name} = ${field.name} == null ? Collections.emptyList() : ${field.name};
-            <#elseif field.type == 'Set'>
-            this.${field.name} = ${field.name} == null ? Collections.emptySet() : ${field.name};
-            </#if>
-            <#else>
             this.${field.name} = ${field.name};
-            </#if>
         <#else>
            <#if field.isCollection()>
            <#if field.type == 'Map'>
@@ -242,14 +232,15 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     <#if field.type == 'Map'>
         @JsonIgnore
         public Set<String> get${field.name?cap_first}Ids() {
-        return this.${field.name}.keySet();
+        return ${field.name} == null ? Collections.emptySet() : this.${field.name}.keySet();
         }
         @JsonIgnore
         public ${field.elementType} get${field.name?cap_first}<@collection_item field=field />(String id) {
+            Map<String, ${field.elementType}> map = ${field.name} == null ? Collections.emptyMap() : ${field.name};
             <#if field.useDefaultForNulls()>
-            return this.${field.name}.getOrDefault(id, <@defaultValue field=field elementOnly=true/>);
+            return map.getOrDefault(id, <@defaultValue field=field elementOnly=true/>);
             <#else>
-            return this.${field.name}.get(id);
+            return map.get(id);
             </#if>
         }
     </#if>
@@ -267,7 +258,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     <#if tableDefinition.isEnableMigrations() && isRoot>
     @JsonIgnore
     @Override
-    public int getDynamapSchemaVersion() {
+    public Integer getDynamapSchemaVersion() {
         return this._schemaVersion;
     }
     public ${beanName} setDynamapSchemaVersion(int schemaVersion) {
@@ -286,13 +277,13 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     }
 
     <#list type.fields as field>
-    <#if !field.isCollection()>
     @JsonIgnore
+    <#if !field.isCollection()>
     @Override
+    </#if>
     public boolean is${field.name?cap_first}Set() {
         return ${field.name} != null;
     }
-    </#if>
     </#list>
 
 

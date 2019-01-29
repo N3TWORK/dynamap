@@ -113,7 +113,11 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
             this.disableOptimisticLocking = disableOptimisticLocking;
             return this;
         }
-    </#if>
+        </#if>
+
+        ${updatesName}(${updatesName} updates) {
+            this(new ${type.name}Bean(updates), updates.getHashKeyValue()<#if tableDefinition.rangeKey??>, updates.getRangeKeyValue()</#if>);
+        }
 
     <#else>
 
@@ -253,7 +257,7 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
 </#if>
 <#if tableDefinition.isEnableMigrations() && isRoot>
     @Override
-    public int getDynamapSchemaVersion() {
+    public Integer getDynamapSchemaVersion() {
         return ${currentState}.getDynamapSchemaVersion();
     }
 </#if>

@@ -71,8 +71,22 @@ if (bean.isCurrencyBalancesModified()) {
 
 ## Making the call to update
 
-Dynamp provides a single `update` method with an `UpdateParams` object. The UpdateParams requires the updates object and accepts additional optional settings such as write limiters and the type of return value (all updates field, just updated field etc)
+Dynamap provides a single `update` method with an `UpdateParams` object. The UpdateParams requires the updates object and accepts additional optional settings such as write limiters and the type of return value (all updates field, just updated field etc)
 
 ```java
 User updatedUser = dynamap.update(new UpdateParams(userUpdates));
+```
+
+## Returning only Updates Values from Updates
+
+The `UpdateParams.withReturnValue()` allows you to indicate which values should be returned, either all or only updates, new or old.
+However, Dynamap always returns a full populated object regardless of which option was specified. It does this by returning the object in an UpdateResult bean class. This class can determine which values were actually updated and fall back to old values to give the appearance of a fully updated object.
+It also provides additional methods that indicate which fields were actually updated.
+
+**Note**: if `ALL_OLD` or `ALL_NEW` is used then the checks for fields being updated will return true regardless of whether they were actually updated or not.
+
+```java
+userUpdates.incrementCurrencyBalanceValue("gold", 2);
+UserUpdateResult updatedUser = dynamap.update(new UpdateParams(userUpdates).withReturnValue(DynamapReturnValue.UPDATED_NEW));
+assert updatedUser.wasCurrencyBalancesUpdates();
 ```

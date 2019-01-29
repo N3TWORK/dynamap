@@ -90,6 +90,9 @@ public class CodeGenerator {
         Template interfaceTemplate = cfg.getTemplate("interface.ftl");
         Template beanTemplate = cfg.getTemplate("bean.ftl");
         Template updatesTemplate = cfg.getTemplate("updates.ftl");
+        Template updateResultInterfaceTemplate = cfg.getTemplate("updateResultInterface.ftl");
+        Template updateResultBeanTemplate = cfg.getTemplate("updateResultBean.ftl");
+        Template updatesUpdateResultTemplate = cfg.getTemplate("updatesUpdateResult.ftl");
         Optional<Type> tableTypeOptional = tableDefinition.getTypes().stream().filter(t -> t.getName().equals(tableDefinition.getType())).findFirst();
         if (!tableTypeOptional.isPresent()) {
             throw new RuntimeException("Cannot find type definition for " + tableDefinition.getType());
@@ -100,6 +103,9 @@ public class CodeGenerator {
             Map<String, Object> model = new HashMap<>();
             String beanName = type.getName() + "Bean";
             String updatesName = type.getName() + "Updates";
+            String updateResultName = type.getName() + "UpdateResult";
+            String updateResultBeanName = type.getName() + "UpdateResultBean";
+            String updatesUpdateResultName = updatesName + "UpdateResult";
             typeSequence++;
             model.put("typeSequence", typeSequence);
             model.put("tableDefinition", tableDefinition);
@@ -140,6 +146,15 @@ public class CodeGenerator {
             }
             try (Writer writer = new OutputStreamWriter(new FileOutputStream(outputPath + "/" + packageDir + "/" + updatesName + ".java"))) {
                 updatesTemplate.process(model, writer);
+            }
+            try (Writer writer = new OutputStreamWriter(new FileOutputStream(outputPath + "/" + packageDir + "/" + updateResultName + ".java"))) {
+                updateResultInterfaceTemplate.process(model, writer);
+            }
+            try (Writer writer = new OutputStreamWriter(new FileOutputStream(outputPath + "/" + packageDir + "/" + updateResultBeanName + ".java"))) {
+                updateResultBeanTemplate.process(model, writer);
+            }
+            try (Writer writer = new OutputStreamWriter(new FileOutputStream(outputPath + "/" + packageDir + "/" + updatesUpdateResultName + ".java"))) {
+                updatesUpdateResultTemplate.process(model, writer);
             }
 
         }

@@ -16,7 +16,10 @@
 
 package com.n3twork.dynamap;
 
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
@@ -25,6 +28,7 @@ import com.amazonaws.util.IOUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import com.n3twork.BatchSaveParams;
 import com.n3twork.dynamap.test.*;
@@ -50,8 +54,18 @@ public class DynamapTest {
 
     @BeforeTest
     public void init() {
-        System.setProperty("sqlite4java.library.path", "native-libs");
-        ddb = DynamoDBEmbedded.create().amazonDynamoDB();
+
+        // This test can be run against an AWS account.
+        // This is necessary for testing the UpdateResult behavior because currently local dynamodb does not correctly implement UPDATE_NEW return values.
+        if (System.getProperty("aws.profile") != null) {
+            AmazonDynamoDBClientBuilder builder = AmazonDynamoDBClient.builder();
+            builder.setCredentials(new ProfileCredentialsProvider((System.getProperty("aws.profile"))));
+            builder.setRegion("us-east-1");
+            ddb = builder.build();
+        } else {
+            System.setProperty("sqlite4java.library.path", "native-libs");
+            ddb = DynamoDBEmbedded.create().amazonDynamoDB();
+        }
     }
 
     @BeforeMethod
@@ -61,7 +75,7 @@ public class DynamapTest {
                 getClass().getResourceAsStream("/DummyLocalIndexSchema.json"));
         // Create tables
         dynamap = new Dynamap(ddb, schemaRegistry).withPrefix("test").withObjectMapper(objectMapper);
-        dynamap.createTables(true);
+        dynamap.createTables(System.getProperty("aws.profile") == null);
     }
 
     @Test
@@ -1064,28 +1078,66 @@ public class DynamapTest {
         nested.setString("string1");
         nested.setIntegerField(1);
         TestDocumentBean doc = createTestDocumentBean(nested);
+        doc.setSetOfString(ImmutableSet.of("a"));
         doc.setString("string1");
+        doc.setMapOfLong(ImmutableMap.of("a", 1L, "b", 1L));
         doc.setIntegerField(1);
+        doc.setListOfInteger(Arrays.asList(1));
         dynamap.save(new SaveParams<>(doc));
 
         NestedTypeUpdates nestedTypeUpdates = nested.createUpdates();
         TestDocumentUpdates testDocumentUpdates = doc.createUpdates().setNestedObjectUpdates(nestedTypeUpdates);
-        doc.setString("string2");
+        testDocumentUpdates.setSetOfStringItem("b");
         testDocumentUpdates.setString("string2");
+        testDocumentUpdates.incrementMapOfLongAmount("a", 1L);
+        testDocumentUpdates.addListOfIntegerValue(2);
+        testDocumentUpdates.setNotPersistedString("notpersisted");
+        testDocumentUpdates.setNotPersistedMapOfLongValue("notpersisted", 1L);
         nestedTypeUpdates.setString("string2");
         testDocumentUpdates.setNestedObjectUpdates(nestedTypeUpdates);
 
-        TestDocument updated = dynamap.update(new UpdateParams<>(testDocumentUpdates).withReturnValue(DynamapReturnValue.UPDATED_NEW));
+        TestDocumentUpdateResult updated = dynamap.update(new UpdateParams<>(testDocumentUpdates).withReturnValue(DynamapReturnValue.UPDATED_NEW));
         Assert.assertEquals(updated.getIntegerField().intValue(), 1);
-        Assert.assertEquals(updated.getNestedObject().getIntegerField().intValue(), 1);
+        Assert.assertTrue(updated.getSetOfString().contains("a"));
+        Assert.assertTrue(updated.getSetOfString().contains("b"));
+        Assert.assertTrue(updated.wasSetOfStringUpdated());
+        Assert.assertEquals(updated.getMapOfLong().get("a").longValue(), 2L);
+        Assert.assertEquals(updated.getMapOfLong().get("b").longValue(), 1L);
+        Assert.assertEquals(updated.getListOfInteger().size(), 2);
         Assert.assertEquals(updated.getString(), "string2");
+        Assert.assertNull(updated.getNotPersistedString());
+        Assert.assertEquals(updated.getNotPersistedMapOfLong().size(), 0);
+        Assert.assertTrue(updated.getNestedObjectUpdateResult().wasStringUpdated());
         Assert.assertEquals(updated.getNestedObject().getString(), "string2");
+        Assert.assertEquals(updated.getNestedObject().getIntegerField().intValue(), 1);
+
 
         testDocumentUpdates = new TestDocumentBean(updated).createUpdates();
-        testDocumentUpdates.setString("string3");
-        updated = dynamap.update(new UpdateParams<>(testDocumentUpdates).withReturnValue(DynamapReturnValue.UPDATED_OLD));
-        Assert.assertEquals(updated.getString(), "string2");
+        testDocumentUpdates.incrementIntegerField(1);
+        nestedTypeUpdates = testDocumentUpdates.getNestedObject().createUpdates();
+        testDocumentUpdates.setNestedObjectUpdates(nestedTypeUpdates);
+        nestedTypeUpdates.incrementIntegerField(1);
+        testDocumentUpdates.deleteMapOfLongValue("a");
 
+
+        TestDocumentUpdateResult result = dynamap.update(new UpdateParams<>(testDocumentUpdates).withReturnValue(DynamapReturnValue.UPDATED_NEW));
+        Assert.assertEquals(result.wasStringUpdated(), false);
+        Assert.assertEquals(result.getIntegerField(), new Integer(2));
+        Assert.assertEquals(result.getMapOfLong().size(), 1);
+        Assert.assertTrue(result.wasMapOfLongUpdated());
+
+        // Test Updates Update Result
+        TestDocumentUpdatesUpdateResult testDocumentUpdatesUpdateResult = new TestDocumentUpdatesUpdateResult(result);
+        Assert.assertEquals(testDocumentUpdatesUpdateResult.wasStringUpdated(), false);
+        // Check that modifying a value after update makes it appear as though it was updated previously
+        testDocumentUpdatesUpdateResult.setString("new");
+        Assert.assertEquals(testDocumentUpdatesUpdateResult.wasStringUpdated(), true);
+
+
+        // Test update result when empty set is returned as the new value - this was causing a null pointer exception
+        testDocumentUpdates = result.createUpdates();
+        testDocumentUpdates.deleteSetOfStringItem("a");
+        dynamap.update(new UpdateParams<>(testDocumentUpdates).withReturnValue(DynamapReturnValue.UPDATED_NEW));
 
     }
 

@@ -16,7 +16,7 @@
 
 package com.n3twork.dynamap;
 
-public class UpdateParams<T extends DynamapPersisted> {
+public class UpdateParams<T extends DynamapPersisted<? extends RecordUpdates<T>>> {
 
     private RecordUpdates<T> updates;
     private DynamoRateLimiter writeLimiter;

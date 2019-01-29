@@ -120,6 +120,13 @@
               "persist": false
             },
             {
+              "name": "notPersistedMapOfLong",
+              "dynamoName": "notPersistedMapOfLong",
+              "type": "Map",
+              "elementType": "Long",
+              "persist": false
+            },
+            {
               "name": "setOfString",
               "dynamoName": "setOfString",
               "type": "Set",

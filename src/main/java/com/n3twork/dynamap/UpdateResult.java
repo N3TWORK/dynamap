@@ -16,22 +16,10 @@
 
 package com.n3twork.dynamap;
 
-public interface Updates<T extends DynamapPersisted<? extends Updates<T>>> {
+public interface UpdateResult<T extends DynamapPersisted<U>, U extends Updates<T>> extends DynamapPersisted<U> {
 
-    DynamoExpressionBuilder getExpressionBuilder();
+    <R extends UpdateResult<T, U> & Updates<T>>R createUpdatesUpdateResult();
 
-    void processUpdateExpression();
-
-    /**
-     *
-     * @return true if any of the persisted fields have been modified
-     */
-    boolean isPersistedModified();
-
-    /**
-     *
-     * @return true if any of the fields, including non-persisted fields, have been modified
-     */
-    boolean isModified();
+    boolean wasUpdated();
 
 }
