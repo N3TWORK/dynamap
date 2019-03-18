@@ -49,7 +49,7 @@
               <#if field.elementType == 'String'>
               "${field.defaultValue}"
               <#else>
-              ${field.defaultValue}
+              <@numberSuffix field field.defaultValue />
               </#if>
           </#if>
      <#else>

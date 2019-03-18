@@ -713,7 +713,7 @@ public class DynamapTest {
     @Test
     public void testOptimisticLocking() {
         final String DOC_ID = "1";
-        DummyDocBean doc = new DummyDocBean(DOC_ID).setName("test").setWeight(6);
+        DummyDocBean doc = new DummyDocBean(DOC_ID).setName("test").setWeight(6L);
         dynamap.save(new SaveParams<>(doc));
 
         DummyDocBean savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
@@ -721,7 +721,7 @@ public class DynamapTest {
         Assert.assertEquals(savedDoc.getRevision().intValue(), 1);
 
         DummyDocUpdates docUpdates = savedDoc.createUpdates();
-        docUpdates.setWeight(100);
+        docUpdates.setWeight(100L);
         dynamap.update(new UpdateParams<>(docUpdates));
 
         savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
@@ -795,14 +795,14 @@ public class DynamapTest {
     @Test
     public void testOptimisticLockingWithSave() {
         final String DOC_ID = "1";
-        DummyDocBean doc = new DummyDocBean(DOC_ID).setName("test").setWeight(6);
+        DummyDocBean doc = new DummyDocBean(DOC_ID).setName("test").setWeight(6L);
         dynamap.save(new SaveParams<>(doc));
 
         DummyDocBean savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
 
         Assert.assertEquals(savedDoc.getRevision().intValue(), 1);
 
-        savedDoc.setWeight(100);
+        savedDoc.setWeight(100L);
 
         // two simultaneous updates, second one should fail
         dynamap.save(new SaveParams<>(savedDoc));
@@ -854,7 +854,7 @@ public class DynamapTest {
             docsToSave.add(testDocument);
         }
 
-        for (int i = 0; i < DUMMY_DOCS_SIZE; i++) {
+        for (long i = 0; i < DUMMY_DOCS_SIZE; i++) {
             String id = UUID.randomUUID().toString();
             DummyDocBean doc = new DummyDocBean(id).setName(bigString).setWeight(i);
             dummyDocsIds.add(id);
@@ -946,9 +946,9 @@ public class DynamapTest {
         // save and get
         IntStream.range(0, MAX).forEach(i -> {
             String suffix = "-" + i;
-            DummyDocBean doc = new DummyDocBean(Integer.toString(i)).setName("test" + i).setWeight(RandomUtils.nextInt(0, 100));
+            DummyDocBean doc = new DummyDocBean(Integer.toString(i)).setName("test" + i).setWeight(RandomUtils.nextLong(0, 100));
             dynamap.save(new SaveParams<>(doc).withSuffix(suffix));
-            doc = new DummyDocBean(Integer.toString(i + 1000)).setName("test" + i).setWeight(RandomUtils.nextInt(0, 100));
+            doc = new DummyDocBean(Integer.toString(i + 1000)).setName("test" + i).setWeight(RandomUtils.nextLong(0, 100));
             dynamap.save(new SaveParams<>(doc).withSuffix(suffix));
             DummyDocBean savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(Integer.toString(i)).withSuffix(suffix)));
             Assert.assertEquals(savedDoc.getId(), Integer.toString(i));
@@ -982,7 +982,7 @@ public class DynamapTest {
         List<DynamapRecordBean> docsToSave = new ArrayList<>();
         final int DUMMY_DOCS_SIZE = 9;
         List<String> dummyDocsIds = new ArrayList<>();
-        for (int i = 0; i < DUMMY_DOCS_SIZE; i++) {
+        for (long i = 0; i < DUMMY_DOCS_SIZE; i++) {
             String id = UUID.randomUUID().toString();
             DummyDocBean doc = new DummyDocBean(id).setName("name" + i).setWeight(i);
 

@@ -205,7 +205,7 @@
               "type": "Map",
               "elementType": "Long",
               "useDefaultForNulls": "true",
-              "default": "2L"
+              "default": "2"
             },
             {
               "name": "mapOfDoubleWithDefaults",

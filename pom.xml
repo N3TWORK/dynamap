@@ -36,13 +36,14 @@
 
     <properties>
         <jackson-version>2.9.7</jackson-version>
+        <dynamodb-version>1.11.477</dynamodb-version>
     </properties>
 
     <repositories>
         <repository>
             <id>dynamodb-local-oregon</id>
             <name>DynamoDB Local Release Repository</name>
-            <url>https://s3-us-west-2.amazonaws.com/dynamodb-local/release</url>
+            <url>https://repository.mulesoft.org/nexus/content/repositories/public/</url>
         </repository>
     </repositories>
 
@@ -106,7 +107,7 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-dynamodb</artifactId>
-            <version>1.11.111</version>
+            <version>${dynamodb-version}</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -136,7 +137,7 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>DynamoDBLocal</artifactId>
-            <version>[1.11,2.0)</version>
+            <version>${dynamodb-version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

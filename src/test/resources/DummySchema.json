@@ -24,7 +24,8 @@
             {
               "name": "weight",
               "dynamoName": "wght",
-              "type": "Integer"
+              "type": "Long",
+              "default": "0"
             },
             {
               "name": "notPersisted",
