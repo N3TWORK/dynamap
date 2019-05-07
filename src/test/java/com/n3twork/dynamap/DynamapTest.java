@@ -21,7 +21,9 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.QueryFilter;
 import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
+import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.util.IOUtils;
@@ -467,18 +469,89 @@ public class DynamapTest {
 
     @Test
     public void testQuery() {
+        QueryRequest<TestDocumentBean> queryRequest;
+        List<TestDocumentBean> testDocuments;
 
         NestedTypeBean nestedTypeBean = createNestedTypeBean();
-        TestDocumentBean doc = createTestDocumentBean(createNestedTypeBean());
-        doc.setIntegerField(1);
-        doc.setString("text_to_query");
-        dynamap.save(new SaveParams<>(doc));
+        String hashKey = UUID.randomUUID().toString();
+        TestDocumentBean doc1 = createTestDocumentBean(hashKey, createNestedTypeBean());
+        doc1.setIntegerField(1);
+        doc1.setString("text_to_query");
+        dynamap.save(new SaveParams<>(doc1));
+        TestDocumentBean doc2 = createTestDocumentBean(hashKey, createNestedTypeBean());
+        doc2.setIntegerField(2);
+        doc2.setString("other_text_to_query");
+        dynamap.save(new SaveParams<>(doc2));
 
-        QueryRequest<TestDocumentBean> queryRequest = new QueryRequest<>(TestDocumentBean.class).withHashKeyValue(doc.getString())
-                .withRangeKeyCondition(new RangeKeyCondition(TestDocumentBean.INTEGERFIELD_FIELD).eq(doc.getIntegerField())).withIndex(TestDocumentBean.GlobalSecondaryIndex.testIndexFull);
-        List<TestDocumentBean> testDocuments = dynamap.query(queryRequest);
+        //Legacy API
+        queryRequest = new QueryRequest<>(TestDocumentBean.class).withHashKeyValue(hashKey)
+                .withRangeKeyCondition(new RangeKeyCondition(TestDocumentBean.SEQUENCE_FIELD).eq(doc1.getSequence()));
+        testDocuments = dynamap.query(queryRequest);
         Assert.assertEquals(testDocuments.size(), 1);
+        Assert.assertEquals(testDocuments.get(0).getSequence(), doc1.getSequence());
         Assert.assertEquals(testDocuments.get(0).getNestedObject().getString(), nestedTypeBean.getString());
+
+        queryRequest = new QueryRequest<>(TestDocumentBean.class).withHashKeyValue(hashKey)
+                .withRangeKeyCondition(new RangeKeyCondition(TestDocumentBean.SEQUENCE_FIELD).ge(doc1.getSequence()));
+        testDocuments = dynamap.query(queryRequest);
+        Assert.assertEquals(testDocuments.size(), 2);
+        Assert.assertEquals(testDocuments.get(0).getSequence(), doc1.getSequence());
+        Assert.assertEquals(testDocuments.get(0).getNestedObject().getString(), nestedTypeBean.getString());
+        Assert.assertEquals(testDocuments.get(1).getSequence(), doc2.getSequence());
+
+        queryRequest = new QueryRequest<>(TestDocumentBean.class).withHashKeyValue(hashKey)
+                .addQueryFilter(new QueryFilter(TestDocument.STRING_FIELD).beginsWith("text"));
+        testDocuments = dynamap.query(queryRequest);
+        Assert.assertEquals(testDocuments.size(), 1);
+        Assert.assertEquals(testDocuments.get(0).getSequence(), doc1.getSequence());
+        Assert.assertEquals(testDocuments.get(0).getNestedObject().getString(), nestedTypeBean.getString());
+
+        queryRequest = new QueryRequest<>(TestDocumentBean.class).withHashKeyValue(hashKey)
+                .addQueryFilter(new QueryFilter(TestDocument.INTEGERFIELD_FIELD).eq(1));
+        testDocuments = dynamap.query(queryRequest);
+        Assert.assertEquals(testDocuments.size(), 1);
+        Assert.assertEquals(testDocuments.get(0).getSequence(), doc1.getSequence());
+        Assert.assertEquals(testDocuments.get(0).getNestedObject().getString(), nestedTypeBean.getString());
+
+        queryRequest = new QueryRequest<>(TestDocumentBean.class).withHashKeyValue(hashKey)
+                .addQueryFilter(new QueryFilter(TestDocument.INTEGERFIELD_FIELD).eq(3));
+        testDocuments = dynamap.query(queryRequest);
+        Assert.assertEquals(testDocuments.size(), 0);
+
+
+        //Expression API
+        queryRequest = new QueryRequest<>(TestDocumentBean.class)
+                .withKeyConditionExpression(String.format("%s = :hashKey and %s = :rangeKey", TestDocument.ID_FIELD, TestDocument.SEQUENCE_FIELD))
+                .withValueMap(new ValueMap().withString(":hashKey", doc1.getId()).withInt(":rangeKey", doc1.getSequence()));
+        testDocuments = dynamap.query(queryRequest);
+        Assert.assertEquals(testDocuments.size(), 1);
+        Assert.assertEquals(testDocuments.get(0).getSequence(), doc1.getSequence());
+        Assert.assertEquals(testDocuments.get(0).getNestedObject().getString(), nestedTypeBean.getString());
+
+        queryRequest = new QueryRequest<>(TestDocumentBean.class)
+                .withKeyConditionExpression(String.format("%s = :hashKey", TestDocument.ID_FIELD))
+                .withFilterExpression(String.format("begins_with(%s, :str)", TestDocument.STRING_FIELD))
+                .withValueMap(new ValueMap().withString(":hashKey", doc1.getId()).withString(":str", "text"));
+        testDocuments = dynamap.query(queryRequest);
+        Assert.assertEquals(testDocuments.size(), 1);
+        Assert.assertEquals(testDocuments.get(0).getSequence(), doc1.getSequence());
+        Assert.assertEquals(testDocuments.get(0).getNestedObject().getString(), nestedTypeBean.getString());
+
+        queryRequest = new QueryRequest<>(TestDocumentBean.class)
+                .withKeyConditionExpression(String.format("%s = :hashKey", TestDocument.ID_FIELD))
+                .withFilterExpression(String.format("%s = :int", TestDocument.INTEGERFIELD_FIELD))
+                .withValueMap(new ValueMap().withString(":hashKey", doc1.getId()).withInt(":int", 1));
+        testDocuments = dynamap.query(queryRequest);
+        Assert.assertEquals(testDocuments.size(), 1);
+        Assert.assertEquals(testDocuments.get(0).getSequence(), doc1.getSequence());
+        Assert.assertEquals(testDocuments.get(0).getNestedObject().getString(), nestedTypeBean.getString());
+
+        queryRequest = new QueryRequest<>(TestDocumentBean.class)
+                .withKeyConditionExpression(String.format("%s = :hashKey", TestDocument.ID_FIELD))
+                .withFilterExpression(String.format("%s = :int", TestDocument.INTEGERFIELD_FIELD))
+                .withValueMap(new ValueMap().withString(":hashKey", doc1.getId()).withInt(":int", 3));
+        testDocuments = dynamap.query(queryRequest);
+        Assert.assertEquals(testDocuments.size(), 0);
     }
 
     @Test
@@ -1141,8 +1214,13 @@ public class DynamapTest {
 
     }
 
+    int seq = 0;
     private TestDocumentBean createTestDocumentBean(NestedTypeBean nestedTypeBean) {
-        return new TestDocumentBean(UUID.randomUUID().toString(), 1).setNestedObject(nestedTypeBean);
+        return createTestDocumentBean(UUID.randomUUID().toString(), nestedTypeBean);
+    }
+
+    private TestDocumentBean createTestDocumentBean(String id, NestedTypeBean nestedTypeBean) {
+        return new TestDocumentBean(id, seq++).setNestedObject(nestedTypeBean);
     }
 
     private NestedTypeBean createNestedTypeBean() {

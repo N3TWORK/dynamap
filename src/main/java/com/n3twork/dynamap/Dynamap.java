@@ -315,13 +315,25 @@ public class Dynamap {
     public <T extends DynamapRecordBean> QueryResult<T> queryResult(QueryRequest<T> queryRequest) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(queryRequest.getResultClass());
         Table table = getTable(tableDefinition.getTableName(prefix, queryRequest.getSuffix()));
-        QuerySpec querySpec = new QuerySpec().withHashKey(tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName(), queryRequest.getHashKeyValue())
-                .withRangeKeyCondition(queryRequest.getRangeKeyCondition())
+        QuerySpec querySpec = new QuerySpec()
                 .withConsistentRead(queryRequest.isConsistentRead())
-                .withQueryFilters(queryRequest.getQueryFilters())
+                .withKeyConditionExpression(queryRequest.getKeyConditionExpression())
+                .withFilterExpression(queryRequest.getFilterExpression())
                 .withProjectionExpression(queryRequest.getProjectionExpression())
+                .withNameMap(queryRequest.getNameMap())
+                .withValueMap(queryRequest.getValueMap())
                 .withScanIndexForward(queryRequest.isScanIndexForward())
                 .withMaxResultSize(queryRequest.getLimit());
+
+        if (queryRequest.getKeyConditionExpression() == null) {
+            querySpec.withHashKey(tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName(), queryRequest.getHashKeyValue())
+                    .withRangeKeyCondition(queryRequest.getRangeKeyCondition());
+        }
+
+        QueryFilter[] queryFilters = queryRequest.getQueryFilters();
+        if (queryRequest.getFilterExpression() == null && queryFilters.length > 0) {
+            querySpec.withQueryFilters(queryFilters);
+        }
 
         final ItemCollection<QueryOutcome> items;
         if (queryRequest.getIndex() != null) {
@@ -333,11 +345,12 @@ public class Dynamap {
             }
             String indexName = indexDef.getIndexName();
             Index index = table.getIndex(indexDef.getIndexName());
-            querySpec.withHashKey(tableDefinition.getField(indexDef.getHashKey()).getDynamoName(), queryRequest.getHashKeyValue());
+            if (queryRequest.getKeyConditionExpression() == null) {
+                querySpec.withHashKey(tableDefinition.getField(indexDef.getHashKey()).getDynamoName(), queryRequest.getHashKeyValue());
+            }
             initAndAcquire(queryRequest.getReadRateLimiter(), table, indexName);
             items = index.query(querySpec);
         } else {
-            querySpec.withHashKey(tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName(), queryRequest.getHashKeyValue());
             initAndAcquire(queryRequest.getReadRateLimiter(), table, null);
             items = table.query(querySpec);
         }

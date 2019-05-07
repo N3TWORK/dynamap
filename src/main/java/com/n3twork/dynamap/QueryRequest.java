@@ -21,6 +21,7 @@ import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class QueryRequest<T> {
 
@@ -28,8 +29,13 @@ public class QueryRequest<T> {
     private DynamapRecordBean.SecondaryIndexEnum index;
     private String hashKeyValue;
     private RangeKeyCondition rangeKeyCondition;
-    private List<QueryFilter> queryFilters = new ArrayList();
+    private List<QueryFilter> queryFilters = new ArrayList<>();
+    private String keyConditionExpression;
+    private String filterExpression;
     private String projectionExpression;
+    private Map<String, String> nameMap;
+    private Map<String, Object> valueMap;
+
     private DynamoRateLimiter readRateLimiter;
     private boolean consistentRead;
     private boolean scanIndexForward = true;
@@ -73,8 +79,28 @@ public class QueryRequest<T> {
         return this;
     }
 
+    public QueryRequest<T> withKeyConditionExpression(String keyConditionExpression) {
+        this.keyConditionExpression = keyConditionExpression;
+        return this;
+    }
+
+    public QueryRequest<T> withFilterExpression(String filterExpression) {
+        this.filterExpression = filterExpression;
+        return this;
+    }
+
     public QueryRequest<T> withProjectionExpression(String projectionExpression) {
         this.projectionExpression = projectionExpression;
+        return this;
+    }
+
+    public QueryRequest<T> withNameMap(Map<String, String> nameMap) {
+        this.nameMap = nameMap;
+        return this;
+    }
+
+    public QueryRequest<T> withValueMap(Map<String, Object> valueMap) {
+        this.valueMap = valueMap;
         return this;
     }
 
@@ -133,8 +159,24 @@ public class QueryRequest<T> {
         return queryFilters.toArray(new QueryFilter[queryFilters.size()]);
     }
 
+    public String getKeyConditionExpression() {
+        return keyConditionExpression;
+    }
+
+    public String getFilterExpression() {
+        return filterExpression;
+    }
+
     public String getProjectionExpression() {
         return projectionExpression;
+    }
+
+    public Map<String, String> getNameMap() {
+        return nameMap;
+    }
+
+    public Map<String, Object> getValueMap() {
+        return valueMap;
     }
 
     public boolean isConsistentRead() {
