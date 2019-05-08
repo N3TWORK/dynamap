@@ -16,6 +16,7 @@
 
 package com.n3twork.dynamap;
 
+import com.amazonaws.services.dynamodbv2.document.KeyAttribute;
 import com.amazonaws.services.dynamodbv2.document.QueryFilter;
 import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 
@@ -35,15 +36,17 @@ public class QueryRequest<T> {
     private String projectionExpression;
     private Map<String, Object> values;
     private Map<String, String> names;
-
+    private KeyAttribute[] exclusiveStartKeys;
     private DynamoRateLimiter readRateLimiter;
     private boolean consistentRead;
     private boolean scanIndexForward = true;
     private Integer limit;
+    private Integer maxResultSize;
     private Object migrationContext;
     private ProgressCallback progressCallback;
     private boolean writeMigrationChange = false;
     private String suffix;
+
 
     public QueryRequest(Class<T> resultClass) {
         this.resultClass = resultClass;
@@ -104,13 +107,24 @@ public class QueryRequest<T> {
         return this;
     }
 
+    public QueryRequest<T> withExclusiveStartKeys(KeyAttribute... exclusiveStartKeys) {
+        this.exclusiveStartKeys = exclusiveStartKeys;
+        return this;
+    }
+
     public QueryRequest<T> withScanIndexForward(boolean scanIndexForward) {
         this.scanIndexForward = scanIndexForward;
         return this;
     }
 
+    @Deprecated
     public QueryRequest<T> withLimit(Integer limit) {
         this.limit = limit;
+        return this;
+    }
+
+    public QueryRequest<T> withMaxResultSize(Integer maxResultSize) {
+        this.maxResultSize = maxResultSize;
         return this;
     }
 
@@ -179,6 +193,10 @@ public class QueryRequest<T> {
         return values;
     }
 
+    public KeyAttribute[] getExclusiveStartKeys() {
+        return exclusiveStartKeys;
+    }
+
     public boolean isConsistentRead() {
         return consistentRead;
     }
@@ -189,6 +207,10 @@ public class QueryRequest<T> {
 
     public Integer getLimit() {
         return limit;
+    }
+
+    public Integer getMaxResultSize() {
+        return maxResultSize;
     }
 
     public Object getMigrationContext() {

@@ -552,6 +552,51 @@ public class DynamapTest {
                 .withValues(new ValueMap().withString(":hashKey", doc1.getId()).withInt(":int", 3));
         testDocuments = dynamap.query(queryRequest);
         Assert.assertEquals(testDocuments.size(), 0);
+
+        //Exclusive start key
+        int docCount = 10;
+        hashKey = UUID.randomUUID().toString();
+        for (int i = 0; i < docCount; i++) {
+            TestDocumentBean doc = createTestDocumentBean(hashKey, createNestedTypeBean());
+            doc.setIntegerField(i);
+            doc.setString("text_to_query_" + i);
+            dynamap.save(new SaveParams<>(doc));
+        }
+
+        queryRequest = new QueryRequest<>(TestDocumentBean.class)
+                .withKeyConditionExpression(String.format("%s = :hashKey", TestDocument.ID_FIELD))
+                .withValues(new ValueMap().withString(":hashKey", hashKey))
+                .withMaxResultSize(docCount-1);
+        QueryResult<TestDocumentBean> queryResult = dynamap.queryResult(queryRequest);
+        Assert.assertEquals(queryResult.getResults().size(), docCount-1);
+
+        queryRequest.withExclusiveStartKeys(queryResult.getLastEvaluatedKeys());
+        Assert.assertEquals(queryRequest.getExclusiveStartKeys().length, 2);
+        queryResult = dynamap.queryResult(queryRequest);
+        Assert.assertEquals(queryResult.getResults().size(), 1);
+        Assert.assertNull(queryResult.getLastEvaluatedKeys());
+
+        //Exclusive start key with secondary index
+        String secondaryIndexHash = "secondary_index_hash";
+        for (int i = 0; i < docCount; i++) {
+            TestDocumentBean doc = createTestDocumentBean(hashKey, createNestedTypeBean());
+            doc.setIntegerField(i);
+            doc.setString(secondaryIndexHash);
+            dynamap.save(new SaveParams<>(doc));
+        }
+        queryRequest = new QueryRequest<>(TestDocumentBean.class)
+                .withIndex(TestDocumentBean.GlobalSecondaryIndex.testIndexFull)
+                .withKeyConditionExpression(String.format("%s = :hashKey", TestDocument.STRING_FIELD))
+                .withValues(new ValueMap().withString(":hashKey", secondaryIndexHash))
+                .withMaxResultSize(docCount-1);
+        queryResult = dynamap.queryResult(queryRequest);
+        Assert.assertEquals(queryResult.getResults().size(), docCount-1);
+
+        queryRequest.withExclusiveStartKeys(queryResult.getLastEvaluatedKeys());
+        Assert.assertEquals(queryRequest.getExclusiveStartKeys().length, 4);
+        queryResult = dynamap.queryResult(queryRequest);
+        Assert.assertEquals(queryResult.getResults().size(), 1);
+        Assert.assertNull(queryResult.getLastEvaluatedKeys());
     }
 
     @Test
@@ -1004,6 +1049,46 @@ public class DynamapTest {
                 .map(TestDocumentBean::getId).collect(Collectors.toList());
 
         Assert.assertTrue(savedTestDocsIds.containsAll(testDocsIds) && testDocsIds.containsAll(savedTestDocsIds));
+    }
+
+    @Test
+    public void testScan() {
+        final int TEST_DOCS_SIZE = 22;
+        List<DynamapRecordBean> docsToSave = new ArrayList<>();
+
+        for (int i = 0; i < TEST_DOCS_SIZE; i++) {
+            TestDocumentBean testDocument = createTestDocumentBean(createNestedTypeBean());
+            testDocument.setString("string");
+            testDocument.setIntegerField(i);
+            docsToSave.add(testDocument);
+        }
+
+        dynamap.batchSave(new BatchSaveParams<>(docsToSave));
+
+
+        ScanRequest<TestDocumentBean> scanRequest = new ScanRequest<>(TestDocumentBean.class)
+                .withMaxResultSize(TEST_DOCS_SIZE - 1);
+        ScanResult<TestDocumentBean> scanResult = dynamap.scan(scanRequest);
+        Assert.assertEquals(scanResult.getResults().size(), scanRequest.getMaxResultSize().intValue());
+
+        scanRequest.withExclusiveStartKeys(scanResult.getLastEvaluatedKeys());
+        Assert.assertEquals(scanRequest.getExclusiveStartKeys().length, 2);
+        scanResult = dynamap.scan(scanRequest);
+        Assert.assertEquals(scanResult.getResults().size(), 1);
+        Assert.assertNull(scanResult.getLastEvaluatedKeys());
+
+        //Scan of secondary index
+        scanRequest = new ScanRequest<>(TestDocumentBean.class)
+                .withIndex(TestDocumentBean.GlobalSecondaryIndex.testIndexFull)
+                .withMaxResultSize(TEST_DOCS_SIZE - 1);
+        scanResult = dynamap.scan(scanRequest);
+        Assert.assertEquals(scanResult.getResults().size(), scanRequest.getMaxResultSize().intValue());
+
+        scanRequest.withExclusiveStartKeys(scanResult.getLastEvaluatedKeys());
+        Assert.assertEquals(scanRequest.getExclusiveStartKeys().length, 4);
+        scanResult = dynamap.scan(scanRequest);
+        Assert.assertEquals(scanResult.getResults().size(), 1);
+        Assert.assertNull(scanResult.getLastEvaluatedKeys());
     }
 
     @Test
