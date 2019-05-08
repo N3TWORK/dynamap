@@ -29,8 +29,6 @@ public class ScanRequest<T> {
     private Map<String, Object> values;
     private Map<String, String> names;
     private DynamoRateLimiter readRateLimiter;
-    private String startExclusiveHashKeyValue;
-    private Object startExclusiveRangeKeyValue;
     private KeyAttribute[] exclusiveStartKeys;
     private Integer segment;
     private Integer totalSegments;
@@ -77,18 +75,6 @@ public class ScanRequest<T> {
 
     public ScanRequest<T> withMigrationContext(Object migrationContext) {
         this.migrationContext = migrationContext;
-        return this;
-    }
-
-    @Deprecated
-    public ScanRequest<T> withStartExclusiveHashKeyValue(String startExclusiveHashKeyValue) {
-        this.startExclusiveHashKeyValue = startExclusiveHashKeyValue;
-        return this;
-    }
-
-    @Deprecated
-    public ScanRequest<T> withStartExclusiveRangeKeyValue(Object startExclusiveRangeKeyValue) {
-        this.startExclusiveRangeKeyValue = startExclusiveRangeKeyValue;
         return this;
     }
 
@@ -146,14 +132,6 @@ public class ScanRequest<T> {
 
     public String getFilterExpression() {
         return filterExpression;
-    }
-
-    public String getStartExclusiveHashKeyValue() {
-        return startExclusiveHashKeyValue;
-    }
-
-    public Object getStartExclusiveRangeKeyValue() {
-        return startExclusiveRangeKeyValue;
     }
 
     public KeyAttribute[] getExclusiveStartKeys() {

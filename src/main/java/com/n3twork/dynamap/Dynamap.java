@@ -34,7 +34,6 @@ import com.n3twork.dynamap.model.Field;
 import com.n3twork.dynamap.model.Schema;
 import com.n3twork.dynamap.model.TableDefinition;
 import com.n3twork.dynamap.model.Type;
-import org.apache.commons.lang3.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -324,7 +323,8 @@ public class Dynamap {
                 .withNameMap(queryRequest.getNames())
                 .withValueMap(queryRequest.getValues())
                 .withScanIndexForward(queryRequest.isScanIndexForward())
-                .withMaxResultSize(ObjectUtils.firstNonNull(queryRequest.getMaxResultSize(), queryRequest.getLimit()))
+                .withMaxResultSize(queryRequest.getMaxResultSize())
+                .withMaxPageSize(queryRequest.getMaxPageSize())
                 .withExclusiveStartKey(queryRequest.getExclusiveStartKeys());
 
         if (queryRequest.getKeyConditionExpression() == null) {
@@ -415,12 +415,6 @@ public class Dynamap {
         }
         if (scanRequest.getExclusiveStartKeys() != null) {
             scanspec.withExclusiveStartKey(scanRequest.getExclusiveStartKeys());
-        } else if (scanRequest.getStartExclusiveHashKeyValue() != null) {
-            if (scanRequest.getStartExclusiveRangeKeyValue() != null) {
-                scanspec.withExclusiveStartKey(tableDefinition.getHashKey(), scanRequest.getStartExclusiveHashKeyValue(), tableDefinition.getRangeKey(), scanRequest.getStartExclusiveRangeKeyValue());
-            } else {
-                scanspec.withExclusiveStartKey(tableDefinition.getHashKey(), scanRequest.getStartExclusiveHashKeyValue());
-            }
         }
 
         if (scanRequest.getTotalSegments() != null && scanRequest.getSegment() != null) {
@@ -548,12 +542,6 @@ public class Dynamap {
             throw e;
         }
     }
-
-//    @Deprecated
-//    public <T extends DynamapPersisted<? extends RecordUpdates<T>>> T update(UpdateParams<T> updateParams) {
-//        UpdateParamsV2 updateParamsV2 = new UpdateParamsV2(updateParams);
-//        return (T) update(updateParamsV2);
-//    }
 
     private static class GetItemInfo {
         public TableKeysAndAttributes keysAndAttributes;

@@ -40,8 +40,8 @@ public class QueryRequest<T> {
     private DynamoRateLimiter readRateLimiter;
     private boolean consistentRead;
     private boolean scanIndexForward = true;
-    private Integer limit;
     private Integer maxResultSize;
+    private Integer maxPageSize;
     private Object migrationContext;
     private ProgressCallback progressCallback;
     private boolean writeMigrationChange = false;
@@ -117,14 +117,13 @@ public class QueryRequest<T> {
         return this;
     }
 
-    @Deprecated
-    public QueryRequest<T> withLimit(Integer limit) {
-        this.limit = limit;
+    public QueryRequest<T> withMaxResultSize(Integer maxResultSize) {
+        this.maxResultSize = maxResultSize;
         return this;
     }
 
-    public QueryRequest<T> withMaxResultSize(Integer maxResultSize) {
-        this.maxResultSize = maxResultSize;
+    public QueryRequest<T> withMaxPageSize(Integer maxPageSize) {
+        this.maxPageSize = maxPageSize;
         return this;
     }
 
@@ -205,12 +204,12 @@ public class QueryRequest<T> {
         return scanIndexForward;
     }
 
-    public Integer getLimit() {
-        return limit;
-    }
-
     public Integer getMaxResultSize() {
         return maxResultSize;
+    }
+
+    public Integer getMaxPageSize() {
+        return maxPageSize;
     }
 
     public Object getMigrationContext() {
