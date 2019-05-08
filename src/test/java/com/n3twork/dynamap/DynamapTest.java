@@ -522,7 +522,7 @@ public class DynamapTest {
         //Expression API
         queryRequest = new QueryRequest<>(TestDocumentBean.class)
                 .withKeyConditionExpression(String.format("%s = :hashKey and %s = :rangeKey", TestDocument.ID_FIELD, TestDocument.SEQUENCE_FIELD))
-                .withValueMap(new ValueMap().withString(":hashKey", doc1.getId()).withInt(":rangeKey", doc1.getSequence()));
+                .withValues(new ValueMap().withString(":hashKey", doc1.getId()).withInt(":rangeKey", doc1.getSequence()));
         testDocuments = dynamap.query(queryRequest);
         Assert.assertEquals(testDocuments.size(), 1);
         Assert.assertEquals(testDocuments.get(0).getSequence(), doc1.getSequence());
@@ -531,7 +531,7 @@ public class DynamapTest {
         queryRequest = new QueryRequest<>(TestDocumentBean.class)
                 .withKeyConditionExpression(String.format("%s = :hashKey", TestDocument.ID_FIELD))
                 .withFilterExpression(String.format("begins_with(%s, :str)", TestDocument.STRING_FIELD))
-                .withValueMap(new ValueMap().withString(":hashKey", doc1.getId()).withString(":str", "text"));
+                .withValues(new ValueMap().withString(":hashKey", doc1.getId()).withString(":str", "text"));
         testDocuments = dynamap.query(queryRequest);
         Assert.assertEquals(testDocuments.size(), 1);
         Assert.assertEquals(testDocuments.get(0).getSequence(), doc1.getSequence());
@@ -540,7 +540,7 @@ public class DynamapTest {
         queryRequest = new QueryRequest<>(TestDocumentBean.class)
                 .withKeyConditionExpression(String.format("%s = :hashKey", TestDocument.ID_FIELD))
                 .withFilterExpression(String.format("%s = :int", TestDocument.INTEGERFIELD_FIELD))
-                .withValueMap(new ValueMap().withString(":hashKey", doc1.getId()).withInt(":int", 1));
+                .withValues(new ValueMap().withString(":hashKey", doc1.getId()).withInt(":int", 1));
         testDocuments = dynamap.query(queryRequest);
         Assert.assertEquals(testDocuments.size(), 1);
         Assert.assertEquals(testDocuments.get(0).getSequence(), doc1.getSequence());
@@ -549,7 +549,7 @@ public class DynamapTest {
         queryRequest = new QueryRequest<>(TestDocumentBean.class)
                 .withKeyConditionExpression(String.format("%s = :hashKey", TestDocument.ID_FIELD))
                 .withFilterExpression(String.format("%s = :int", TestDocument.INTEGERFIELD_FIELD))
-                .withValueMap(new ValueMap().withString(":hashKey", doc1.getId()).withInt(":int", 3));
+                .withValues(new ValueMap().withString(":hashKey", doc1.getId()).withInt(":int", 3));
         testDocuments = dynamap.query(queryRequest);
         Assert.assertEquals(testDocuments.size(), 0);
     }
