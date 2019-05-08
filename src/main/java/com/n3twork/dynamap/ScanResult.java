@@ -16,6 +16,8 @@
 
 package com.n3twork.dynamap;
 
+import com.amazonaws.services.dynamodbv2.document.KeyAttribute;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -46,5 +48,9 @@ public class ScanResult<T> {
 
     public int getScannedCount() {
         return itemIterator.getScannedCount();
+    }
+
+    public KeyAttribute[] getLastEvaluatedKeys() {
+        return itemIterator.getLastEvaluatedKeys();
     }
 }

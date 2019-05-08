@@ -34,6 +34,7 @@ import com.n3twork.dynamap.model.Field;
 import com.n3twork.dynamap.model.Schema;
 import com.n3twork.dynamap.model.TableDefinition;
 import com.n3twork.dynamap.model.Type;
+import org.apache.commons.lang3.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -323,7 +324,8 @@ public class Dynamap {
                 .withNameMap(queryRequest.getNames())
                 .withValueMap(queryRequest.getValues())
                 .withScanIndexForward(queryRequest.isScanIndexForward())
-                .withMaxResultSize(queryRequest.getLimit());
+                .withMaxResultSize(ObjectUtils.firstNonNull(queryRequest.getMaxResultSize(), queryRequest.getLimit()))
+                .withExclusiveStartKey(queryRequest.getExclusiveStartKeys());
 
         if (queryRequest.getKeyConditionExpression() == null) {
             querySpec.withHashKey(tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName(), queryRequest.getHashKeyValue())
@@ -373,24 +375,7 @@ public class Dynamap {
             }
         });
 
-        final Iterator<Item> iterator = items.iterator();
-
-        ItemIterator<T> itemIterator = new ItemIterator<T>() {
-
-            @Override
-            public boolean hasNext() {
-                return iterator.hasNext();
-            }
-
-            @Override
-            public int getCount() {
-                return items.getAccumulatedItemCount();
-            }
-
-            @Override
-            public int getScannedCount() {
-                return items.getAccumulatedScannedCount();
-            }
+        ItemIterator<T> itemIterator = new ItemIterator<T>(items) {
 
             @Override
             public T next() {
@@ -400,15 +385,18 @@ public class Dynamap {
                 return result;
             }
 
+            @Override
+            protected Map<String, AttributeValue> getLowLevelLastEvaluatedKey() {
+                return items.getLastLowLevelResult().getQueryResult().getLastEvaluatedKey();
+            }
         };
 
 
-        return new QueryResult(itemIterator);
+        return new QueryResult<>(itemIterator);
     }
 
 
     public <T extends DynamapRecordBean> ScanResult<T> scan(ScanRequest<T> scanRequest) {
-        List<T> results = new ArrayList<>();
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(scanRequest.getResultClass());
         Table table = getTable(tableDefinition.getTableName(prefix, scanRequest.getSuffix()));
 
@@ -425,7 +413,9 @@ public class Dynamap {
         if (scanRequest.getFilterExpression() != null) {
             scanspec.withFilterExpression(scanRequest.getFilterExpression());
         }
-        if (scanRequest.getStartExclusiveHashKeyValue() != null) {
+        if (scanRequest.getExclusiveStartKeys() != null) {
+            scanspec.withExclusiveStartKey(scanRequest.getExclusiveStartKeys());
+        } else if (scanRequest.getStartExclusiveHashKeyValue() != null) {
             if (scanRequest.getStartExclusiveRangeKeyValue() != null) {
                 scanspec.withExclusiveStartKey(tableDefinition.getHashKey(), scanRequest.getStartExclusiveHashKeyValue(), tableDefinition.getRangeKey(), scanRequest.getStartExclusiveRangeKeyValue());
             } else {
@@ -478,24 +468,8 @@ public class Dynamap {
 
         });
 
-        final Iterator<Item> iterator = scanItems.iterator();
 
-        ItemIterator<T> itemIterator = new ItemIterator<T>() {
-
-            @Override
-            public boolean hasNext() {
-                return iterator.hasNext();
-            }
-
-            @Override
-            public int getCount() {
-                return scanItems.getAccumulatedItemCount();
-            }
-
-            @Override
-            public int getScannedCount() {
-                return scanItems.getAccumulatedScannedCount();
-            }
+        ItemIterator<T> itemIterator = new ItemIterator<T>(scanItems) {
 
             @Override
             public T next() {
@@ -503,6 +477,11 @@ public class Dynamap {
                         null, scanRequest.getMigrationContext(), scanRequest.isWriteMigrationChange(),
                         scanRequest.getProjectionExpression() != null, scanRequest.getSuffix());
                 return result;
+            }
+
+            @Override
+            protected Map<String, AttributeValue> getLowLevelLastEvaluatedKey() {
+                return scanItems.getLastLowLevelResult().getScanResult().getLastEvaluatedKey();
             }
         };
 
