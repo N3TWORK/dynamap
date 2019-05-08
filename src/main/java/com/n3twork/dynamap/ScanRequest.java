@@ -16,6 +16,8 @@
 
 package com.n3twork.dynamap;
 
+import com.amazonaws.services.dynamodbv2.document.KeyAttribute;
+
 import java.util.Map;
 
 public class ScanRequest<T> {
@@ -29,6 +31,7 @@ public class ScanRequest<T> {
     private DynamoRateLimiter readRateLimiter;
     private String startExclusiveHashKeyValue;
     private Object startExclusiveRangeKeyValue;
+    private KeyAttribute[] exclusiveStartKeys;
     private Integer segment;
     private Integer totalSegments;
     private Object migrationContext;
@@ -77,13 +80,20 @@ public class ScanRequest<T> {
         return this;
     }
 
+    @Deprecated
     public ScanRequest<T> withStartExclusiveHashKeyValue(String startExclusiveHashKeyValue) {
         this.startExclusiveHashKeyValue = startExclusiveHashKeyValue;
         return this;
     }
 
+    @Deprecated
     public ScanRequest<T> withStartExclusiveRangeKeyValue(Object startExclusiveRangeKeyValue) {
         this.startExclusiveRangeKeyValue = startExclusiveRangeKeyValue;
+        return this;
+    }
+
+    public ScanRequest<T> withExclusiveStartKeys(KeyAttribute... exclusiveStartKeys) {
+        this.exclusiveStartKeys = exclusiveStartKeys;
         return this;
     }
 
@@ -144,6 +154,10 @@ public class ScanRequest<T> {
 
     public Object getStartExclusiveRangeKeyValue() {
         return startExclusiveRangeKeyValue;
+    }
+
+    public KeyAttribute[] getExclusiveStartKeys() {
+        return exclusiveStartKeys;
     }
 
     public Integer getSegment() {

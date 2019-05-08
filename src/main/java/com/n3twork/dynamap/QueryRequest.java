@@ -16,11 +16,13 @@
 
 package com.n3twork.dynamap;
 
+import com.amazonaws.services.dynamodbv2.document.KeyAttribute;
 import com.amazonaws.services.dynamodbv2.document.QueryFilter;
 import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class QueryRequest<T> {
 
@@ -28,16 +30,23 @@ public class QueryRequest<T> {
     private DynamapRecordBean.SecondaryIndexEnum index;
     private String hashKeyValue;
     private RangeKeyCondition rangeKeyCondition;
-    private List<QueryFilter> queryFilters = new ArrayList();
+    private List<QueryFilter> queryFilters = new ArrayList<>();
+    private String keyConditionExpression;
+    private String filterExpression;
     private String projectionExpression;
+    private Map<String, Object> values;
+    private Map<String, String> names;
+    private KeyAttribute[] exclusiveStartKeys;
     private DynamoRateLimiter readRateLimiter;
     private boolean consistentRead;
     private boolean scanIndexForward = true;
     private Integer limit;
+    private Integer maxResultSize;
     private Object migrationContext;
     private ProgressCallback progressCallback;
     private boolean writeMigrationChange = false;
     private String suffix;
+
 
     public QueryRequest(Class<T> resultClass) {
         this.resultClass = resultClass;
@@ -73,8 +82,33 @@ public class QueryRequest<T> {
         return this;
     }
 
+    public QueryRequest<T> withKeyConditionExpression(String keyConditionExpression) {
+        this.keyConditionExpression = keyConditionExpression;
+        return this;
+    }
+
+    public QueryRequest<T> withFilterExpression(String filterExpression) {
+        this.filterExpression = filterExpression;
+        return this;
+    }
+
     public QueryRequest<T> withProjectionExpression(String projectionExpression) {
         this.projectionExpression = projectionExpression;
+        return this;
+    }
+
+    public QueryRequest<T> withNames(Map<String, String> names) {
+        this.names = names;
+        return this;
+    }
+
+    public QueryRequest<T> withValues(Map<String, Object> values) {
+        this.values = values;
+        return this;
+    }
+
+    public QueryRequest<T> withExclusiveStartKeys(KeyAttribute... exclusiveStartKeys) {
+        this.exclusiveStartKeys = exclusiveStartKeys;
         return this;
     }
 
@@ -83,8 +117,14 @@ public class QueryRequest<T> {
         return this;
     }
 
+    @Deprecated
     public QueryRequest<T> withLimit(Integer limit) {
         this.limit = limit;
+        return this;
+    }
+
+    public QueryRequest<T> withMaxResultSize(Integer maxResultSize) {
+        this.maxResultSize = maxResultSize;
         return this;
     }
 
@@ -133,8 +173,28 @@ public class QueryRequest<T> {
         return queryFilters.toArray(new QueryFilter[queryFilters.size()]);
     }
 
+    public String getKeyConditionExpression() {
+        return keyConditionExpression;
+    }
+
+    public String getFilterExpression() {
+        return filterExpression;
+    }
+
     public String getProjectionExpression() {
         return projectionExpression;
+    }
+
+    public Map<String, String> getNames() {
+        return names;
+    }
+
+    public Map<String, Object> getValues() {
+        return values;
+    }
+
+    public KeyAttribute[] getExclusiveStartKeys() {
+        return exclusiveStartKeys;
     }
 
     public boolean isConsistentRead() {
@@ -147,6 +207,10 @@ public class QueryRequest<T> {
 
     public Integer getLimit() {
         return limit;
+    }
+
+    public Integer getMaxResultSize() {
+        return maxResultSize;
     }
 
     public Object getMigrationContext() {
