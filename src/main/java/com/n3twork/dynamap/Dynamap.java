@@ -320,8 +320,8 @@ public class Dynamap {
                 .withKeyConditionExpression(queryRequest.getKeyConditionExpression())
                 .withFilterExpression(queryRequest.getFilterExpression())
                 .withProjectionExpression(queryRequest.getProjectionExpression())
-                .withNameMap(queryRequest.getNameMap())
-                .withValueMap(queryRequest.getValueMap())
+                .withNameMap(queryRequest.getNames())
+                .withValueMap(queryRequest.getValues())
                 .withScanIndexForward(queryRequest.isScanIndexForward())
                 .withMaxResultSize(queryRequest.getLimit());
 

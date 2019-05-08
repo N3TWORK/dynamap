@@ -33,8 +33,8 @@ public class QueryRequest<T> {
     private String keyConditionExpression;
     private String filterExpression;
     private String projectionExpression;
-    private Map<String, String> nameMap;
-    private Map<String, Object> valueMap;
+    private Map<String, Object> values;
+    private Map<String, String> names;
 
     private DynamoRateLimiter readRateLimiter;
     private boolean consistentRead;
@@ -94,13 +94,13 @@ public class QueryRequest<T> {
         return this;
     }
 
-    public QueryRequest<T> withNameMap(Map<String, String> nameMap) {
-        this.nameMap = nameMap;
+    public QueryRequest<T> withNames(Map<String, String> names) {
+        this.names = names;
         return this;
     }
 
-    public QueryRequest<T> withValueMap(Map<String, Object> valueMap) {
-        this.valueMap = valueMap;
+    public QueryRequest<T> withValues(Map<String, Object> values) {
+        this.values = values;
         return this;
     }
 
@@ -171,12 +171,12 @@ public class QueryRequest<T> {
         return projectionExpression;
     }
 
-    public Map<String, String> getNameMap() {
-        return nameMap;
+    public Map<String, String> getNames() {
+        return names;
     }
 
-    public Map<String, Object> getValueMap() {
-        return valueMap;
+    public Map<String, Object> getValues() {
+        return values;
     }
 
     public boolean isConsistentRead() {
