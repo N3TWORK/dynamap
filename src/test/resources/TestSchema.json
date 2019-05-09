@@ -102,6 +102,18 @@
               "default": "2"
             },
             {
+              "name": "longFieldNonZeroDefault",
+              "dynamoName": "longfnzd",
+              "type": "Long",
+              "default": "1"
+            },
+            {
+              "name": "longFieldMaxValueDefault",
+              "dynamoName": "longfmvd",
+              "type": "Long",
+              "default": "Long.MAX_VALUE"
+            },
+            {
               "name": "listOfString",
               "dynamoName": "strList",
               "type": "List",

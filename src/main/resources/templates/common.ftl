@@ -66,12 +66,16 @@
 
 <#macro numberSuffix field value>
 <#compress>
-    <#if field.elementType == 'Long'>
-    ${value}L
-    <#elseif field.elementType = 'Float'>
-    ${value}f
-    <#elseif field.elementType = 'Double'>
-    ${value}d
+    <#if value?matches("\\d+\\.?\\d*")>
+        <#if field.elementType == 'Long'>
+        ${value}L
+        <#elseif field.elementType = 'Float'>
+        ${value}f
+        <#elseif field.elementType = 'Double'>
+        ${value}d
+        <#else>
+        ${value}
+        </#if>
     <#else>
     ${value}
     </#if>

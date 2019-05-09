@@ -103,6 +103,20 @@ public class DynamapTest {
     }
 
     @Test
+    public void testMaxValueDefault() {
+        TestDocumentBean doc = createTestDocumentBean(createNestedTypeBean());
+        dynamap.save(new SaveParams<>(doc));
+
+        // Get Object
+        TestDocumentBean testDocumentBean = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(testDocumentBean.getId(), doc.getId());
+
+
+        // Check Long.MAX_VALUE default
+        Assert.assertEquals(testDocumentBean.getLongFieldMaxValueDefault().longValue(), Long.MAX_VALUE);
+    }
+
+    @Test
     public void testStringField() {
         NestedTypeBean nested = createNestedTypeBean();
         nested.setString("string1");
