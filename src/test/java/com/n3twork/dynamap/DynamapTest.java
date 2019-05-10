@@ -1307,9 +1307,12 @@ public class DynamapTest {
 
 
         // Test update result when empty set is returned as the new value - this was causing a null pointer exception
+        // Test setting a value to nill
         testDocumentUpdates = result.createUpdates();
         testDocumentUpdates.deleteSetOfStringItem("a");
-        dynamap.update(new UpdateParams<>(testDocumentUpdates).withReturnValue(DynamapReturnValue.UPDATED_NEW));
+        testDocumentUpdates.setString(null);
+        result = dynamap.update(new UpdateParams<>(testDocumentUpdates).withReturnValue(DynamapReturnValue.UPDATED_NEW));
+        Assert.assertNull(result.getString());
 
     }
 
