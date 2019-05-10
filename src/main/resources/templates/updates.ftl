@@ -239,7 +239,7 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
         <#if field.isNumber()>
         return MergeUtil.getLatestNumericValue(${field.elementType}.class, ${currentState}.get${field.name?cap_first}(), ${field.name}Delta, ${field.name}, ${field.name}Modified, <@defaultValue field=field elementOnly=false />);
         <#else>
-        return this.${field.name} == null ? ${currentState}.get${field.name?cap_first}() : this.${field.name};
+        return ${field.name}Modified ? this.${field.name} : ${currentState}.get${field.name?cap_first}();
         </#if>
     }
     </#if>
