@@ -100,6 +100,23 @@ public class CodeGenerator {
         Type tableType = tableTypeOptional.get();
         int typeSequence = 0;
         for (Type type : tableDefinition.getTypes()) {
+
+            //Validate fields
+            Set<String> uniqueFieldName = Sets.newHashSet();
+            Set<String> uniqueFieldDynamoName = Sets.newHashSet();
+            for (Field field : type.getFields()) {
+
+                if (uniqueFieldName.contains(field.getName())) {
+                    throw new IllegalArgumentException(String.format("Type: %s has a duplicated field name: %s. Field name must be unique.", type.getName(), field.getName()));
+                }
+                uniqueFieldName.add(field.getName());
+
+                if (uniqueFieldDynamoName.contains(field.getDynamoName())) {
+                    throw new IllegalArgumentException(String.format("Type: %s has a duplicated field dynamo name: %s. Field dynamo name must be unique.", type.getName(), field.getDynamoName()));
+                }
+                uniqueFieldDynamoName.add(field.getDynamoName());
+            }
+
             Map<String, Object> model = new HashMap<>();
             String beanName = type.getName() + "Bean";
             String updatesName = type.getName() + "Updates";
