@@ -54,24 +54,30 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
 
     <#if isRoot>
     public ${beanName}(String ${tableDefinition.hashKey}<#if tableDefinition.rangeKey??>, ${tableDefinition.getField(tableDefinition.rangeKey).type} ${tableDefinition.rangeKey}</#if>) {
-            this(<#list type.serializedFields as field>null<#sep>,</#list>
-            <#if isRoot && optimisticLocking>,null</#if><#if tableDefinition.isEnableMigrations() && isRoot>,null</#if>);
+            this(<#list type.serializedFields as field>null<#sep>,
+                </#list><#if isRoot && optimisticLocking>,
+                null</#if><#if tableDefinition.isEnableMigrations() && isRoot>,
+                null</#if>);
             this.${tableDefinition.hashKey} = ${tableDefinition.hashKey};
             <#if tableDefinition.rangeKey??>this.${tableDefinition.rangeKey} = ${tableDefinition.rangeKey};</#if>
     }
     </#if>
 
     <#if isRoot>protected<#else>public</#if> ${beanName}() {
-        this(<#list type.serializedFields as field>null<#sep>,</#list>
-        <#if isRoot && optimisticLocking>,null</#if><#if tableDefinition.isEnableMigrations() && isRoot>,null</#if>);
+        this(<#list type.serializedFields as field>null<#sep>,
+            </#list><#if isRoot && optimisticLocking>,
+            null</#if><#if tableDefinition.isEnableMigrations() && isRoot>,
+            null</#if>);
     }
 
     @JsonCreator
     public ${beanName}(
         <#list type.serializedFields as field>
         @JsonProperty(${field.name?upper_case}_FIELD) <#if field.generatedType>${field.elementType}Bean<#else><@field_type field=field /></#if> ${field.name}<#sep>,
-        </#list><#if isRoot && optimisticLocking>,@JsonProperty(REVISION_FIELD) Integer _revision</#if>
-            <#if tableDefinition.isEnableMigrations() && isRoot>,@JsonProperty(SCHEMA_VERSION_FIELD) Integer _schemaVersion</#if>) {
+        </#list>
+<#if isRoot && optimisticLocking>,
+        @JsonProperty(REVISION_FIELD) Integer _revision</#if><#if tableDefinition.isEnableMigrations() && isRoot>,
+        @JsonProperty(SCHEMA_VERSION_FIELD) Integer _schemaVersion</#if>) {
 
     <#list type.fields as field>
         <#if field.isPersist()>
