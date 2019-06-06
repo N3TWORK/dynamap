@@ -111,7 +111,7 @@ public class CodeGenerator {
                 }
                 uniqueFieldName.add(field.getName());
 
-                if (uniqueFieldDynamoName.contains(field.getDynamoName())) {
+                if (field.isPersist() && uniqueFieldDynamoName.contains(field.getDynamoName())) {
                     throw new IllegalArgumentException(String.format("Type: %s has a duplicated field dynamo name: %s. Field dynamo name must be unique.", type.getName(), field.getDynamoName()));
                 }
                 uniqueFieldDynamoName.add(field.getDynamoName());
