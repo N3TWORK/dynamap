@@ -117,6 +117,12 @@ public class CodeGenerator {
                 uniqueFieldDynamoName.add(field.getDynamoName());
             }
 
+            if (tableDefinition.isOptimisticLocking() &&
+                    (uniqueFieldName.contains("revision") || uniqueFieldDynamoName.contains(Schema.REVISION_FIELD))) {
+                throw new IllegalArgumentException(String.format("Type: %s is using reserved field name: revision or field dynamo name: %s", type.getName(), Schema.REVISION_FIELD));
+
+            }
+
             Map<String, Object> model = new HashMap<>();
             String beanName = type.getName() + "Bean";
             String updatesName = type.getName() + "Updates";
