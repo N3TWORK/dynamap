@@ -337,6 +337,11 @@ public class Dynamap {
             querySpec.withQueryFilters(queryFilters);
         }
 
+        Select select = queryRequest.getSelect();
+        if (select != null) {
+            querySpec.withSelect(select);
+        }
+
         final ItemCollection<QueryOutcome> items;
         if (queryRequest.getIndex() != null) {
             com.n3twork.dynamap.model.Index indexDef = null;
@@ -364,7 +369,7 @@ public class Dynamap {
             @Override
             public void onLowLevelResult(QueryOutcome queryOutcome) {
                 DynamoRateLimiter dynamoRateLimiter = queryRequest.getReadRateLimiter();
-                totalProgress += queryOutcome.getQueryResult().getItems().size();
+                totalProgress += queryOutcome.getQueryResult().getCount();
                 if (queryRequest.getProgressCallback() != null) {
                     queryRequest.getProgressCallback().reportProgress(totalProgress);
                 }
@@ -406,6 +411,9 @@ public class Dynamap {
         }
         if (scanRequest.getValues() != null) {
             scanspec.withValueMap(scanRequest.getValues());
+        }
+        if (scanRequest.getSelect() != null) {
+            scanspec.withSelect(scanRequest.getSelect());
         }
         if (scanRequest.getProjectionExpression() != null) {
             scanspec.withProjectionExpression(scanRequest.getProjectionExpression());
@@ -450,7 +458,7 @@ public class Dynamap {
             @Override
             public void onLowLevelResult(ScanOutcome scanOutcome) {
                 DynamoRateLimiter dynamoRateLimiter = scanRequest.getReadRateLimiter();
-                totalProgress += scanOutcome.getScanResult().getItems().size();
+                totalProgress += scanOutcome.getScanResult().getCount();
                 if (progressCallback != null) {
                     progressCallback.reportProgress(totalProgress);
                 }

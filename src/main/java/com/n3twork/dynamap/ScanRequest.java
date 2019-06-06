@@ -17,6 +17,7 @@
 package com.n3twork.dynamap;
 
 import com.amazonaws.services.dynamodbv2.document.KeyAttribute;
+import com.amazonaws.services.dynamodbv2.model.Select;
 
 import java.util.Map;
 
@@ -37,6 +38,7 @@ public class ScanRequest<T> {
     private Integer maxPageSize;
     private ProgressCallback progressCallback;
     private boolean writeMigrationChange;
+    private Select select;
     private String suffix;
 
     public ScanRequest(Class<T> resultClass) {
@@ -55,6 +57,11 @@ public class ScanRequest<T> {
 
     public ScanRequest<T> withValues(Map<String, Object> values) {
         this.values = values;
+        return this;
+    }
+
+    public ScanRequest<T> withSelect(Select select) {
+        this.select = select;
         return this;
     }
 
@@ -116,6 +123,10 @@ public class ScanRequest<T> {
     public ScanRequest<T> withSuffix(String suffix) {
         this.suffix = suffix;
         return this;
+    }
+
+    public Select getSelect() {
+        return select;
     }
 
     public String getProjectionExpression() {

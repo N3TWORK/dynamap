@@ -26,6 +26,7 @@ import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
+import com.amazonaws.services.dynamodbv2.model.Select;
 import com.amazonaws.util.IOUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
@@ -611,6 +612,19 @@ public class DynamapTest {
         queryResult = dynamap.queryResult(queryRequest);
         Assert.assertEquals(queryResult.getResults().size(), 1);
         Assert.assertNull(queryResult.getLastEvaluatedKeys());
+
+
+        //Query with select
+        queryRequest = new QueryRequest<>(TestDocumentBean.class)
+                .withKeyConditionExpression(String.format("%s = :hashKey", TestDocument.ID_FIELD))
+                .withFilterExpression(String.format("begins_with(%s, :str)", TestDocument.STRING_FIELD))
+                .withValues(new ValueMap().withString(":hashKey", doc1.getId()).withString(":str", "text"))
+                .withSelect(Select.COUNT);
+
+        queryResult = dynamap.queryResult(queryRequest);
+        Assert.assertEquals(queryResult.getResults().size(), 0);
+        Assert.assertEquals(queryResult.getCount(), 1);
+        Assert.assertEquals(queryResult.getScannedCount(), 2);
     }
 
     @Test
@@ -1103,6 +1117,14 @@ public class DynamapTest {
         scanResult = dynamap.scan(scanRequest);
         Assert.assertEquals(scanResult.getResults().size(), 1);
         Assert.assertNull(scanResult.getLastEvaluatedKeys());
+
+        //Scan with select
+        scanRequest = new ScanRequest<>(TestDocumentBean.class)
+                .withSelect(Select.COUNT);
+        scanResult = dynamap.scan(scanRequest);
+        Assert.assertEquals(scanResult.getResults().size(), 0);
+        Assert.assertEquals(scanResult.getCount(), TEST_DOCS_SIZE);
+        Assert.assertEquals(scanResult.getScannedCount(), TEST_DOCS_SIZE);
     }
 
     @Test

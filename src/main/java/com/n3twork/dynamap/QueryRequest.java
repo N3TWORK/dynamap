@@ -19,6 +19,7 @@ package com.n3twork.dynamap;
 import com.amazonaws.services.dynamodbv2.document.KeyAttribute;
 import com.amazonaws.services.dynamodbv2.document.QueryFilter;
 import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
+import com.amazonaws.services.dynamodbv2.model.Select;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +46,7 @@ public class QueryRequest<T> {
     private Object migrationContext;
     private ProgressCallback progressCallback;
     private boolean writeMigrationChange = false;
+    private Select select;
     private String suffix;
 
 
@@ -84,6 +86,11 @@ public class QueryRequest<T> {
 
     public QueryRequest<T> withKeyConditionExpression(String keyConditionExpression) {
         this.keyConditionExpression = keyConditionExpression;
+        return this;
+    }
+
+    public QueryRequest<T> withSelect(Select select) {
+        this.select = select;
         return this;
     }
 
@@ -174,6 +181,10 @@ public class QueryRequest<T> {
 
     public String getKeyConditionExpression() {
         return keyConditionExpression;
+    }
+
+    public Select getSelect() {
+        return select;
     }
 
     public String getFilterExpression() {
