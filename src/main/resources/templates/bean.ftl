@@ -252,6 +252,7 @@ public class ${beanName} implements ${type.name}<#if isRoot>, DynamapRecordBean<
     </#if>
     </#list>
     <#if isRoot && optimisticLocking>
+    @JsonIgnore
     public Integer getRevision() {
         return this._revision;
     }
