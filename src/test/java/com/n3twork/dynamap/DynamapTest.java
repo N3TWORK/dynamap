@@ -1264,6 +1264,83 @@ public class DynamapTest {
         Assert.assertEquals(docs.get(0).getSetOfString().size(), 0); // ensure that non projected fields are not populated
     }
 
+    @Test
+    public void testCachedCollections() {
+        //Updates types should use a cached collection when using the MergeUtil class to calculate the updated value.
+        NestedTypeBean nestedTypeBean;
+        NestedTypeUpdates updates;
+
+        //List
+        nestedTypeBean = createNestedTypeBean();
+        nestedTypeBean.setListOfLong(ImmutableList.of(1L, 2L));
+        updates = nestedTypeBean.createUpdates();
+        List<Long> listOfLongFromUpdates = updates.getListOfLong();
+        Assert.assertEquals(listOfLongFromUpdates.size(), 2);
+        Assert.assertSame(listOfLongFromUpdates, nestedTypeBean.getListOfLong());
+
+        updates.addListOfLongValue(3L);
+        listOfLongFromUpdates = updates.getListOfLong();
+        Assert.assertEquals(listOfLongFromUpdates.size(), 3);
+        Assert.assertSame(listOfLongFromUpdates, updates.getListOfLong());
+
+        updates.setListOfLong(ImmutableList.of(1L, 2L));
+        listOfLongFromUpdates = updates.getListOfLong();
+        Assert.assertEquals(listOfLongFromUpdates.size(), 2);
+
+        //Map
+        nestedTypeBean = createNestedTypeBean();
+        nestedTypeBean.setMapOfLong(ImmutableMap.of("a", 1L, "b", 2L));
+        updates = nestedTypeBean.createUpdates();
+        Map<String,Long> mapOfLongFromUpdates = updates.getMapOfLong();
+        Assert.assertEquals(mapOfLongFromUpdates.size(), 2);
+        Assert.assertSame(mapOfLongFromUpdates, nestedTypeBean.getMapOfLong());
+
+        updates.setMapOfLongValue("c", 3L);
+        mapOfLongFromUpdates = updates.getMapOfLong();
+        Assert.assertEquals(mapOfLongFromUpdates.size(), 3);
+        Assert.assertSame(mapOfLongFromUpdates, updates.getMapOfLong());
+
+        updates.incrementMapOfLongAmount("b", 1L);
+        mapOfLongFromUpdates = updates.getMapOfLong();
+        Assert.assertEquals(mapOfLongFromUpdates.size(), 3);
+        Assert.assertEquals(mapOfLongFromUpdates.get("b").longValue(), 3L);
+        Assert.assertSame(mapOfLongFromUpdates, updates.getMapOfLong());
+
+        Set<String> mapOfLongIds = updates.getMapOfLongIds();
+        Assert.assertEquals(mapOfLongIds.size(), 3);
+        Assert.assertSame(mapOfLongIds, updates.getMapOfLongIds());
+
+        nestedTypeBean.setMapOfCustomType(ImmutableMap.of("a", new CustomType("name", "value", CustomType.CustomTypeEnum.VALUE_A)));
+        Map<String,CustomType> mapOfCustomTypeFromUpdates = updates.getMapOfCustomType();
+        Assert.assertEquals(mapOfCustomTypeFromUpdates.size(), 1);
+        Assert.assertSame(mapOfCustomTypeFromUpdates, nestedTypeBean.getMapOfCustomType());
+        updates.setMapOfCustomTypeItem("b", new CustomType("name2", "value2", CustomType.CustomTypeEnum.VALUE_B));
+        mapOfCustomTypeFromUpdates = updates.getMapOfCustomType();
+        Assert.assertEquals(mapOfCustomTypeFromUpdates.size(), 2);
+        Assert.assertSame(mapOfCustomTypeFromUpdates, updates.getMapOfCustomType());
+
+        //Set
+        nestedTypeBean = createNestedTypeBean();
+        nestedTypeBean.setSetOfLong(ImmutableSet.of(1L, 2L));
+        updates = nestedTypeBean.createUpdates();
+        Set<Long> setOfLongFromUpdates = updates.getSetOfLong();
+        Assert.assertEquals(setOfLongFromUpdates.size(), 2);
+        Assert.assertSame(setOfLongFromUpdates, nestedTypeBean.getSetOfLong());
+
+        updates.setSetOfLongValue(3L);
+        setOfLongFromUpdates = updates.getSetOfLong();
+        Assert.assertEquals(setOfLongFromUpdates.size(), 3);
+        Assert.assertSame(setOfLongFromUpdates, updates.getSetOfLong());
+
+        nestedTypeBean.setSetOfCustomType(ImmutableSet.of(new CustomType("name", "value", CustomType.CustomTypeEnum.VALUE_A)));
+        Set<CustomType> setOfCustomTypeFromUpdates = updates.getSetOfCustomType();
+        Assert.assertEquals(setOfCustomTypeFromUpdates.size(), 1);
+        Assert.assertSame(setOfCustomTypeFromUpdates, nestedTypeBean.getSetOfCustomType());
+        updates.setSetOfCustomTypeItem(new CustomType("name2", "value2", CustomType.CustomTypeEnum.VALUE_B));
+        setOfCustomTypeFromUpdates = updates.getSetOfCustomType();
+        Assert.assertEquals(setOfCustomTypeFromUpdates.size(), 2);
+        Assert.assertSame(setOfCustomTypeFromUpdates, updates.getSetOfCustomType());
+    }
 
     @Test
     public void testReturnUpdated() {
