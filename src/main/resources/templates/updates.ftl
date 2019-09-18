@@ -140,6 +140,11 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
 
 <#list type.fields as field>
     <#if field.isCollection()>
+        <#assign cachedCollection>cached${field.name?cap_first}</#assign>
+    private <@field_type field=field /> ${cachedCollection};
+            <#assign cachedIds>cached${field.name?cap_first}Ids</#assign>
+
+    private Set<String> ${cachedIds};
 
     <#if field.type == 'Map'>
     @Override
@@ -153,7 +158,10 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
             <#assign deltas>null</#assign>
         </#if>
         if (${field.name}Modified) {
-            return MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}Ids(), ${deltas}, ${field.name}Sets.keySet(), ${field.name}Deletes, ${field.name}Clear);
+            if (${cachedIds} == null) {
+                ${cachedIds} = MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}Ids(), ${deltas}, ${field.name}Sets.keySet(), ${field.name}Deletes, ${field.name}Clear);
+            }
+            return ${cachedIds};
         }
         else {
             return ${currentState}.get${field.name?cap_first}Ids();
@@ -190,16 +198,24 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
         }
         <#if field.isNumber()>
         if ( ${field.name}Deltas.size() > 0 || ${field.name}Deletes.size() > 0 || ${field.name}Sets.size() > 0) {
-            Map<String, ${field.elementType}> allItems = new HashMap<>();
-            for (String id : get${field.name?cap_first}Ids()) {
-                allItems.put(id, get${field.name?cap_first}<@collection_item field=field />(id));
+            if (${cachedCollection} == null) {
+                <@field_type field=field /> allItems = new HashMap<>();
+                for (String id : get${field.name?cap_first}Ids()) {
+                    allItems.put(id, get${field.name?cap_first}<@collection_item field=field />(id));
+                }
+                ${cachedCollection} = allItems;
             }
-            return allItems;
+            return ${cachedCollection};
         }
-        return ${currentState}.get${field.name?cap_first}();
-        <#else>
+        else {
+            return ${currentState}.get${field.name?cap_first}();
+        }
+            <#else>
         if (${field.name}Modified) {
-            return MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}(), ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
+            if (${cachedCollection} == null) {
+                ${cachedCollection} = MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}(), ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
+            }
+            return ${cachedCollection};
         }
         else {
             return ${currentState}.get${field.name?cap_first}();
@@ -217,7 +233,15 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
         if (${field.name} != null) {
             return ${field.name};
         }
-        return MergeUtil.mergeAdds(${currentState}.get${field.name?cap_first}(), ${field.name}Adds, ${field.name}Clear);
+        if (${field.name}Modified) {
+            if (${cachedCollection} == null) {
+                ${cachedCollection} = MergeUtil.mergeAdds(${currentState}.get${field.name?cap_first}(), ${field.name}Adds, ${field.name}Clear);
+            }
+            return ${cachedCollection};
+        }
+        else {
+            return ${currentState}.get${field.name?cap_first}();
+        }
     }
     <#elseif field.type == 'Set'>
     @Override
@@ -226,7 +250,10 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
             return ${field.name};
         }
         if (${field.name}Modified) {
-            return MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}(), null, ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
+            if (${cachedCollection} == null) {
+                ${cachedCollection} = MergeUtil.mergeUpdatesAndDeletes(${currentState}.get${field.name?cap_first}(), null, ${field.name}Sets, ${field.name}Deletes, ${field.name}Clear);
+            }
+            return ${cachedCollection};
         }
         else {
             return ${currentState}.get${field.name?cap_first}();
@@ -295,7 +322,8 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
 
 <#list type.fields as field>
   <#if field.isCollection()>
-    <#if field.useDeltas()>
+        <#assign cachedCollection>cached${field.name?cap_first}</#assign>
+        <#if field.useDeltas()>
     public ${updatesName} clear${field.name?cap_first}() {
         ${field.name}Clear = true;
         modified = true;
@@ -303,16 +331,19 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
         <@persisted_modified field/>
         return this;
     }
+        </#if>
     </#if>
-  </#if>
     <#if field.type == 'Map'>
-    <#if field.useDeltas()>
-        <#if field.isNumber()>
+        <#assign cachedIds>cached${field.name?cap_first}Ids</#assign>
+        <#if field.useDeltas()>
+            <#if field.isNumber()>
     public ${updatesName} increment${field.name?cap_first}Amount(String id, ${field.elementType} amount) {
         ${field.name}Deltas.put(id, ${field.name}Deltas.getOrDefault(id, <@numberSuffix field 0 />) + amount);
         modified = true;
         ${field.name}Modified = true;
         <@persisted_modified field/>
+        ${cachedIds} = null;
+        ${cachedCollection} = null;
         return this;
     }
     public ${updatesName} decrement${field.name?cap_first}Amount(String id, ${field.elementType} amount) {
@@ -320,6 +351,8 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
         modified = true;
         ${field.name}Modified = true;
         <@persisted_modified field/>
+        ${cachedIds} = null;
+        ${cachedCollection} = null;
         return this;
     }
         </#if>
@@ -328,6 +361,8 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
         modified = true;
         ${field.name}Modified = true;
         <@persisted_modified field/>
+        ${cachedIds} = null;
+        ${cachedCollection} = null;
         return this;
     }
     public ${updatesName} set${field.name?cap_first}<@collection_item field=field />(String id, ${field.elementType} value, boolean override) {
@@ -338,6 +373,8 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
         modified = true;
         ${field.name}Modified = true;
         <@persisted_modified field/>
+        ${cachedIds} = null;
+        ${cachedCollection} = null;
         return this;
     }
     public ${updatesName} delete${field.name?cap_first}<@collection_item field=field />(String id) {
@@ -345,17 +382,21 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
         modified = true;
         ${field.name}Modified = true;
         <@persisted_modified field/>
+        ${cachedIds} = null;
+        ${cachedCollection} = null;
         return this;
     }
 
-    <#else>
-       public ${updatesName} set${field.name?cap_first}(Map<String,${field.elementType}> value) {
-                this.${field.name} = value;
-                modified = true;
-                ${field.name}Modified = true;
-                return this;
-        }
-    </#if>
+        <#else>
+    public ${updatesName} set${field.name?cap_first}(<@field_type field=field /> value) {
+        this.${field.name} = value;
+        modified = true;
+        ${field.name}Modified = true;
+        ${cachedIds} = null;
+        ${cachedCollection} = null;
+        return this;
+    }
+        </#if>
 
     <#elseif field.type == 'List'>
     public ${updatesName} add${field.name?cap_first}<@collection_item field=field />(${field.elementType} value) {
@@ -363,6 +404,7 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
         modified = true;
         ${field.name}Modified = true;
         <@persisted_modified field/>
+        ${cachedCollection} = null;
         return this;
     }
     public ${updatesName} set${field.name?cap_first}(List<${field.elementType}> list) {
@@ -370,6 +412,7 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
         modified = true;
         ${field.name}Modified = true;
         <@persisted_modified field/>
+        ${cachedCollection} = null;
         return this;
     }
     <#elseif field.type == 'Set'>
@@ -379,6 +422,7 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
         modified = true;
         ${field.name}Modified = true;
         <@persisted_modified field/>
+        ${cachedCollection} = null;
         return this;
     }
     public ${updatesName} delete${field.name?cap_first}<@collection_item field=field />(${field.elementType} value) {
@@ -386,6 +430,7 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
         modified = true;
         ${field.name}Modified = true;
         <@persisted_modified field/>
+        ${cachedCollection} = null;
         return this;
     }
     <#else>
@@ -394,6 +439,7 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
         modified = true;
         ${field.name}Modified = true;
         <@persisted_modified field/>
+        ${cachedCollection} = null;
         return this;
     }
     </#if>
