@@ -52,6 +52,6 @@ Dynamap is published on Maven central
 <dependency>
     <groupId>com.n3twork.dynamap</groupId>
     <artifactId>dynamap</artifactId>
-    <version>0.9.55</version>
+    <version>0.9.56</version>
 </dependency>
 ```
