@@ -20,39 +20,40 @@ In your Maven project file add the following dependency:
 Create this simple schema below and save it to a file in your project resources folder.
 
 ```javascript
-  "tables": [
-    {
-      "table": "User",
-      "package": "com.n3twork.dynamap.example",
-      "type": "User",
-      "version": 1,
-      "hashkey": "id",
-      "types": [
-        {
-          "name": "User",
-          "fields": [
-            {
-              "name": "id",
-              "dynamoName": "id",
-              "type": "String"
-            },
-            {
-              "name": "userName",
-              "dynamoName": "un",
-              "type": "String"
-            },
-            {
-              "name": "balances",
-              "dynamoName": "bl",
-              "type": "Map",
-              "elementType": "Long"
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
+  {
+    "tables": [
+      {
+        "table": "User",
+        "package": "com.n3twork.dynamap.example",
+        "type": "User",
+        "version": 1,
+        "hashKey": "id",
+        "types": [
+          {
+            "name": "User",
+            "fields": [
+              {
+                "name": "id",
+                "dynamoName": "id",
+                "type": "String"
+              },
+              {
+                "name": "userName",
+                "dynamoName": "un",
+                "type": "String"
+              },
+              {
+                "name": "balances",
+                "dynamoName": "bl",
+                "type": "Map",
+                "elementType": "Long"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
 ```
 
 ### Step 3. Configure the code generator
