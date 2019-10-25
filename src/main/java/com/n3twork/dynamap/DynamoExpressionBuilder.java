@@ -316,7 +316,7 @@ public class DynamoExpressionBuilder {
             if (SUPPORTED_JAVA_TYPES.contains(type.getName())) {
                 valueMap = valueMap.withList(alias, (List) value);
             } else {
-                List<String> values = new ArrayList<>();
+                List<Object> values = new ArrayList<>();
                 for (Object object : (List) value) {
                     values.add(objectMapper.convertValue(object, new TypeReference<Map<String, Object>>() {
                     }));
