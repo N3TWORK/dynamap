@@ -204,22 +204,26 @@ public class Dynamap {
         return TableUtils.createTableIfNotExists(amazonDynamoDB, createTableRequest);
     }
 
-    public boolean updateTableTimeToLive(String baseTableName, String ttlAttributeName) {
+    public void updateTableTimeToLive() {
+        for (TableDefinition tableDefinition : schemaRegistry.getSchema().getTableDefinitions()) {
+            String ttlField = tableDefinition.getTtlField();
+            if (ttlField == null) {
+                continue;
+            }
 
-        TimeToLiveSpecification timeToLiveSpecification = new TimeToLiveSpecification()
-                .withAttributeName(ttlAttributeName);
-        UpdateTimeToLiveRequest updateTimeToLiveRequest = new UpdateTimeToLiveRequest()
-                .withTableName(baseTableName)
-                .withTimeToLiveSpecification(timeToLiveSpecification);
-        try {
-            amazonDynamoDB.updateTimeToLive(updateTimeToLiveRequest);
-            return true;
-        } catch (ResourceNotFoundException var3) {
-            if (logger.isTraceEnabled()) {
-                logger.trace("Table " + updateTimeToLiveRequest.getTableName() + " does not exist", var3);
+            TimeToLiveSpecification timeToLiveSpecification = new TimeToLiveSpecification()
+                    .withAttributeName(ttlField);
+            UpdateTimeToLiveRequest updateTimeToLiveRequest = new UpdateTimeToLiveRequest()
+                    .withTableName(tableDefinition.getTableName())
+                    .withTimeToLiveSpecification(timeToLiveSpecification);
+            try {
+                amazonDynamoDB.updateTimeToLive(updateTimeToLiveRequest);
+            } catch (ResourceNotFoundException var3) {
+                if (logger.isTraceEnabled()) {
+                    logger.trace("Table " + updateTimeToLiveRequest.getTableName() + " does not exist", var3);
+                }
             }
         }
-        return false;
     }
 
     public <T extends DynamapRecordBean> T getObject(GetObjectParams<T> getObjectParams) {
