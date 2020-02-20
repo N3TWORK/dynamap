@@ -188,23 +188,8 @@ public class Dynamap {
                 TableUtils.deleteTableIfExists(amazonDynamoDB, new DeleteTableRequest().withTableName(tableDefinition.getTableName(prefix)));
             }
             TableUtils.createTableIfNotExists(amazonDynamoDB, request);
-
         }
 
-    }
-
-    // Used for tests, allows to easily create a table with suffix using the schema an existing table
-    public boolean createTableFromExisting(String baseTableName, String newTableName, boolean deleteIfExists) {
-        CreateTableRequest createTableRequest = createTableRequests.get(baseTableName);
-        String fullNewTableName = prefix + newTableName;
-        createTableRequest.withTableName(fullNewTableName);
-        if (deleteIfExists) {
-            TableUtils.deleteTableIfExists(amazonDynamoDB, new DeleteTableRequest().withTableName(fullNewTableName));
-        }
-        return TableUtils.createTableIfNotExists(amazonDynamoDB, createTableRequest);
-    }
-
-    public void updateTableTimeToLive() {
         for (TableDefinition tableDefinition : schemaRegistry.getSchema().getTableDefinitions()) {
             String ttlField = tableDefinition.getTtlField();
             if (ttlField == null) {
@@ -224,6 +209,17 @@ public class Dynamap {
                 }
             }
         }
+    }
+
+    // Used for tests, allows to easily create a table with suffix using the schema an existing table
+    public boolean createTableFromExisting(String baseTableName, String newTableName, boolean deleteIfExists) {
+        CreateTableRequest createTableRequest = createTableRequests.get(baseTableName);
+        String fullNewTableName = prefix + newTableName;
+        createTableRequest.withTableName(fullNewTableName);
+        if (deleteIfExists) {
+            TableUtils.deleteTableIfExists(amazonDynamoDB, new DeleteTableRequest().withTableName(fullNewTableName));
+        }
+        return TableUtils.createTableIfNotExists(amazonDynamoDB, createTableRequest);
     }
 
     public <T extends DynamapRecordBean> T getObject(GetObjectParams<T> getObjectParams) {
