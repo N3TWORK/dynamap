@@ -188,9 +188,27 @@ public class Dynamap {
                 TableUtils.deleteTableIfExists(amazonDynamoDB, new DeleteTableRequest().withTableName(tableDefinition.getTableName(prefix)));
             }
             TableUtils.createTableIfNotExists(amazonDynamoDB, request);
-
         }
 
+        for (TableDefinition tableDefinition : schemaRegistry.getSchema().getTableDefinitions()) {
+            String ttlField = tableDefinition.getTtlField();
+            if (ttlField == null) {
+                continue;
+            }
+
+            TimeToLiveSpecification timeToLiveSpecification = new TimeToLiveSpecification()
+                    .withAttributeName(ttlField);
+            UpdateTimeToLiveRequest updateTimeToLiveRequest = new UpdateTimeToLiveRequest()
+                    .withTableName(tableDefinition.getTableName())
+                    .withTimeToLiveSpecification(timeToLiveSpecification);
+            try {
+                amazonDynamoDB.updateTimeToLive(updateTimeToLiveRequest);
+            } catch (ResourceNotFoundException var3) {
+                if (logger.isTraceEnabled()) {
+                    logger.trace("Table " + updateTimeToLiveRequest.getTableName() + " does not exist", var3);
+                }
+            }
+        }
     }
 
     // Used for tests, allows to easily create a table with suffix using the schema an existing table
