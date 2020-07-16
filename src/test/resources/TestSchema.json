@@ -8,7 +8,6 @@
       "version": 1,
       "hashKey": "id",
       "rangeKey": "sequence",
-      "ttlField": "ttlField",
       "globalSecondaryIndexes": [
         {
           "index": "testIndexProjection",
@@ -186,12 +185,6 @@
               "type": "Set",
               "elementType": "com.n3twork.dynamap.CustomType",
               "compressCollection": "gzip"
-            },
-            {
-              "name": "ttlField",
-              "dynamoName": "ttlField",
-              "type": "Long",
-              "default": "0"
             }
           ]
         },

@@ -46,12 +46,11 @@ public class TableDefinition {
     private final boolean enableMigrations;
     private final List<PersistAsFieldItem> persistAsFieldItems;
     private final List<CompressCollectionItem> compressCollectionItems;
-    private final String ttlField;
 
     @JsonCreator
     public TableDefinition(@JsonProperty("table") String tableName, @JsonProperty("description") String description, @JsonProperty("package") String packageName, @JsonProperty("type") String type, @JsonProperty("hashKey") String hashKey, @JsonProperty("rangeKey") String rangeKey,
                            @JsonProperty("version") int version, @JsonProperty("fields") List<Field> fields, @JsonProperty("types") List<Type> types, @JsonProperty("globalSecondaryIndexes") List<Index> globalSecondaryIndexes, @JsonProperty("localSecondaryIndexes") List<Index> localSecondaryIndexes, @JsonProperty("optimisticLocking") boolean optimisticLocking,
-                           @JsonProperty("schemaVersionField") String schemaVersionField, @JsonProperty("enableMigrations") Boolean enableMigrations, @JsonProperty("ttlField") String ttlField) {
+                           @JsonProperty("schemaVersionField") String schemaVersionField, @JsonProperty("enableMigrations") Boolean enableMigrations) {
         this.tableName = tableName;
         this.description = description;
         this.packageName = packageName;
@@ -67,7 +66,6 @@ public class TableDefinition {
         this.enableMigrations = enableMigrations == null ? Boolean.TRUE : enableMigrations;
         this.persistAsFieldItems = buildPersistAsListFields();
         this.compressCollectionItems = buildCompressFields();
-        this.ttlField = ttlField;
     }
 
     public String getTableName() {
@@ -138,10 +136,6 @@ public class TableDefinition {
 
     public boolean isEnableMigrations() {
         return enableMigrations;
-    }
-
-    public String getTtlField() {
-        return ttlField;
     }
 
     public Field getField(String fieldName) {
