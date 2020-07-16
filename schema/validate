@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+usage() { echo "Usage: $0 [-f <path/to/dynamap.json>]" 1>&2; exit 1; }
+
+while getopts "f:" option; do
+case "${option}" in
+f) FILE=${OPTARG};;
+*) usage;;
+esac
+done
+
+if [ -z "${FILE}" ]; then
+    usage
+fi
+
+echo "Processing file $FILE ..."
+
+ajv -s v1/schema.json \
+    -r v1/table.schema.json \
+    -r v1/type.schema.json \
+    -r v1/field.schema.json \
+    -r v1/gsi.schema.json \
+    -r v1/lsi.schema.json \
+    -d $FILE
