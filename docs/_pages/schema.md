@@ -57,7 +57,7 @@ Attribute | Required |  Description
 `name` | yes | The object field name. This is used as the name of the property in the Java classes.
 `description` | no | A description of the field. This is for your documentation purposes only.
 `dynamoName` | yes | The name of the field or property when serialized and persisted in DynamoDB.
-`type` | yes | The object class type. The following types are permitted:<br/><br/>* *Java primitives*: **String**,**Integer**,**Long**,**Float**,**Double**<br/>* *Collections*: **Map**,**List**,**Set**<br/>* *Dynamap Types*: Any Dynamap generated [type](#type-definition) defined for this table.<br/>* *Custom classes*: Any fully qualified class name<br/>
+`type` | yes | The object class type. The following types are permitted:<br/><br/>* *Java primitives*: **String**,**Integer**,**Long**,**Float**,**Double**<br/>* *Collections*: **Map**,**List**,**Set**<br/>* *Dynamap Types*: Any Dynamap generated [type](#type-definition) defined for this table.<br/>* *Custom classes*: Any fully qualified class name<br/>* *ttl*: A time to live field (one per table, details ***[here](#TTL)***)<br/>
 `elementType` | no | Required for collection types. Specifies for element type of the collection
 `default` | no | A Java expression that returns the default value.
 `useDefaultForNulls` | no | Only relevant when type is **Map**. For get methods, returns the default value when an element does not exist.
@@ -66,6 +66,9 @@ Attribute | Required |  Description
 `deltas` | no | boolean: `true` or `false`, default `true`. When `false` Dynamap will not track deltas. The *Updates* object will only expose methods for setting the value or entire collection. For numberic values there will be no increment or decrement methods.
 `compressCollection` | no | string: `gzip`. When set Dynamap will compress the entire collection and serialize it as a binary type using the compression method. Currently only `gzip` is supported. Note that as the entire collection is compressed this has the same effect as using `replace`, i.e. fine grained updates are not possible and so concurrent operations are not safe.
 `serializeAsListElementId` | no | A common use case is to use maps as an index to a collection of unique beans. This setting allows the map to be serialized as a list and then re-constructed as a map by deriving the map's key from the property of the bean specified. This results in a more efficient storage representation and much better compression if compression is enabled. Note that the property corresponds to the bean's field as it is serialized. i.e., the Jackson annotation if using a custom provided class or the `dynamoName` of using a Dynamap defined type.
+
+## TTL
+DynamoDB allows you to enable one time to live attribute per table. Please see the official DynamoDB [TTL Documentation](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html) for details. You can include a single field with type `ttl` in your Dynamap schema. Any time you call `Dynamap.createTables`, each table will be checked for a `ttl` field and, when possible, an `UpdateTimeToLiveRequest` will be sent to DynamoDB to ensure the underlying table matches the schema. Changes to the TTL field on a table in DynamoDB are asynchronous and may take a while to apply. When a table is in the process of `ENABLING` or `DISABLING` a TTL, it is not possible to set another TTL attribute. If Dynamap encounters this situation, it will not issue an `UpdateTimeToLiveRequest` and a warning will be logged. 
 
 ### Example Schema
 
