@@ -1,0 +1,30 @@
+{
+  "tables": [
+    {
+      "table": "Test",
+      "description": "Bad Equals Fields",
+      "package": "com.n3twork.dynamap.test",
+      "type": "TestDocument",
+      "version": 1,
+      "hashKey": "id",
+      "types": [
+        {
+          "name": "TestDocument",
+          "description": "Top level document",
+          "hashCodeFields": [
+            "id",
+            "not_a_valid_field"
+          ],
+          "fields": [
+            {
+              "name": "id",
+              "description": "Primary key",
+              "dynamoName": "id",
+              "type": "String"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -65,9 +65,4 @@ public class DynamapTtlTest {
         // In a scenario with a live DynamoDB connection, it will take some time for the change to apply. But with DynamoDBLocal it happens synchronously.
         Assert.assertEquals(describeTimeToLiveResult.getTimeToLiveDescription(), new TimeToLiveDescription().withAttributeName("ttlB").withTimeToLiveStatus(TimeToLiveStatus.ENABLED));
     }
-
-    @Test(expectedExceptions = RuntimeException.class, expectedExceptionsMessageRegExp = "java.lang.IllegalArgumentException: Table TestWithTtl has 2 ttl fields defined. At most one is allowed.")
-    public void schemaWithTwoTtlFieldsShouldFailValidation() {
-        new SchemaRegistry(getClass().getResourceAsStream("/TestSchemaWithTwoTtlFields.json"));
-    }
 }

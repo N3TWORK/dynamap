@@ -21,10 +21,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -249,5 +246,25 @@ public class TableDefinition {
             String msg = String.format("Table %s has %d ttl fields defined. At most one is allowed.", this.getTableName(), ttlFields.size());
             throw new IllegalArgumentException(msg);
         }
+
+        types.forEach(t -> {
+            Set<String> validFields = t.getFields().stream().map(Field::getName).collect(Collectors.toSet());
+
+            if (null != t.getEqualsFields()) {
+                Set<String> missingEqualsFields = t.getEqualsFields().stream().filter(f -> !validFields.contains(f)).collect(Collectors.toSet());
+                if (!missingEqualsFields.isEmpty()) {
+                    String msg = String.format("Table %s, type %s, has invalid equals fields: %s.", this.getTableName(), t.getName(), missingEqualsFields);
+                    throw new IllegalArgumentException(msg);
+                }
+            }
+
+            if (null != t.getHashCodeFields()) {
+                Set<String> missingHashCodeFields = t.getHashCodeFields().stream().filter(f -> !validFields.contains(f)).collect(Collectors.toSet());
+                if (!missingHashCodeFields.isEmpty()) {
+                    String msg = String.format("Table %s, type %s, has invalid hashCode fields: %s.", this.getTableName(), t.getName(), missingHashCodeFields);
+                    throw new IllegalArgumentException(msg);
+                }
+            }
+        });
     }
 }
