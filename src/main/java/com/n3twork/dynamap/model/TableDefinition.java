@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -148,6 +149,14 @@ public class TableDefinition {
 
     }
 
+    /**
+     * @return The TTL field for this table, or Optional.EMPTY if none is defined.
+     */
+    public Optional<Field> getTtlField() {
+        Type tableType = getTypes().stream().filter(t -> t.getName().equals(getType())).findFirst().get();
+        return tableType.getFields().stream().filter(Field::isTtl).findFirst();
+    }
+
     @JsonIgnore
     public List<PersistAsFieldItem> getPersistAsFieldItems() {
         return persistAsFieldItems;
@@ -230,5 +239,15 @@ public class TableDefinition {
 
         public final String parentKey;
         public final String itemKey;
+    }
+
+    // Ideally, we would do validation using a strict JSON Schema. But until we add something like that, it's
+    // important to catch critical errors in code.
+    public void validate() {
+        List<Field> ttlFields = types.stream().map(t -> t.getFields()).flatMap(List::stream).filter(Field::isTtl).collect(Collectors.toList());
+        if (ttlFields.size() > 1) {
+            String msg = String.format("Table %s has %d ttl fields defined. At most one is allowed.", this.getTableName(), ttlFields.size());
+            throw new IllegalArgumentException(msg);
+        }
     }
 }

@@ -185,6 +185,12 @@
               "type": "Set",
               "elementType": "com.n3twork.dynamap.CustomType",
               "compressCollection": "gzip"
+            },
+            {
+              "name": "ttl",
+              "dynamoName": "ttl",
+              "type": "ttl",
+              "description": "A ttl field's DynamoDB type is Number. Its value is an epoch timestamp in seconds."
             }
           ]
         },

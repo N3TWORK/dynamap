@@ -1,0 +1,32 @@
+{
+  "tables": [
+    {
+      "table": "TestWithTtl",
+      "description": "Test Schema With TTL version A",
+      "package": "com.n3twork.dynamap.test",
+      "type": "TestDocumentWithTTL",
+      "version": 1,
+      "hashKey": "id",
+      "types": [
+        {
+          "name": "TestDocumentWithTTL",
+          "description": "Top level document",
+          "fields": [
+            {
+              "name": "id",
+              "description": "Primary key",
+              "dynamoName": "id",
+              "type": "String"
+            },
+            {
+              "name": "ttlA",
+              "dynamoName": "ttlA",
+              "type": "ttl",
+              "description": "A ttl field's DynamoDB type is Number. Its value is an epoch timestamp in seconds."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

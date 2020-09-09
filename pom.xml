@@ -123,10 +123,11 @@
             <version>2.0M10</version>
             <scope>test</scope>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/com.amazonaws/DynamoDBLocal -->
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>DynamoDBLocal</artifactId>
-            <version>[1.11,2.0)</version>
+            <version>1.13.1</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

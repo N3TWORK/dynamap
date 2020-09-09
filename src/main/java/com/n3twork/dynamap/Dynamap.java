@@ -187,10 +187,9 @@ public class Dynamap {
             if (deleteIfExists) {
                 TableUtils.deleteTableIfExists(amazonDynamoDB, new DeleteTableRequest().withTableName(tableDefinition.getTableName(prefix)));
             }
-            TableUtils.createTableIfNotExists(amazonDynamoDB, request);
-
+            boolean wasCreated = TableUtils.createTableIfNotExists(amazonDynamoDB, request);
+            updateTableTtl(tableDefinition, Optional.empty());
         }
-
     }
 
     // Used for tests, allows to easily create a table with suffix using the schema an existing table
@@ -201,7 +200,80 @@ public class Dynamap {
         if (deleteIfExists) {
             TableUtils.deleteTableIfExists(amazonDynamoDB, new DeleteTableRequest().withTableName(fullNewTableName));
         }
-        return TableUtils.createTableIfNotExists(amazonDynamoDB, createTableRequest);
+        boolean wasCreated = TableUtils.createTableIfNotExists(amazonDynamoDB, createTableRequest);
+        TableDefinition tableDefinition = schemaRegistry.getTableDefinition(baseTableName);
+        updateTableTtl(tableDefinition, Optional.of(newTableName));
+        return wasCreated;
+    }
+
+    /**
+     * Set a table's TTL field in DynamoDB.
+     *
+     * Does nothing if:
+     *  - the provided TableDefinition lacks a TTL Field.
+     *  - the table already has the desired TTL ENABLED or is ENABLING it.
+     *  - the table has a TTL set to a field other than the requested field (will log a WARN)
+     *
+     * Changing the TTL on a table in DynamoDB is an asynchronous process and can take up to an hour to apply.
+     *
+     *
+     * @param tableDefinition   The table to update. Should have a TTL Field defined otherwise this call will no-op.
+     * @param tableNameOverride Optional table name override to support current test patterns.
+     */
+    private void updateTableTtl(TableDefinition tableDefinition, Optional<String> tableNameOverride) {
+        Optional<Field> ttlField = tableDefinition.getTtlField();
+        if (!ttlField.isPresent()) {
+            return;
+        }
+        // Describe current TTL settings for the table.
+        String tableName = tableNameOverride.isPresent() ? tableNameOverride.get() : tableDefinition.getTableName(prefix);
+        TimeToLiveDescription timeToLiveDescription =
+                amazonDynamoDB.describeTimeToLive(new DescribeTimeToLiveRequest().withTableName(tableName)).getTimeToLiveDescription();
+        TimeToLiveStatus timeToLiveStatus = TimeToLiveStatus.fromValue(timeToLiveDescription.getTimeToLiveStatus());
+
+        logger.debug("TimeToLiveDescription for table {} is {}", tableName, timeToLiveDescription);
+        switch (timeToLiveStatus) {
+            case DISABLED: {
+                // No current TTL is set on the table, we're clear to apply ours.
+                logger.info("Setting TTL for table {} and field {}.", tableDefinition.getTableName(prefix), ttlField.get().getDynamoName());
+                updateTimeToLive(tableDefinition, tableNameOverride, ttlField);
+                break;
+            }
+            case ENABLED:
+                if (ttlField.get().getDynamoName().equals(timeToLiveDescription.getAttributeName())) {
+                    // TTL is already enabled on the correct field. Nothing to do.
+                    logger.info("TTL for table {} is set to field {}.", tableDefinition.getTableName(prefix), ttlField.get().getDynamoName());
+                } else {
+                    // TTL is ENABLED but not on the desired field. Kick off the requested change of TTL.
+                    logger.info("Setting TTL for table {} and field {}. This replaces the current TTL on field {}.", tableDefinition.getTableName(prefix), ttlField.get().getDynamoName(), timeToLiveDescription.getAttributeName());
+                    updateTimeToLive(tableDefinition, tableNameOverride, ttlField);
+                }
+                break;
+            case ENABLING:
+                if (ttlField.get().getDynamoName().equals(timeToLiveDescription.getAttributeName())) {
+                    // TTL is enabling on the correct field. Nothing to do but wait for DynamoDB.
+                    logger.info("TTL for table {} and field {} is ENABLING.", tableDefinition.getTableName(prefix), ttlField.get().getDynamoName());
+                } else {
+                    logger.warn("Failed to set TTL for table {} and field {}. TimeToLiveStatus is currently {} on field {}", tableDefinition.getTableName(prefix), ttlField.get().getDynamoName(), timeToLiveStatus, timeToLiveDescription.getAttributeName());
+                }
+                break;
+            case DISABLING:
+                logger.warn("Failed to set TTL for table {} and field {}. TimeToLiveStatus is currently {} on field {}", tableDefinition.getTableName(prefix), ttlField.get().getDynamoName(), timeToLiveStatus, timeToLiveDescription.getAttributeName());
+                break;
+        }
+    }
+
+    // Make the DynamoDB call, handle errors.
+    private void updateTimeToLive(TableDefinition tableDefinition, Optional<String> tableNameOverride, Optional<Field> ttlField) {
+        UpdateTimeToLiveRequest updateTimeToLiveRequest = new UpdateTimeToLiveRequest()
+                .withTableName(tableNameOverride.isPresent() ? tableNameOverride.get() : tableDefinition.getTableName(prefix))
+                .withTimeToLiveSpecification(new TimeToLiveSpecification().withAttributeName(ttlField.get().getDynamoName()).withEnabled(true));
+        try {
+            amazonDynamoDB.updateTimeToLive(updateTimeToLiveRequest);
+        } catch(ResourceInUseException e) {
+            // This will happen if another request kicks off a TTL change between our DescribeTimeToLiveRequest
+            // and UpdateTimeToLiveRequest calls.
+        }
     }
 
     public <T extends DynamapRecordBean> T getObject(GetObjectParams<T> getObjectParams) {
@@ -570,7 +642,8 @@ public class Dynamap {
 
         int unprocessedKeyCount;
         //todo: need to add exponential backoff for unprocessed items and a termination condition
-        do {
+        do
+        {
 
             if (outcome.getBatchGetItemResult().getConsumedCapacity() != null) {
                 for (ConsumedCapacity consumedCapacity : outcome.getBatchGetItemResult().getConsumedCapacity()) {

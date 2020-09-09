@@ -38,6 +38,7 @@ public class Field {
     private final String serializeAsListElementId;
     private final String compressCollection;
     private final boolean isCollection;
+    private final boolean isTtl;
 
     private boolean generatedType;
 
@@ -47,6 +48,15 @@ public class Field {
                  @JsonProperty("useDefaultForNulls") Boolean useDefaultForNulls, @JsonProperty("replace") Boolean replace,
                  @JsonProperty("persist") Boolean persist, @JsonProperty("serialize") Boolean serialize, @JsonProperty("deltas") Boolean deltas,
                  @JsonProperty("serializeAsListElementId") String serializeAsListElementId, @JsonProperty("compressCollection") String compressCollection) {
+        if ("ttl".equals(type)) {
+            if (null != persist && !persist) {
+                throw new IllegalArgumentException("Invalid field definition for " + name + ". TTL field must be persisted.");
+            }
+            this.isTtl = true;
+            type = "Long";
+        } else {
+            this.isTtl = false;
+        }
         this.name = name;
         this.description = description;
         this.dynamoName = dynamoName;
@@ -158,4 +168,7 @@ public class Field {
         return deltas;
     }
 
+    public boolean isTtl() {
+        return isTtl;
+    }
 }

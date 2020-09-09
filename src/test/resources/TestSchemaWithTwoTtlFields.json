@@ -1,0 +1,38 @@
+{
+  "tables": [
+    {
+      "table": "TestWithTtl",
+      "description": "Test Schema With two TTL field. This schema is invalid.",
+      "package": "com.n3twork.dynamap.test",
+      "type": "TestDocumentWithTTL",
+      "version": 1,
+      "hashKey": "id",
+      "types": [
+        {
+          "name": "TestDocumentWithTTL",
+          "description": "Top level document",
+          "fields": [
+            {
+              "name": "id",
+              "description": "Primary key",
+              "dynamoName": "id",
+              "type": "String"
+            },
+            {
+              "name": "ttlA",
+              "dynamoName": "ttlA",
+              "type": "ttl",
+              "description": "First TTL field."
+            },
+            {
+              "name": "ttlB",
+              "dynamoName": "ttlB",
+              "type": "ttl",
+              "description": "Second TTL field. This schema is invalid."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
