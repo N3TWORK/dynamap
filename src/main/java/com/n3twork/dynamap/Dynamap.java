@@ -211,11 +211,15 @@ public class Dynamap {
      *
      * Does nothing if:
      *  - the provided TableDefinition lacks a TTL Field.
-     *  - the table already has the desired TTL ENABLED or is ENABLING it.
-     *  - the table has a TTL set to a field other than the requested field (will log a WARN)
+     *  - the table already has the desired TTL ENABLED.
+     *  - the table has another field ENABLED as TTL. DynamoDB requires that you first disable the current TTL and then enable a new TTL.
+     *  - the table's TimeToLiveStatus is ENABLING or DISABLING.
      *
-     * Changing the TTL on a table in DynamoDB is an asynchronous process and can take up to an hour to apply.
+     * Changing the TTL on a table in DynamoDB is an asynchronous process and can take a while to apply.
+     * Documents with a TTL attribute set are expired by DynamoDB using a background process and it is far
+     * from exact: items may linger beyond their TTL and application code should account for this.
      *
+     * Read the docs for further details: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html
      *
      * @param tableDefinition   The table to update. Should have a TTL Field defined otherwise this call will no-op.
      * @param tableNameOverride Optional table name override to support current test patterns.
@@ -244,9 +248,8 @@ public class Dynamap {
                     // TTL is already enabled on the correct field. Nothing to do.
                     logger.info("TTL for table {} is set to field {}.", tableDefinition.getTableName(prefix), ttlField.get().getDynamoName());
                 } else {
-                    // TTL is ENABLED but not on the desired field. Kick off the requested change of TTL.
-                    logger.info("Setting TTL for table {} and field {}. This replaces the current TTL on field {}.", tableDefinition.getTableName(prefix), ttlField.get().getDynamoName(), timeToLiveDescription.getAttributeName());
-                    updateTimeToLive(tableDefinition, tableNameOverride, ttlField);
+                    // TTL is ENABLED but not on the desired field.
+                    logger.warn("Failed to set TTL for table {} and field {}. Table already has TTL field {}. You must disable this TTL field before choosing a new one.", tableDefinition.getTableName(prefix), ttlField.get().getDynamoName(), timeToLiveStatus, timeToLiveDescription.getAttributeName());
                 }
                 break;
             case ENABLING:

@@ -18,10 +18,7 @@ package com.n3twork.dynamap;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
-import com.amazonaws.services.dynamodbv2.model.DescribeTimeToLiveRequest;
-import com.amazonaws.services.dynamodbv2.model.DescribeTimeToLiveResult;
-import com.amazonaws.services.dynamodbv2.model.TimeToLiveDescription;
-import com.amazonaws.services.dynamodbv2.model.TimeToLiveStatus;
+import com.amazonaws.services.dynamodbv2.model.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
@@ -53,13 +50,18 @@ public class DynamapTtlTest {
 
     @Test(dependsOnMethods = {"ttlShouldBeSetOnNewTables"})
     public void ttlShouldBeSetOnExistingTables() {
-        // This scenario models a migration that moves the TTL field to a new field in the schema. Dynamap will detect this and will
-        // request that the TTL field be changed in DynamoDB.
+        // Disable the current TTL. This is required by DynamoDB.
+        ddb.updateTimeToLive(new UpdateTimeToLiveRequest().withTableName("testTestWithTtl").withTimeToLiveSpecification(new TimeToLiveSpecification().withAttributeName("ttlA").withEnabled(false)));
+        DescribeTimeToLiveResult describeTimeToLiveResult = ddb.describeTimeToLive(new DescribeTimeToLiveRequest().withTableName("testTestWithTtl"));
+        // In a scenario with a live DynamoDB connection, it will take some time for the change to apply. But with DynamoDBLocal it happens synchronously.
+        Assert.assertEquals(describeTimeToLiveResult.getTimeToLiveDescription(), new TimeToLiveDescription().withTimeToLiveStatus(TimeToLiveStatus.DISABLED));
+
+        // Call createTables with an updated schema specifying `ttlB` as the table TTL field.
         schemaRegistry = new SchemaRegistry(getClass().getResourceAsStream("/TestSchemaWithTtlB.json")); // Same table except for the new TTL field.
         dynamap = new Dynamap(ddb, schemaRegistry).withPrefix("test").withObjectMapper(objectMapper);
         dynamap.createTables(System.getProperty("aws.profile") == null);
 
-        DescribeTimeToLiveResult describeTimeToLiveResult = ddb.describeTimeToLive(new DescribeTimeToLiveRequest().withTableName("testTestWithTtl"));
+        describeTimeToLiveResult = ddb.describeTimeToLive(new DescribeTimeToLiveRequest().withTableName("testTestWithTtl"));
         // In a scenario with a live DynamoDB connection, it will take some time for the change to apply. But with DynamoDBLocal it happens synchronously.
         Assert.assertEquals(describeTimeToLiveResult.getTimeToLiveDescription(), new TimeToLiveDescription().withAttributeName("ttlB").withTimeToLiveStatus(TimeToLiveStatus.ENABLED));
     }
