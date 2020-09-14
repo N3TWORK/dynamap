@@ -45,12 +45,10 @@ public class ReadTx {
             throw new NullPointerException();
         }
         this.amazonDynamoDB = amazonDynamoDB;
-
         if (null == readOpFactory) {
             throw new NullPointerException();
         }
         this.readOpFactory = readOpFactory;
-
         if (null == dynamapBeanFactory) {
             throw new NullPointerException();
         }

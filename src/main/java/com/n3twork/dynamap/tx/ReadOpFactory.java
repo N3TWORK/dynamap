@@ -19,8 +19,9 @@ public class ReadOpFactory {
     private final String tableNamePrefix;
 
     public ReadOpFactory(SchemaRegistry schemaRegistry, String tableNamePrefix) {
-        if (null == schemaRegistry)
+        if (null == schemaRegistry) {
             throw new NullPointerException();
+        }
         this.schemaRegistry = schemaRegistry;
         this.tableNamePrefix = tableNamePrefix; // nullable
     }

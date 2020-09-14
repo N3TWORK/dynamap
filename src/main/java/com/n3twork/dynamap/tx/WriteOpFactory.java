@@ -28,12 +28,18 @@ public class WriteOpFactory {
     private final SchemaRegistry schemaRegistry;
 
     public WriteOpFactory(ObjectMapper objectMapper, String tableNamePrefix, DynamapToItemConverter itemFactory, SchemaRegistry schemaRegistry) {
-        if (null==objectMapper) throw new NullPointerException();
+        if (null == objectMapper) {
+            throw new NullPointerException();
+        }
         this.objectMapper = objectMapper;
         this.tableNamePrefix = tableNamePrefix; // nullable
-        if (null==itemFactory) throw new NullPointerException();
+        if (null == itemFactory) {
+            throw new NullPointerException();
+        }
         this.itemFactory = itemFactory;
-        if (null==schemaRegistry) throw new NullPointerException();
+        if (null == schemaRegistry) {
+            throw new NullPointerException();
+        }
         this.schemaRegistry = schemaRegistry;
     }
 
@@ -57,10 +63,6 @@ public class WriteOpFactory {
         NameMap nm = expressionBuilder.getNameMap();
         ValueMap vm = expressionBuilder.getValueMap();
 
-        logger.info("              NameMap: " + nm);
-        logger.info("             ValueMap: " + vm);
-        logger.info("ConditionalExpression: " + expressionBuilder.buildConditionalExpression());
-        logger.info("     UpdateExpression: " + expressionBuilder.buildUpdateExpression());
         return new Update()
                 .withTableName(tableDefinition.getTableName(tableNamePrefix))
                 .withKey(key)
