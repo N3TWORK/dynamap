@@ -28,11 +28,13 @@ import com.n3twork.dynamap.test.PlayerBean;
 import com.n3twork.dynamap.test.PlayerUpdates;
 import com.n3twork.dynamap.tx.ReadTx;
 import com.n3twork.dynamap.tx.TxUtil;
+import com.n3twork.dynamap.tx.WriteConditionCheck;
 import com.n3twork.dynamap.tx.WriteTx;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
+import java.util.Collections;
 import java.util.List;
 
 import static org.testng.Assert.*;
@@ -121,21 +123,17 @@ public class DynamapTxTest {
 
     @Test
     public void testWriteTxWithConditionCheck() {
-        // TODO Feels like we maybe need a Dynamap abstraction around ConditionCheck.
         PlayerBean p1 = new PlayerBean("playerOne", "Player One", PlayerBean.SCHEMA_VERSION);
         PlayerBean p2 = new PlayerBean("playerTwo", "Player Two", PlayerBean.SCHEMA_VERSION);
 
-        TableDefinition tableDefinition = schemaRegistry.getTableDefinition(PlayerBean.class);
-        ConditionCheck conditionCheck = new ConditionCheck()
-                .withTableName(tableDefinition.getTableName("test"))
-                .withKey(TxUtil.getKey(tableDefinition, "playerThree", null))
-                .withConditionExpression("attribute_not_exists(id)");
+        WriteConditionCheck<PlayerBean> writeConditionCheck = new WriteConditionCheck<>(PlayerBean.class, "playerThree", null);
+        writeConditionCheck.getDynamoExpressionBuilder().addAttributeNotExistsCondition("id");
 
-        // Create two players in a single transaction.
+        // Create two players in a single transaction but only if a third player does not exist.
         WriteTx createTwoPlayers = dynamap.newWriteTx();
         createTwoPlayers.put(p1);
         createTwoPlayers.put(p2);
-        createTwoPlayers.condition(conditionCheck);
+        createTwoPlayers.condition(writeConditionCheck);
         createTwoPlayers.exec();
 
         PlayerBean playerOneRead = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerOne")));

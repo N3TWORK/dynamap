@@ -70,8 +70,8 @@ public class WriteTx {
         deletes.add(writeOpFactory.buildDelete(deleteRequest));
     }
 
-    public void condition(ConditionCheck conditionCheck) {
-        conditionChecks.add(conditionCheck);
+    public <T extends DynamapRecordBean> void condition(WriteConditionCheck<T> writeConditionCheck) {
+        conditionChecks.add(writeOpFactory.buildConditionCheck(writeConditionCheck));
     }
 
     public void exec() {

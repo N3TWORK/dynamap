@@ -4,12 +4,10 @@ import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.ItemUtils;
 import com.amazonaws.services.dynamodbv2.document.utils.NameMap;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.Delete;
-import com.amazonaws.services.dynamodbv2.model.Put;
-import com.amazonaws.services.dynamodbv2.model.Update;
+import com.amazonaws.services.dynamodbv2.model.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.n3twork.dynamap.*;
+import com.n3twork.dynamap.DeleteRequest;
 import com.n3twork.dynamap.model.TableDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,5 +76,20 @@ public class WriteOpFactory {
         return new Delete()
                 .withTableName(tableDefinition.getTableName(tableNamePrefix))
                 .withKey(key);
+    }
+
+    public <T extends DynamapRecordBean> ConditionCheck buildConditionCheck(WriteConditionCheck<T> writeConditionCheck) {
+        TableDefinition tableDefinition = schemaRegistry.getTableDefinition(writeConditionCheck.getBeanClass());
+        ConditionCheck conditionCheck = new ConditionCheck()
+                .withTableName(tableDefinition.getTableName(tableNamePrefix))
+                .withKey(TxUtil.getKey(tableDefinition, writeConditionCheck.getHashKey(), writeConditionCheck.getRangeKey()))
+                .withConditionExpression(writeConditionCheck.getDynamoExpressionBuilder().buildConditionalExpression());
+        if (!writeConditionCheck.getDynamoExpressionBuilder().getNameMap().isEmpty()) {
+            conditionCheck = conditionCheck.withExpressionAttributeNames(writeConditionCheck.getDynamoExpressionBuilder().getNameMap());
+        }
+        if (!writeConditionCheck.getDynamoExpressionBuilder().getValueMap().isEmpty()) {
+            conditionCheck = conditionCheck.withExpressionAttributeValues(ItemUtils.fromSimpleMap(writeConditionCheck.getDynamoExpressionBuilder().getValueMap()));
+        }
+        return conditionCheck;
     }
 }
