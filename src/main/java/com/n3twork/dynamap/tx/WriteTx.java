@@ -44,6 +44,7 @@ public class WriteTx {
     private final Set<Update> updates = new HashSet<>();
     private final Set<Put> puts = new HashSet<>();
     private final Set<Delete> deletes = new HashSet<>();
+    private final Set<ConditionCheck> conditionChecks = new HashSet<>();
     private final WriteOpFactory writeOpFactory;
 
     public WriteTx(AmazonDynamoDB amazonDynamoDB, WriteOpFactory writeOpFactory) {
@@ -69,11 +70,17 @@ public class WriteTx {
         deletes.add(writeOpFactory.buildDelete(deleteRequest));
     }
 
+    public void condition(ConditionCheck conditionCheck) {
+        conditionChecks.add(conditionCheck);
+    }
+
     public void exec() {
-        Collection<TransactWriteItem> actions = new HashSet<>(puts.size() + updates.size() + deletes.size());
+        Collection<TransactWriteItem> actions = new HashSet<>(puts.size() + updates.size() + deletes.size() + conditionChecks.size());
         puts.stream().map(p -> new TransactWriteItem().withPut(p)).forEach(actions::add);
         updates.stream().map(u -> new TransactWriteItem().withUpdate(u)).forEach(actions::add);
         deletes.stream().map(d -> new TransactWriteItem().withDelete(d)).forEach(actions::add);
+        conditionChecks.stream().map(c -> new TransactWriteItem().withConditionCheck(c)).forEach(actions::add);
+
         TransactWriteItemsRequest tx = new TransactWriteItemsRequest()
                 .withTransactItems(actions)
                 .withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);

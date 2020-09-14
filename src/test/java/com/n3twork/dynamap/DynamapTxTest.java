@@ -21,11 +21,13 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
+import com.amazonaws.services.dynamodbv2.model.ConditionCheck;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.n3twork.dynamap.model.TableDefinition;
 import com.n3twork.dynamap.test.PlayerBean;
 import com.n3twork.dynamap.test.PlayerUpdates;
 import com.n3twork.dynamap.tx.ReadTx;
+import com.n3twork.dynamap.tx.TxUtil;
 import com.n3twork.dynamap.tx.WriteTx;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
@@ -71,7 +73,6 @@ public class DynamapTxTest {
     public void testWriteTx() {
         PlayerBean p1 = new PlayerBean("playerOne", "Player One", PlayerBean.SCHEMA_VERSION);
         PlayerBean p2 = new PlayerBean("playerTwo", "Player Two", PlayerBean.SCHEMA_VERSION);
-        TableDefinition playerTableDef = schemaRegistry.getTableDefinition(PlayerBean.class);
 
         // Create two players in a single transaction.
         WriteTx createTwoPlayers = dynamap.newWriteTx();
@@ -116,6 +117,34 @@ public class DynamapTxTest {
 
         playerTwoRead = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerTwo")));
         assertNull(playerTwoRead);
+    }
+
+    @Test
+    public void testWriteTxWithConditionCheck() {
+        // TODO Feels like we maybe need a Dynamap abstraction around ConditionCheck.
+        PlayerBean p1 = new PlayerBean("playerOne", "Player One", PlayerBean.SCHEMA_VERSION);
+        PlayerBean p2 = new PlayerBean("playerTwo", "Player Two", PlayerBean.SCHEMA_VERSION);
+
+        TableDefinition tableDefinition = schemaRegistry.getTableDefinition(PlayerBean.class);
+        ConditionCheck conditionCheck = new ConditionCheck()
+                .withTableName(tableDefinition.getTableName("test"))
+                .withKey(TxUtil.getKey(tableDefinition, "playerThree", null))
+                .withConditionExpression("attribute_not_exists(id)");
+
+        // Create two players in a single transaction.
+        WriteTx createTwoPlayers = dynamap.newWriteTx();
+        createTwoPlayers.put(p1);
+        createTwoPlayers.put(p2);
+        createTwoPlayers.condition(conditionCheck);
+        createTwoPlayers.exec();
+
+        PlayerBean playerOneRead = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerOne")));
+        assertNotNull(playerOneRead);
+        assertEquals(playerOneRead, p1);
+
+        PlayerBean playerTwoRead = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerTwo")));
+        assertNotNull(playerTwoRead);
+        assertEquals(playerTwoRead, p2);
     }
 
     @Test
