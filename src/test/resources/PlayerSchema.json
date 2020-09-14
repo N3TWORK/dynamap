@@ -1,0 +1,37 @@
+{
+  "tables": [
+    {
+      "table": "Player",
+      "description": "Player Test Schema",
+      "package": "com.n3twork.dynamap.test",
+      "type": "Player",
+      "version": 1,
+      "hashKey": "id",
+      "types": [
+        {
+          "name": "Player",
+          "description": "Player",
+          "hashCodeFields": [
+            "id"
+          ],
+          "equalsFields": [
+            "id"
+          ],
+          "fields": [
+            {
+              "name": "id",
+              "description": "Player Id",
+              "dynamoName": "id",
+              "type": "String"
+            },
+            {
+              "name": "name",
+              "dynamoName": "name",
+              "type": "String"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

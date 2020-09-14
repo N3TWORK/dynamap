@@ -34,6 +34,10 @@ import com.n3twork.dynamap.model.Field;
 import com.n3twork.dynamap.model.Schema;
 import com.n3twork.dynamap.model.TableDefinition;
 import com.n3twork.dynamap.model.Type;
+import com.n3twork.dynamap.tx.ReadOpFactory;
+import com.n3twork.dynamap.tx.ReadTx;
+import com.n3twork.dynamap.tx.WriteOpFactory;
+import com.n3twork.dynamap.tx.WriteTx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +57,8 @@ public class Dynamap {
     private String prefix;
     private ObjectMapper objectMapper;
     private Map<String, CreateTableRequest> createTableRequests = new HashMap<>();
+    private WriteOpFactory writeOpFactory;
+    private ReadOpFactory readOpFactory;
 
     private static final int MAX_BATCH_SIZE = 25;
     private static final int MAX_BATCH_GET_SIZE = 100;
@@ -62,6 +68,8 @@ public class Dynamap {
         this.dynamoDB = new DynamoDB(amazonDynamoDB);
         this.schemaRegistry = schemaRegistry;
         this.objectMapper = new ObjectMapper();
+        this.writeOpFactory = new WriteOpFactory(objectMapper, this.prefix, this::buildDynamoItemFromObject, schemaRegistry);
+        this.readOpFactory = new ReadOpFactory(schemaRegistry, this.prefix);
     }
 
     public Dynamap withObjectMapper(ObjectMapper objectMapper) {
@@ -71,6 +79,8 @@ public class Dynamap {
 
     public Dynamap withPrefix(String prefix) {
         this.prefix = prefix;
+        this.writeOpFactory = new WriteOpFactory(objectMapper, this.prefix, this::buildDynamoItemFromObject, schemaRegistry);
+        this.readOpFactory = new ReadOpFactory(schemaRegistry, this.prefix);
         return this;
     }
 
@@ -280,7 +290,7 @@ public class Dynamap {
                             writeLimiter = pair.getWriteLimiter();
                         }
                     }
-                    resultsForClass.add(((Object) buildObjectFromDynamoItem(item, getItemInfo.tableDefinition,
+                    resultsForClass.add(((Object) buildObjectFromDynamoItem(item,
                             getItemInfo.getObjectRequest.getResultClass(), writeLimiter,
                             batchGetObjectParams.getMigrationContext(), batchGetObjectParams.isWriteMigrationChange(), false, getItemInfo.getObjectRequest.getSuffix())));
                 }
@@ -384,7 +394,7 @@ public class Dynamap {
 
             @Override
             public T next() {
-                T result = buildObjectFromDynamoItem(iterator.next(), tableDefinition, queryRequest.getResultClass(),
+                T result = buildObjectFromDynamoItem(iterator.next(), queryRequest.getResultClass(),
                         null, queryRequest.getMigrationContext(), queryRequest.isWriteMigrationChange(),
                         queryRequest.getProjectionExpression() != null, queryRequest.getSuffix());
                 return result;
@@ -475,7 +485,7 @@ public class Dynamap {
 
             @Override
             public T next() {
-                T result = buildObjectFromDynamoItem(iterator.next(), tableDefinition, scanRequest.getResultClass(),
+                T result = buildObjectFromDynamoItem(iterator.next(), scanRequest.getResultClass(),
                         null, scanRequest.getMigrationContext(), scanRequest.isWriteMigrationChange(),
                         scanRequest.getProjectionExpression() != null, scanRequest.getSuffix());
                 return result;
@@ -638,15 +648,12 @@ public class Dynamap {
         }
     }
 
-    private <T extends DynamapRecordBean> T buildObjectFromDynamoItem(Item item, TableDefinition tableDefinition, Class<T> resultClass, DynamoRateLimiter writeRateLimiter, Object migrationContext, boolean writeBack, boolean skipMigration) {
-        return buildObjectFromDynamoItem(item, tableDefinition, resultClass, writeRateLimiter, migrationContext, writeBack, skipMigration, null);
-    }
-
-    private <T extends DynamapRecordBean> T buildObjectFromDynamoItem(Item item, TableDefinition tableDefinition, Class<T> resultClass, DynamoRateLimiter writeRateLimiter, Object migrationContext, boolean writeBack, boolean skipMigration, String suffix) {
+    private <T extends DynamapRecordBean> T buildObjectFromDynamoItem(Item item, Class<T> resultClass, DynamoRateLimiter writeRateLimiter, Object migrationContext, boolean writeBack, boolean skipMigration, String suffix) {
         if (item == null) {
             return null;
         }
 
+        TableDefinition tableDefinition = this.schemaRegistry.getTableDefinition(resultClass);
         T result;
         String schemaField = tableDefinition.getSchemaVersionField();
         int currentVersion = 0;
@@ -1054,5 +1061,13 @@ public class Dynamap {
             tableCache.put(tableName, table);
         }
         return table;
+    }
+
+    public WriteTx newWriteTx() {
+        return new WriteTx(amazonDynamoDB, writeOpFactory);
+    }
+
+    public ReadTx newReadTx() {
+        return new ReadTx(amazonDynamoDB, readOpFactory, this::buildObjectFromDynamoItem);
     }
 }
