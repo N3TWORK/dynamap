@@ -1,11 +1,7 @@
-package com.n3twork.dynamap.tx;
+package com.n3twork.dynamap;
 
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.Get;
-import com.n3twork.dynamap.DynamapRecordBean;
-import com.n3twork.dynamap.GetObjectParams;
-import com.n3twork.dynamap.GetObjectRequest;
-import com.n3twork.dynamap.SchemaRegistry;
 import com.n3twork.dynamap.model.TableDefinition;
 
 import java.util.Map;
@@ -14,7 +10,7 @@ import java.util.Map;
  * The DynamoDB read transactions API works in terms of Get instances.
  * This class provides methods to build Get objects from Dynamap GetObjectParams instances.
  */
-public class ReadOpFactory {
+class ReadOpFactory {
     private final SchemaRegistry schemaRegistry;
     private final String tableNamePrefix;
 

@@ -1,9 +1,9 @@
-package com.n3twork.dynamap.tx;
+package com.n3twork.dynamap;
 
 import com.n3twork.dynamap.DynamapRecordBean;
 import com.n3twork.dynamap.DynamoExpressionBuilder;
 
-public class  WriteConditionCheck<T extends DynamapRecordBean> {
+public class WriteConditionCheck<T extends DynamapRecordBean> {
     private final Class<T> beanClass;
     private final DynamoExpressionBuilder dynamoExpressionBuilder;
     private final String hashKey;

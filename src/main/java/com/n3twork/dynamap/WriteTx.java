@@ -1,9 +1,7 @@
-package com.n3twork.dynamap.tx;
+package com.n3twork.dynamap;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.model.*;
-import com.n3twork.dynamap.DeleteRequest;
-import com.n3twork.dynamap.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +46,7 @@ public class WriteTx {
     private final WriteOpFactory writeOpFactory;
     private final DynamoItemFactory dynamoItemFactory;
 
-    public WriteTx(AmazonDynamoDB amazonDynamoDB, WriteOpFactory writeOpFactory, DynamoItemFactory dynamoItemFactory) {
+    WriteTx(AmazonDynamoDB amazonDynamoDB, WriteOpFactory writeOpFactory, DynamoItemFactory dynamoItemFactory) {
         if (null == amazonDynamoDB) {
             throw new NullPointerException();
         }

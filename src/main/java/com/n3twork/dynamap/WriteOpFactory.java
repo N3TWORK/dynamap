@@ -1,10 +1,8 @@
-package com.n3twork.dynamap.tx;
+package com.n3twork.dynamap;
 
 import com.amazonaws.services.dynamodbv2.document.ItemUtils;
 import com.amazonaws.services.dynamodbv2.model.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.n3twork.dynamap.DeleteRequest;
-import com.n3twork.dynamap.*;
 import com.n3twork.dynamap.model.TableDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +13,7 @@ import java.util.Map;
  * The DynamoDB write transactions API works in terms of Put, Update, and Delete instances.
  * This class provides methods to build each of those from our Dynamap types.
  */
-public class WriteOpFactory {
+class WriteOpFactory {
     private static final Logger logger = LoggerFactory.getLogger(WriteOpFactory.class);
     private final ObjectMapper objectMapper;
     private final String tableNamePrefix;

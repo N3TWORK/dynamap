@@ -1,11 +1,8 @@
-package com.n3twork.dynamap.tx;
+package com.n3twork.dynamap;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.document.ItemUtils;
 import com.amazonaws.services.dynamodbv2.model.*;
-import com.n3twork.dynamap.DynamapBeanLoader;
-import com.n3twork.dynamap.DynamapRecordBean;
-import com.n3twork.dynamap.GetObjectParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +38,7 @@ public class ReadTx {
     private final List<GetObjectParams> gets = new ArrayList<>();
     private final DynamapBeanLoader dynamapBeanLoader;
 
-    public ReadTx(AmazonDynamoDB amazonDynamoDB, ReadOpFactory readOpFactory, DynamapBeanLoader dynamapBeanLoader) {
+    ReadTx(AmazonDynamoDB amazonDynamoDB, ReadOpFactory readOpFactory, DynamapBeanLoader dynamapBeanLoader) {
         if (null == amazonDynamoDB) {
             throw new NullPointerException();
         }

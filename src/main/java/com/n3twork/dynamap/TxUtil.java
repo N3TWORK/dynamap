@@ -1,4 +1,4 @@
-package com.n3twork.dynamap.tx;
+package com.n3twork.dynamap;
 
 import com.amazonaws.services.dynamodbv2.document.ItemUtils;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
@@ -7,11 +7,11 @@ import com.n3twork.dynamap.model.TableDefinition;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TxUtil {
+class TxUtil {
     /**
      * @return A Map of key attributes as expected by the low level DynamoDB API.
      */
-    public static Map<String, AttributeValue> getKey(TableDefinition tableDefinition, String hashKeyValue, Object rangeKeyValue) {
+    static Map<String, AttributeValue> getKey(TableDefinition tableDefinition, String hashKeyValue, Object rangeKeyValue) {
         Map<String, AttributeValue> key = new HashMap<>();
         key.put(tableDefinition.getHashKey(), new AttributeValue(hashKeyValue));
         if (null != tableDefinition.getRangeKey()) {

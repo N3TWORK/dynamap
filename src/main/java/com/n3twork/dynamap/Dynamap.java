@@ -29,10 +29,6 @@ import com.google.common.collect.Multimap;
 import com.n3twork.BatchSaveParams;
 import com.n3twork.dynamap.model.Field;
 import com.n3twork.dynamap.model.TableDefinition;
-import com.n3twork.dynamap.tx.ReadOpFactory;
-import com.n3twork.dynamap.tx.ReadTx;
-import com.n3twork.dynamap.tx.WriteOpFactory;
-import com.n3twork.dynamap.tx.WriteTx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
