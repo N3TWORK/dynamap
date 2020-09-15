@@ -21,20 +21,16 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
-import com.amazonaws.services.dynamodbv2.model.ConditionCheck;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.n3twork.dynamap.model.TableDefinition;
 import com.n3twork.dynamap.test.PlayerBean;
 import com.n3twork.dynamap.test.PlayerUpdates;
 import com.n3twork.dynamap.tx.ReadTx;
-import com.n3twork.dynamap.tx.TxUtil;
 import com.n3twork.dynamap.tx.WriteConditionCheck;
 import com.n3twork.dynamap.tx.WriteTx;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
-import java.util.Collections;
 import java.util.List;
 
 import static org.testng.Assert.*;
@@ -78,8 +74,8 @@ public class DynamapTxTest {
 
         // Create two players in a single transaction.
         WriteTx createTwoPlayers = dynamap.newWriteTx();
-        createTwoPlayers.put(p1);
-        createTwoPlayers.put(p2);
+        createTwoPlayers.save(p1);
+        createTwoPlayers.save(p2);
         createTwoPlayers.exec();
 
         PlayerBean playerOneRead = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerOne")));
@@ -131,8 +127,8 @@ public class DynamapTxTest {
 
         // Create two players in a single transaction but only if a third player does not exist.
         WriteTx createTwoPlayers = dynamap.newWriteTx();
-        createTwoPlayers.put(p1);
-        createTwoPlayers.put(p2);
+        createTwoPlayers.save(p1);
+        createTwoPlayers.save(p2);
         createTwoPlayers.condition(writeConditionCheck);
         createTwoPlayers.exec();
 

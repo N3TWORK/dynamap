@@ -67,7 +67,7 @@ public class WriteTx {
         updates.add(writeOpFactory.buildUpdate(u));
     }
 
-    public <T extends DynamapRecordBean> void put(T dynamapRecordBean) {
+    public <T extends DynamapRecordBean> void save(T dynamapRecordBean) {
         puts.add(writeOpFactory.buildPut(dynamapRecordBean, dynamoItemFactory));
     }
 
