@@ -13,7 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-public class DynamoItemFactory {
+class DynamoItemFactory {
     private final ObjectMapper objectMapper;
     private final boolean disableOptimisticLocking;
 

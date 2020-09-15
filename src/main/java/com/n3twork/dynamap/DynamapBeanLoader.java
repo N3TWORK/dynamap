@@ -16,7 +16,7 @@ import java.util.List;
  *     <li>Conversion to the appripriate Dynamap Bean type</li>
  * </ul>
  */
-public class DynamapBeanLoader {
+class DynamapBeanLoader {
     private static final Logger logger = LoggerFactory.getLogger(DynamapBeanLoader.class);
     private final SchemaRegistry schemaRegistry;
     private final DynamapBeanFactory dynamapBeanFactory;
