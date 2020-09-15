@@ -19,11 +19,8 @@ package com.n3twork.dynamap;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.document.*;
 import com.amazonaws.services.dynamodbv2.document.spec.*;
-import com.amazonaws.services.dynamodbv2.document.utils.NameMap;
-import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.model.*;
 import com.amazonaws.services.dynamodbv2.util.TableUtils;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -31,9 +28,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.n3twork.BatchSaveParams;
 import com.n3twork.dynamap.model.Field;
-import com.n3twork.dynamap.model.Schema;
 import com.n3twork.dynamap.model.TableDefinition;
-import com.n3twork.dynamap.model.Type;
 import com.n3twork.dynamap.tx.ReadOpFactory;
 import com.n3twork.dynamap.tx.ReadTx;
 import com.n3twork.dynamap.tx.WriteOpFactory;
@@ -53,12 +48,13 @@ public class Dynamap {
     private final AmazonDynamoDB amazonDynamoDB;
     private final DynamoDB dynamoDB;
     private final SchemaRegistry schemaRegistry;
-    private final Map<String, Table> tableCache = new HashMap<>();
+    private final TableCache tableCache;
     private String prefix;
     private ObjectMapper objectMapper;
     private Map<String, CreateTableRequest> createTableRequests = new HashMap<>();
     private WriteOpFactory writeOpFactory;
     private ReadOpFactory readOpFactory;
+    private DynamapBeanFactory dynamapBeanFactory;
 
     private static final int MAX_BATCH_SIZE = 25;
     private static final int MAX_BATCH_GET_SIZE = 100;
@@ -66,20 +62,23 @@ public class Dynamap {
     public Dynamap(AmazonDynamoDB amazonDynamoDB, SchemaRegistry schemaRegistry) {
         this.amazonDynamoDB = amazonDynamoDB;
         this.dynamoDB = new DynamoDB(amazonDynamoDB);
+        this.tableCache = new TableCache(this.dynamoDB);
         this.schemaRegistry = schemaRegistry;
         this.objectMapper = new ObjectMapper();
-        this.writeOpFactory = new WriteOpFactory(objectMapper, this.prefix, this::buildDynamoItemFromObject, schemaRegistry);
+        this.writeOpFactory = new WriteOpFactory(objectMapper, this.prefix, schemaRegistry);
         this.readOpFactory = new ReadOpFactory(schemaRegistry, this.prefix);
+        this.dynamapBeanFactory = new DynamapBeanFactory(schemaRegistry, this.objectMapper);
     }
 
     public Dynamap withObjectMapper(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
+        this.dynamapBeanFactory = new DynamapBeanFactory(schemaRegistry, this.objectMapper);
         return this;
     }
 
     public Dynamap withPrefix(String prefix) {
         this.prefix = prefix;
-        this.writeOpFactory = new WriteOpFactory(objectMapper, this.prefix, this::buildDynamoItemFromObject, schemaRegistry);
+        this.writeOpFactory = new WriteOpFactory(objectMapper, this.prefix, schemaRegistry);
         this.readOpFactory = new ReadOpFactory(schemaRegistry, this.prefix);
         return this;
     }
@@ -269,7 +268,7 @@ public class Dynamap {
                 getItemInfo.tableDefinition = tableDefinition;
                 getItemInfo.getObjectRequest = getObjectRequest;
                 queryInfos.put(tableName, getItemInfo);
-                getItemInfo.table = getTable(tableName);
+                getItemInfo.table = tableCache.getTable(tableName);
             }
 
             Multimap<String, Item> allItems = doBatchGetItem(queryInfos, rateLimitersByTable, totalProgress, batchGetObjectParams.getProgressCallback());
@@ -290,9 +289,12 @@ public class Dynamap {
                             writeLimiter = pair.getWriteLimiter();
                         }
                     }
-                    resultsForClass.add(((Object) buildObjectFromDynamoItem(item,
-                            getItemInfo.getObjectRequest.getResultClass(), writeLimiter,
-                            batchGetObjectParams.getMigrationContext(), batchGetObjectParams.isWriteMigrationChange(), false, getItemInfo.getObjectRequest.getSuffix())));
+                    DynamapBeanLoader dynamapBeanLoader = new DynamapBeanLoader(schemaRegistry, dynamapBeanFactory, objectMapper, prefix, tableCache)
+                            .withWriteLimiter(writeLimiter)
+                            .writeBack(batchGetObjectParams.isWriteMigrationChange())
+                            .withMigrationContext(batchGetObjectParams.getMigrationContext())
+                            .withSuffix(getItemInfo.getObjectRequest.getSuffix());
+                    resultsForClass.add(dynamapBeanLoader.loadItem(item, getItemInfo.getObjectRequest.getResultClass()));
                 }
             }
         }
@@ -324,7 +326,7 @@ public class Dynamap {
 
     public <T extends DynamapRecordBean> QueryResult<T> queryResult(QueryRequest<T> queryRequest) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(queryRequest.getResultClass());
-        Table table = getTable(tableDefinition.getTableName(prefix, queryRequest.getSuffix()));
+        Table table = tableCache.getTable(tableDefinition.getTableName(prefix, queryRequest.getSuffix()));
         QuerySpec querySpec = new QuerySpec()
                 .withConsistentRead(queryRequest.isConsistentRead())
                 .withKeyConditionExpression(queryRequest.getKeyConditionExpression())
@@ -394,10 +396,12 @@ public class Dynamap {
 
             @Override
             public T next() {
-                T result = buildObjectFromDynamoItem(iterator.next(), queryRequest.getResultClass(),
-                        null, queryRequest.getMigrationContext(), queryRequest.isWriteMigrationChange(),
-                        queryRequest.getProjectionExpression() != null, queryRequest.getSuffix());
-                return result;
+                DynamapBeanLoader dynamapBeanLoader = new DynamapBeanLoader(schemaRegistry, dynamapBeanFactory, objectMapper, prefix, tableCache)
+                        .skipMigration(queryRequest.getProjectionExpression() != null)
+                        .writeBack(queryRequest.isWriteMigrationChange())
+                        .withMigrationContext(queryRequest.getMigrationContext())
+                        .withSuffix(queryRequest.getSuffix());
+                return dynamapBeanLoader.loadItem(iterator.next(), queryRequest.getResultClass());
             }
 
             @Override
@@ -413,7 +417,7 @@ public class Dynamap {
 
     public <T extends DynamapRecordBean> ScanResult<T> scan(ScanRequest<T> scanRequest) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(scanRequest.getResultClass());
-        Table table = getTable(tableDefinition.getTableName(prefix, scanRequest.getSuffix()));
+        Table table = tableCache.getTable(tableDefinition.getTableName(prefix, scanRequest.getSuffix()));
 
         ScanSpec scanspec = new ScanSpec();
         if (scanRequest.getNames() != null) {
@@ -482,13 +486,14 @@ public class Dynamap {
 
 
         ItemIterator<T> itemIterator = new ItemIterator<T>(scanItems) {
-
             @Override
             public T next() {
-                T result = buildObjectFromDynamoItem(iterator.next(), scanRequest.getResultClass(),
-                        null, scanRequest.getMigrationContext(), scanRequest.isWriteMigrationChange(),
-                        scanRequest.getProjectionExpression() != null, scanRequest.getSuffix());
-                return result;
+                DynamapBeanLoader dynamapBeanLoader = new DynamapBeanLoader(schemaRegistry, dynamapBeanFactory, objectMapper, prefix, tableCache)
+                        .skipMigration(scanRequest.getProjectionExpression() != null)
+                        .writeBack(scanRequest.isWriteMigrationChange())
+                        .withMigrationContext(scanRequest.getMigrationContext())
+                        .withSuffix(scanRequest.getSuffix());
+                return dynamapBeanLoader.loadItem(iterator.next(), scanRequest.getResultClass());
             }
 
             @Override
@@ -502,8 +507,14 @@ public class Dynamap {
 
     public void save(SaveParams saveParams) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(saveParams.getDynamapRecordBean().getClass());
-        putObject(saveParams.getDynamapRecordBean(), tableDefinition, !saveParams.isDisableOverwrite(),
-                saveParams.isDisableOptimisticLocking(), false, saveParams.getWriteLimiter(), saveParams.getSuffix());
+        new DynamapBeanPut(objectMapper, prefix, tableCache)
+                .putObject(saveParams.getDynamapRecordBean(),
+                        tableDefinition,
+                        !saveParams.isDisableOverwrite(),
+                        saveParams.isDisableOptimisticLocking(),
+                        false,
+                        saveParams.getWriteLimiter(),
+                        saveParams.getSuffix());
     }
 
     public <T extends DynamapPersisted<U>, U extends RecordUpdates<T>, R extends UpdateResult<T, U>> R update(UpdateParams<T> updateParams) {
@@ -513,7 +524,7 @@ public class Dynamap {
 
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(updates.getTableName());
         UpdateItemSpec updateItemSpec = getUpdateItemSpec(updates, tableDefinition, updateParams.getDynamapReturnValue());
-        Table table = getTable(tableDefinition.getTableName(prefix, suffix));
+        Table table = tableCache.getTable(tableDefinition.getTableName(prefix, suffix));
 
         logger.debug("About to submit DynamoDB Update: Update expression: {}, Conditional expression: {}, Values {}, Names: {}", updateItemSpec.getUpdateExpression(), updateItemSpec.getConditionExpression(), updateItemSpec.getValueMap(), updateItemSpec.getNameMap());
         try {
@@ -544,7 +555,7 @@ public class Dynamap {
             }
 
             Class beanClass = Class.forName(tableDefinition.getPackageName() + "." + tableDefinition.getType() + "Bean");
-            T bean = (T) convertMapToObject(tableDefinition, updateItemOutcome.getItem().asMap(), beanClass);
+            T bean = (T) dynamapBeanFactory.asDynamapBean(updateItemOutcome.getItem(), beanClass);
             return constructor.newInstance(updates, bean);
 
 
@@ -580,7 +591,8 @@ public class Dynamap {
 
         int unprocessedKeyCount;
         //todo: need to add exponential backoff for unprocessed items and a termination condition
-        do {
+        do
+        {
 
             if (outcome.getBatchGetItemResult().getConsumedCapacity() != null) {
                 for (ConsumedCapacity consumedCapacity : outcome.getBatchGetItemResult().getConsumedCapacity()) {
@@ -630,7 +642,7 @@ public class Dynamap {
     private void initAndAcquire(Map<String, ReadWriteRateLimiterPair> rateLimiters, boolean write) {
         if (rateLimiters != null) {
             for (String tableName : rateLimiters.keySet()) {
-                Table table = getTable(tableName);
+                Table table = tableCache.getTable(tableName);
                 for (ReadWriteRateLimiterPair dynamoRateLimiters : rateLimiters.values()) {
                     DynamoRateLimiter rateLimiter = write ? dynamoRateLimiters.getWriteLimiter() : dynamoRateLimiters.getReadLimiter();
                     if (rateLimiter != null) {
@@ -648,267 +660,6 @@ public class Dynamap {
         }
     }
 
-    private <T extends DynamapRecordBean> T buildObjectFromDynamoItem(Item item, Class<T> resultClass, DynamoRateLimiter writeRateLimiter, Object migrationContext, boolean writeBack, boolean skipMigration, String suffix) {
-        if (item == null) {
-            return null;
-        }
-
-        TableDefinition tableDefinition = this.schemaRegistry.getTableDefinition(resultClass);
-        T result;
-        String schemaField = tableDefinition.getSchemaVersionField();
-        int currentVersion = 0;
-        if (tableDefinition.isEnableMigrations() && !skipMigration) {
-            if (!item.hasAttribute(schemaField)) {
-                Field field = tableDefinition.getField(tableDefinition.getHashKey());
-                logger.warn("Schema version field does not exist for {} on item with hash key {}. Migrating item to current version", tableDefinition.getTableName(), item.get(field.getDynamoName()));
-            } else {
-                currentVersion = item.getInt(schemaField);
-            }
-        }
-
-        if (tableDefinition.isEnableMigrations() && !skipMigration && currentVersion > tableDefinition.getVersion()) {
-            throw new RuntimeException("Document schema has been migrated to a version later than this release supports: Document version: " + currentVersion + ", Supported version: " + tableDefinition.getVersion());
-        }
-
-        if (tableDefinition.isEnableMigrations() && !skipMigration && currentVersion < tableDefinition.getVersion()) {
-            List<Migration> migrations = schemaRegistry.getMigrations(resultClass);
-            if (migrations != null) {
-                for (Migration migration : migrations) {
-                    if (migration.getVersion() > currentVersion) {
-                        migration.migrate(item, currentVersion, migrationContext);
-                    }
-                }
-                for (Migration migration : migrations) {
-                    if (migration.getVersion() > currentVersion) {
-                        migration.postMigration(item, currentVersion, migrationContext);
-                    }
-                }
-            }
-            item = item.withInt(schemaField, tableDefinition.getVersion());
-            result = convertMapToObject(tableDefinition, item.asMap(), resultClass);
-            if (writeBack) {
-                putObject(result, tableDefinition, true, false, true, writeRateLimiter, suffix);
-            }
-        } else {
-            result = convertMapToObject(tableDefinition, item.asMap(), resultClass);
-        }
-
-        return result;
-    }
-
-    private <T extends DynamapRecordBean> T convertMapToObject(TableDefinition tableDefinition, Map<String, Object> map, Class<T> resultClass) {
-        processDeserializationConversions(tableDefinition, map);
-        return objectMapper.convertValue(map, resultClass);
-    }
-
-    private void processDeserializationConversions(TableDefinition tableDefinition, Map<String, Object> map) {
-        // decompress gzip byte arrays
-        for (TableDefinition.CompressCollectionItem compressCollectionItem : tableDefinition.getCompressCollectionItems()) {
-            byte[] bytes = null;
-            if (compressCollectionItem.parentKey != null) {
-                Map<String, Object> parent = (Map<String, Object>) map.get(compressCollectionItem.parentKey);
-                if (parent != null) {
-                    bytes = (byte[]) parent.get(compressCollectionItem.itemKey);
-                }
-            } else {
-                bytes = (byte[]) map.get(compressCollectionItem.itemKey);
-            }
-            if (bytes != null) {
-                Object object = GZipUtil.deSerialize(bytes, objectMapper, Object.class);
-                if (compressCollectionItem.parentKey != null) {
-                    ((Map) map.get(compressCollectionItem.parentKey)).put(compressCollectionItem.itemKey, object);
-                } else {
-                    map.put(compressCollectionItem.itemKey, object);
-                }
-            }
-        }
-
-        // convert lists to map for persistAsList fields
-        for (TableDefinition.PersistAsFieldItem persistAsFieldItem : tableDefinition.getPersistAsFieldItems()) {
-            List<Map<String, Object>> list = null;
-            if (persistAsFieldItem.parentKey != null) {
-                Map<String, Object> parent = (Map<String, Object>) map.get(persistAsFieldItem.parentKey);
-                if (parent != null) {
-                    list = (List<Map<String, Object>>) parent.get(persistAsFieldItem.itemKey);
-                }
-            } else {
-                list = (List<Map<String, Object>>) map.get(persistAsFieldItem.itemKey);
-            }
-            if (list != null) {
-                Map<String, Object> converted = new HashMap<>();
-                for (Map<String, Object> item : list) {
-                    converted.put((String) item.get(persistAsFieldItem.idKey), item);
-                }
-                if (persistAsFieldItem.parentKey != null) {
-                    ((Map) map.get(persistAsFieldItem.parentKey)).put(persistAsFieldItem.itemKey, converted);
-                } else {
-                    map.put(persistAsFieldItem.itemKey, converted);
-                }
-            }
-        }
-    }
-
-    private void processSerializationConversions(TableDefinition tableDefinition, Item item) {
-        // convert maps to list for persistAsList fields
-        for (TableDefinition.PersistAsFieldItem persistAsFieldItem : tableDefinition.getPersistAsFieldItems()) {
-            Map<String, Object> map = null;
-            if (persistAsFieldItem.parentKey != null) {
-                Map<String, Object> parent = (Map<String, Object>) item.get(persistAsFieldItem.parentKey);
-                if (parent != null) {
-                    map = (Map<String, Object>) parent.get(persistAsFieldItem.itemKey);
-                }
-            } else {
-                map = (Map<String, Object>) item.get(persistAsFieldItem.itemKey);
-            }
-            if (map != null) {
-                List converted = new ArrayList(map.values());
-                if (persistAsFieldItem.parentKey != null) {
-                    ((Map) item.get(persistAsFieldItem.parentKey)).put(persistAsFieldItem.itemKey, converted);
-                } else {
-                    item.withList(persistAsFieldItem.itemKey, converted);
-                }
-            }
-        }
-
-        // compress json to byte array
-        for (TableDefinition.CompressCollectionItem compressCollectionItem : tableDefinition.getCompressCollectionItems()) {
-            Object object = null;
-            if (compressCollectionItem.parentKey != null) {
-                Map<String, Object> parent = (Map<String, Object>) item.get(compressCollectionItem.parentKey);
-                if (parent != null) {
-                    object = parent.get(compressCollectionItem.itemKey);
-                }
-            } else {
-                object = item.get(compressCollectionItem.itemKey);
-            }
-            if (object != null) {
-                byte[] bytes = GZipUtil.serialize(object, objectMapper);
-                if (compressCollectionItem.parentKey != null) {
-                    ((Map) item.get(compressCollectionItem.parentKey)).put(compressCollectionItem.itemKey, bytes);
-                } else {
-                    item.withBinary(compressCollectionItem.itemKey, bytes);
-                }
-            }
-
-        }
-
-    }
-
-
-    private <T extends DynamapRecordBean> Item buildDynamoItemFromObject(T object, TableDefinition tableDefinition, boolean disableOptimisticLocking) {
-        Map<String, Object> map = objectMapper.convertValue(object, new TypeReference<Map<String, Object>>() {
-        });
-        Item item = new Item();
-        if (tableDefinition.isEnableMigrations()) {
-            item.withInt(tableDefinition.getSchemaVersionField(), tableDefinition.getVersion());
-        }
-
-        if (!disableOptimisticLocking && tableDefinition.isOptimisticLocking()) {
-            int revision = (int) map.getOrDefault(Schema.REVISION_FIELD, 0);
-            item.withInt(Schema.REVISION_FIELD, revision + 1);
-        }
-
-        Type type = tableDefinition.getTypes().stream().filter(t -> t.getName().equals(tableDefinition.getType())).findFirst().get();
-        for (Field field : type.getPersistedFields()) {
-            if (!map.containsKey(field.getDynamoName()) || map.get(field.getDynamoName()) == null) {
-                continue;
-            }
-            // if field is a nested dynamap object then remove any non persisted fields
-            if (field.isGeneratedType()) {
-                Map<String, Object> objectToPersist = (Map<String, Object>) map.get(field.getDynamoName());
-                Type fieldType = tableDefinition.getFieldType(field.getElementType());
-                for (Field fieldToCheck : fieldType.getFields()) {
-                    if (objectToPersist.containsKey(fieldToCheck.getName()) && !fieldToCheck.isPersist()) {
-                        objectToPersist.remove(fieldToCheck.getName());
-                    }
-                }
-            }
-            // Jackson converts all collections to array lists, which in turn are treated as lists
-            // Need to handle Sets specifically. Sets can also not be empty
-            if (field.getType().equals("Set")) {
-                List list = (List) map.get(field.getDynamoName());
-                if (list.size() > 0) {
-                    item.with(field.getDynamoName(), new HashSet<>((List) map.get(field.getDynamoName())));
-                }
-            } else {
-                item.with(field.getDynamoName(), map.get(field.getDynamoName()));
-            }
-        }
-
-        processSerializationConversions(tableDefinition, item);
-
-        String hashKeyFieldName = tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName();
-        if (object.getRangeKeyValue() != null) {
-            String rangeKeyFieldName = tableDefinition.getField(tableDefinition.getRangeKey()).getDynamoName();
-            item.withPrimaryKey(hashKeyFieldName, object.getHashKeyValue(), rangeKeyFieldName, object.getRangeKeyValue());
-        } else {
-            item.withPrimaryKey(hashKeyFieldName, object.getHashKeyValue());
-        }
-
-        return item;
-    }
-
-    private <T extends DynamapRecordBean> Item buildDynamoItemFromObject(T object, TableDefinition tableDefinition) {
-        return buildDynamoItemFromObject(object, tableDefinition, false);
-    }
-
-    private <T extends DynamapRecordBean> void putObject(T object, TableDefinition tableDefinition, boolean overwrite, boolean disableOptimisticLocking, boolean isMigration, DynamoRateLimiter writeLimiter, String suffix) {
-
-        Item item = buildDynamoItemFromObject(object, tableDefinition, disableOptimisticLocking);
-        PutItemSpec putItemSpec = new PutItemSpec()
-                .withItem(item)
-                .withReturnValues(ReturnValue.NONE);
-        String hashKeyFieldName = tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName();
-        ValueMap valueMap = new ValueMap();
-        NameMap nameMap = new NameMap();
-        List<String> conditionalExpressions = new ArrayList<>();
-        if (!overwrite) {
-            conditionalExpressions.add("attribute_not_exists(" + hashKeyFieldName + ")");
-        }
-
-        if (!disableOptimisticLocking && tableDefinition.isOptimisticLocking()) {
-            // value is incremented in buildDynamoItemFromObject, so here i must get the original value
-            int revision = item.getInt(Schema.REVISION_FIELD) - 1;
-            if (revision > 0) {
-                conditionalExpressions.add("#name0=:val0");
-                nameMap.with("#name0", Schema.REVISION_FIELD);
-                valueMap.withInt(":val0", revision);
-            }
-        }
-
-        if (isMigration) {
-            conditionalExpressions.add("#namemigr < :valmigr");
-            nameMap.with("#namemigr", tableDefinition.getSchemaVersionField());
-            valueMap.withInt(":valmigr", tableDefinition.getVersion());
-        }
-
-        if (conditionalExpressions.size() > 0) {
-            putItemSpec.withConditionExpression(String.join(" AND ", conditionalExpressions));
-            if (valueMap.size() > 0) {
-                putItemSpec.withNameMap(nameMap);
-                putItemSpec.withValueMap(valueMap);
-            }
-        }
-
-        Table table = getTable(tableDefinition.getTableName(prefix, suffix));
-        try {
-            if (writeLimiter != null) {
-                writeLimiter.init(table);
-                writeLimiter.acquire();
-            }
-            PutItemOutcome outcome = table.putItem(putItemSpec);
-            if (writeLimiter != null) {
-                writeLimiter.setConsumedCapacity(outcome.getPutItemResult().getConsumedCapacity());
-            }
-        } catch (Exception e) {
-            logger.debug(getPutErrorMessage(putItemSpec));
-            throw e;
-        }
-    }
-
-    private String getPutErrorMessage(PutItemSpec putItemSpec) {
-        return "Error putting item:" + putItemSpec.getItem().toJSON() + " Conditional expression: " + putItemSpec.getConditionExpression() + " Values: " + putItemSpec.getValueMap() + " Names: " + putItemSpec.getNameMap();
-    }
 
     private boolean hasAttributeDefinition(Collection<AttributeDefinition> attributeDefinitions, String name) {
         return attributeDefinitions.stream().anyMatch(d -> d.getAttributeName().equals(name));
@@ -948,7 +699,7 @@ public class Dynamap {
 
     public void delete(DeleteRequest deleteRequest) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(deleteRequest.getResultClass());
-        Table table = getTable(tableDefinition.getTableName(prefix, deleteRequest.getSuffix()));
+        Table table = tableCache.getTable(tableDefinition.getTableName(prefix, deleteRequest.getSuffix()));
 
         DeleteItemSpec deleteItemSpec = new DeleteItemSpec();
         Field hashField = tableDefinition.getField(tableDefinition.getHashKey());
@@ -1007,7 +758,7 @@ public class Dynamap {
 
             for (DynamapRecordBean object : batch) {
                 TableDefinition tableDefinition = schemaRegistry.getTableDefinition(object.getClass());
-                Item item = buildDynamoItemFromObject(object, tableDefinition);
+                Item item = new DynamoItemFactory(objectMapper).asDynamoItem(object, tableDefinition);
 
                 String tableName = tableDefinition.getTableName(prefix, batchSaveParams.getSuffix());
                 TableWriteItems writeItems = tableWriteItems.getOrDefault(tableName, new TableWriteItems(tableName));
@@ -1040,7 +791,7 @@ public class Dynamap {
                     DynamoRateLimiter rateLimiter = writeLimiterMapByTable.get(consumedCapacity.getTableName());
                     rateLimiter.setConsumedCapacity(consumedCapacity);
                     logger.debug("Set rate limiter capacity {}", consumedCapacity.getCapacityUnits());
-                    Table table = getTable(consumedCapacity.getTableName());
+                    Table table = tableCache.getTable(consumedCapacity.getTableName());
                     rateLimiter.init(table);
                     rateLimiter.acquire();
                 }
@@ -1054,20 +805,11 @@ public class Dynamap {
         logger.debug("doBatchWriteItem done");
     }
 
-    private Table getTable(String tableName) {
-        Table table = tableCache.get(tableName);
-        if (table == null) {
-            table = dynamoDB.getTable(tableName);
-            tableCache.put(tableName, table);
-        }
-        return table;
-    }
-
     public WriteTx newWriteTx() {
-        return new WriteTx(amazonDynamoDB, writeOpFactory);
+        return new WriteTx(amazonDynamoDB, writeOpFactory, new DynamoItemFactory(objectMapper));
     }
 
     public ReadTx newReadTx() {
-        return new ReadTx(amazonDynamoDB, readOpFactory, this::buildObjectFromDynamoItem);
+        return new ReadTx(amazonDynamoDB, readOpFactory, new DynamapBeanLoader(schemaRegistry, dynamapBeanFactory, objectMapper, prefix, tableCache));
     }
 }

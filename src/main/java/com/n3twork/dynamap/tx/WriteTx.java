@@ -46,8 +46,9 @@ public class WriteTx {
     private final Set<Delete> deletes = new HashSet<>();
     private final Set<ConditionCheck> conditionChecks = new HashSet<>();
     private final WriteOpFactory writeOpFactory;
+    private final DynamoItemFactory dynamoItemFactory;
 
-    public WriteTx(AmazonDynamoDB amazonDynamoDB, WriteOpFactory writeOpFactory) {
+    public WriteTx(AmazonDynamoDB amazonDynamoDB, WriteOpFactory writeOpFactory, DynamoItemFactory dynamoItemFactory) {
         if (null == amazonDynamoDB) {
             throw new NullPointerException();
         }
@@ -56,6 +57,10 @@ public class WriteTx {
             throw new NullPointerException();
         }
         this.writeOpFactory = writeOpFactory;
+        if (null == dynamoItemFactory) {
+            throw new NullPointerException();
+        }
+        this.dynamoItemFactory = dynamoItemFactory;
     }
 
     public <T extends DynamapPersisted<U>, U extends RecordUpdates<T>> void update(UpdateParams<T> u) {
@@ -63,7 +68,7 @@ public class WriteTx {
     }
 
     public <T extends DynamapRecordBean> void put(T dynamapRecordBean) {
-        puts.add(writeOpFactory.buildPut(dynamapRecordBean));
+        puts.add(writeOpFactory.buildPut(dynamapRecordBean, dynamoItemFactory));
     }
 
     public void delete(DeleteRequest deleteRequest) {

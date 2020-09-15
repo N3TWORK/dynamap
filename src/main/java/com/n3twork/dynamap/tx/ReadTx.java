@@ -3,6 +3,7 @@ package com.n3twork.dynamap.tx;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.document.ItemUtils;
 import com.amazonaws.services.dynamodbv2.model.*;
+import com.n3twork.dynamap.DynamapBeanLoader;
 import com.n3twork.dynamap.DynamapRecordBean;
 import com.n3twork.dynamap.GetObjectParams;
 import org.slf4j.Logger;
@@ -38,9 +39,9 @@ public class ReadTx {
     private final AmazonDynamoDB amazonDynamoDB;
     private final ReadOpFactory readOpFactory;
     private final List<GetObjectParams> gets = new ArrayList<>();
-    private final ItemToDynamapConverter dynamapBeanFactory;
+    private final DynamapBeanLoader dynamapBeanLoader;
 
-    public ReadTx(AmazonDynamoDB amazonDynamoDB, ReadOpFactory readOpFactory, ItemToDynamapConverter dynamapBeanFactory) {
+    public ReadTx(AmazonDynamoDB amazonDynamoDB, ReadOpFactory readOpFactory, DynamapBeanLoader dynamapBeanLoader) {
         if (null == amazonDynamoDB) {
             throw new NullPointerException();
         }
@@ -49,10 +50,10 @@ public class ReadTx {
             throw new NullPointerException();
         }
         this.readOpFactory = readOpFactory;
-        if (null == dynamapBeanFactory) {
+        if (null == dynamapBeanLoader) {
             throw new NullPointerException();
         }
-        this.dynamapBeanFactory = dynamapBeanFactory;
+        this.dynamapBeanLoader = dynamapBeanLoader;
     }
 
     public <T extends DynamapRecordBean> void get(GetObjectParams<T> getObjectParams) {
@@ -82,14 +83,7 @@ public class ReadTx {
                     result.set(i, null);
                     continue;
                 }
-                result.add(dynamapBeanFactory.toDynamapBean(ItemUtils.toItem(itemResponse.getItem()),
-                        getObjectParams.getGetObjectRequest().getResultClass(),
-                        null == getObjectParams.getRateLimiters() ? null : getObjectParams.getRateLimiters().getWriteLimiter(),
-                        getObjectParams.getMigrationContext(),
-                        true,
-                        false,
-                        null)
-                );
+                result.add(dynamapBeanLoader.loadItem(ItemUtils.toItem(itemResponse.getItem()), getObjectParams.getGetObjectRequest().getResultClass()));
             }
             return result;
         } catch (ResourceNotFoundException rnf) {

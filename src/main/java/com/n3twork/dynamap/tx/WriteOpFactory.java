@@ -1,13 +1,10 @@
 package com.n3twork.dynamap.tx;
 
-import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.ItemUtils;
-import com.amazonaws.services.dynamodbv2.document.utils.NameMap;
-import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.model.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.n3twork.dynamap.*;
 import com.n3twork.dynamap.DeleteRequest;
+import com.n3twork.dynamap.*;
 import com.n3twork.dynamap.model.TableDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,31 +19,25 @@ public class WriteOpFactory {
     private static final Logger logger = LoggerFactory.getLogger(WriteOpFactory.class);
     private final ObjectMapper objectMapper;
     private final String tableNamePrefix;
-    private final DynamapToItemConverter itemFactory;
     private final SchemaRegistry schemaRegistry;
 
-    public WriteOpFactory(ObjectMapper objectMapper, String tableNamePrefix, DynamapToItemConverter itemFactory, SchemaRegistry schemaRegistry) {
+    public WriteOpFactory(ObjectMapper objectMapper, String tableNamePrefix, SchemaRegistry schemaRegistry) {
         if (null == objectMapper) {
             throw new NullPointerException();
         }
         this.objectMapper = objectMapper;
         this.tableNamePrefix = tableNamePrefix; // nullable
-        if (null == itemFactory) {
-            throw new NullPointerException();
-        }
-        this.itemFactory = itemFactory;
         if (null == schemaRegistry) {
             throw new NullPointerException();
         }
         this.schemaRegistry = schemaRegistry;
     }
 
-    public <T extends DynamapRecordBean> Put buildPut(T dynamapRecordBean) {
+    public <T extends DynamapRecordBean> Put buildPut(T dynamapRecordBean, DynamoItemFactory dynamoItemFactory) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(dynamapRecordBean.getClass());
-        Item item = itemFactory.toItem(dynamapRecordBean, tableDefinition);
         return new Put()
                 .withTableName(tableDefinition.getTableName(tableNamePrefix))
-                .withItem(ItemUtils.toAttributeValues(item));
+                .withItem(ItemUtils.toAttributeValues(dynamoItemFactory.asDynamoItem(dynamapRecordBean, tableDefinition)));
     }
 
     public <T extends DynamapPersisted<U>, U extends RecordUpdates<T>> Update buildUpdate(UpdateParams<T> updateParams) {
@@ -57,9 +48,6 @@ public class WriteOpFactory {
         DynamoExpressionBuilder expressionBuilder = updates.getExpressionBuilder();
         expressionBuilder.setObjectMapper(objectMapper);
         updates.processUpdateExpression();
-
-        NameMap nm = expressionBuilder.getNameMap();
-        ValueMap vm = expressionBuilder.getValueMap();
 
         return new Update()
                 .withTableName(tableDefinition.getTableName(tableNamePrefix))
