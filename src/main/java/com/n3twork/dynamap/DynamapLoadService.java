@@ -16,8 +16,8 @@ import java.util.List;
  *     <li>Conversion to the appripriate Dynamap Bean type</li>
  * </ul>
  */
-class DynamapBeanLoader {
-    private static final Logger logger = LoggerFactory.getLogger(DynamapBeanLoader.class);
+class DynamapLoadService {
+    private static final Logger logger = LoggerFactory.getLogger(DynamapLoadService.class);
     private final SchemaRegistry schemaRegistry;
     private final DynamapBeanFactory dynamapBeanFactory;
     private final ObjectMapper objectMapper;
@@ -29,7 +29,7 @@ class DynamapBeanLoader {
     private Object migrationContext;
     private TableCache tableCache;
 
-    public DynamapBeanLoader(SchemaRegistry schemaRegistry, DynamapBeanFactory dynamapBeanFactory, ObjectMapper objectMapper, String tableNamePrefix, TableCache tableCache) {
+    public DynamapLoadService(SchemaRegistry schemaRegistry, DynamapBeanFactory dynamapBeanFactory, ObjectMapper objectMapper, String tableNamePrefix, TableCache tableCache) {
         if (null == schemaRegistry) {
             throw new IllegalArgumentException();
         }
@@ -52,27 +52,27 @@ class DynamapBeanLoader {
         this.tableCache = tableCache;
     }
 
-    public DynamapBeanLoader withWriteLimiter(DynamoRateLimiter dynamoRateLimiter) {
+    public DynamapLoadService withWriteLimiter(DynamoRateLimiter dynamoRateLimiter) {
         this.writeRateLimiter = dynamoRateLimiter;
         return this;
     }
 
-    public DynamapBeanLoader writeBack(boolean writeBack) {
+    public DynamapLoadService writeBack(boolean writeBack) {
         this.writeBack = writeBack;
         return this;
     }
 
-    public DynamapBeanLoader withSuffix(String suffix) {
+    public DynamapLoadService withSuffix(String suffix) {
         this.suffix = suffix;
         return this;
     }
 
-    public DynamapBeanLoader skipMigration(boolean skipMigration) {
+    public DynamapLoadService skipMigration(boolean skipMigration) {
         this.skipMigration = skipMigration;
         return this;
     }
 
-    public DynamapBeanLoader withMigrationContext(Object migrationContext) {
+    public DynamapLoadService withMigrationContext(Object migrationContext) {
         this.migrationContext = migrationContext;
         return this;
     }
@@ -91,8 +91,8 @@ class DynamapBeanLoader {
             MigrationResult migrationResult = migrateItem(item, resultClass, this.migrationContext);
             T result = dynamapBeanFactory.asDynamapBean(migrationResult.item, resultClass);
             if (migrationResult.wasMigrated && writeBack) {
-                new DynamapBeanPut(objectMapper, tableNamePrefix, tableCache)
-                        .putObject(result, tableDefinition, true, false, true, writeRateLimiter, suffix);
+                new DynamapSaveService(objectMapper, tableNamePrefix, tableCache)
+                        .saveBean(result, tableDefinition, true, false, true, writeRateLimiter, suffix);
             }
             return result;
         }

@@ -17,15 +17,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * All the logic necessary to put Dynamap beans into DynamoDB.
+ * All the logic necessary to save Dynamap beans in DynamoDB.
  */
-class DynamapBeanPut {
-    private static final Logger logger = LoggerFactory.getLogger(DynamapBeanPut.class);
+class DynamapSaveService {
+    private static final Logger logger = LoggerFactory.getLogger(DynamapSaveService.class);
     private final ObjectMapper objectMapper;
     private final String tableNamePrefix;
     private final TableCache tableCache;
 
-    public DynamapBeanPut(ObjectMapper objectMapper, String tableNamePrefix, TableCache tableCache) {
+    public DynamapSaveService(ObjectMapper objectMapper, String tableNamePrefix, TableCache tableCache) {
         if (null == objectMapper) {
             throw new IllegalArgumentException();
         }
@@ -37,8 +37,8 @@ class DynamapBeanPut {
         this.tableCache = tableCache;
     }
 
-    public <T extends DynamapRecordBean> void putObject(T object, TableDefinition tableDefinition, boolean overwrite, boolean disableOptimisticLocking, boolean isMigration, DynamoRateLimiter writeLimiter, String suffix) {
-        Item item = new DynamoItemFactory(objectMapper, disableOptimisticLocking).asDynamoItem(object, tableDefinition);
+    public <T extends DynamapRecordBean> void saveBean(T bean, TableDefinition tableDefinition, boolean overwrite, boolean disableOptimisticLocking, boolean isMigration, DynamoRateLimiter writeLimiter, String suffix) {
+        Item item = new DynamoItemFactory(objectMapper, disableOptimisticLocking).asDynamoItem(bean, tableDefinition);
         PutItemSpec putItemSpec = new PutItemSpec()
                 .withItem(item)
                 .withReturnValues(ReturnValue.NONE);

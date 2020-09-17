@@ -36,9 +36,9 @@ public class ReadTx {
     private final AmazonDynamoDB amazonDynamoDB;
     private final ReadOpFactory readOpFactory;
     private final List<GetObjectParams> gets = new ArrayList<>();
-    private final DynamapBeanLoader dynamapBeanLoader;
+    private final DynamapLoadService dynamapBeanLoader;
 
-    ReadTx(AmazonDynamoDB amazonDynamoDB, ReadOpFactory readOpFactory, DynamapBeanLoader dynamapBeanLoader) {
+    ReadTx(AmazonDynamoDB amazonDynamoDB, ReadOpFactory readOpFactory, DynamapLoadService dynamapBeanLoader) {
         if (null == amazonDynamoDB) {
             throw new NullPointerException();
         }

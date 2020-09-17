@@ -285,7 +285,7 @@ public class Dynamap {
                             writeLimiter = pair.getWriteLimiter();
                         }
                     }
-                    DynamapBeanLoader dynamapBeanLoader = new DynamapBeanLoader(schemaRegistry, dynamapBeanFactory, objectMapper, prefix, tableCache)
+                    DynamapLoadService dynamapBeanLoader = new DynamapLoadService(schemaRegistry, dynamapBeanFactory, objectMapper, prefix, tableCache)
                             .withWriteLimiter(writeLimiter)
                             .writeBack(batchGetObjectParams.isWriteMigrationChange())
                             .withMigrationContext(batchGetObjectParams.getMigrationContext())
@@ -392,7 +392,7 @@ public class Dynamap {
 
             @Override
             public T next() {
-                DynamapBeanLoader dynamapBeanLoader = new DynamapBeanLoader(schemaRegistry, dynamapBeanFactory, objectMapper, prefix, tableCache)
+                DynamapLoadService dynamapBeanLoader = new DynamapLoadService(schemaRegistry, dynamapBeanFactory, objectMapper, prefix, tableCache)
                         .skipMigration(queryRequest.getProjectionExpression() != null)
                         .writeBack(queryRequest.isWriteMigrationChange())
                         .withMigrationContext(queryRequest.getMigrationContext())
@@ -484,7 +484,7 @@ public class Dynamap {
         ItemIterator<T> itemIterator = new ItemIterator<T>(scanItems) {
             @Override
             public T next() {
-                DynamapBeanLoader dynamapBeanLoader = new DynamapBeanLoader(schemaRegistry, dynamapBeanFactory, objectMapper, prefix, tableCache)
+                DynamapLoadService dynamapBeanLoader = new DynamapLoadService(schemaRegistry, dynamapBeanFactory, objectMapper, prefix, tableCache)
                         .skipMigration(scanRequest.getProjectionExpression() != null)
                         .writeBack(scanRequest.isWriteMigrationChange())
                         .withMigrationContext(scanRequest.getMigrationContext())
@@ -503,8 +503,8 @@ public class Dynamap {
 
     public void save(SaveParams saveParams) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(saveParams.getDynamapRecordBean().getClass());
-        new DynamapBeanPut(objectMapper, prefix, tableCache)
-                .putObject(saveParams.getDynamapRecordBean(),
+        new DynamapSaveService(objectMapper, prefix, tableCache)
+                .saveBean(saveParams.getDynamapRecordBean(),
                         tableDefinition,
                         !saveParams.isDisableOverwrite(),
                         saveParams.isDisableOptimisticLocking(),
@@ -806,6 +806,6 @@ public class Dynamap {
     }
 
     public ReadTx newReadTx() {
-        return new ReadTx(amazonDynamoDB, readOpFactory, new DynamapBeanLoader(schemaRegistry, dynamapBeanFactory, objectMapper, prefix, tableCache));
+        return new ReadTx(amazonDynamoDB, readOpFactory, new DynamapLoadService(schemaRegistry, dynamapBeanFactory, objectMapper, prefix, tableCache));
     }
 }
