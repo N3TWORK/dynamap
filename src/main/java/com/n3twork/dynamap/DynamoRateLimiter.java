@@ -27,15 +27,14 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class DynamoRateLimiter {
-
-    public static boolean DISABLE_RATE_LIMITING = false; // For integration tests
+    public enum RateLimitType {READ, WRITE}
 
     private RateLimiter rateLimiter;
     private int permitsToConsume = 1;
     private final RateLimitType rateLimitType;
     private Integer targetPercent;
 
-    public enum RateLimitType {READ, WRITE}
+    private double totalSecondsSlept;
 
     public DynamoRateLimiter(RateLimitType rateLimitType) {
         this.rateLimitType = rateLimitType;
@@ -56,6 +55,11 @@ public class DynamoRateLimiter {
 
     public RateLimitType getRateLimitType() {
         return rateLimitType;
+    }
+
+    // Visible for testing
+    double getTotalSecondsSlept() {
+        return totalSecondsSlept;
     }
 
     public void setTargetPercent(int targetPercent) {
@@ -85,21 +89,24 @@ public class DynamoRateLimiter {
                     provisionedThroughputDescription = table.getDescription().getProvisionedThroughput();
                 }
                 if (RateLimitType.READ.equals(rateLimitType)) {
-                    double permitsPerSec = provisionedThroughputDescription.getReadCapacityUnits() / (100 / targetPercent);
+                    double permitsPerSec = provisionedThroughputDescription.getReadCapacityUnits() / (100.0 / targetPercent);
                     rateLimiter = RateLimiter.create(Math.max(1, permitsPerSec)); // units per second
                 } else {
-                    double permitsPerSec = provisionedThroughputDescription.getWriteCapacityUnits() / (100 / targetPercent);
+                    double permitsPerSec = provisionedThroughputDescription.getWriteCapacityUnits() / (100.0 / targetPercent);
                     rateLimiter = RateLimiter.create(Math.max(1, permitsPerSec)); // units per second
                 }
             }
         }
     }
 
+    int getPermitsToConsume() {
+        return permitsToConsume;
+    }
+
     public void acquire() {
         if (rateLimiter != null) {
-            if (!DISABLE_RATE_LIMITING) {
-                rateLimiter.acquire(permitsToConsume);
-            }
+            totalSecondsSlept += rateLimiter.acquire(permitsToConsume);
+            permitsToConsume = 1;
         } else {
             throw new RuntimeException("Not initialized");
         }
@@ -116,7 +123,7 @@ public class DynamoRateLimiter {
 
     public void setConsumedCapacity(List<ConsumedCapacity> consumedCapacities) {
         if (consumedCapacities != null) {
-            double totalUnits = consumedCapacities.stream().collect(Collectors.summingDouble(c -> c.getCapacityUnits()));
+            double totalUnits = consumedCapacities.stream().mapToDouble(ConsumedCapacity::getCapacityUnits).sum();
             permitsToConsume = (int) (totalUnits - 1.0);
             if (permitsToConsume <= 0) {
                 permitsToConsume = 1;

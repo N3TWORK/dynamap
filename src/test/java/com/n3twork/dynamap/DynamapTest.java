@@ -78,7 +78,7 @@ public class DynamapTest {
                 getClass().getResourceAsStream("/DummyLocalIndexSchema.json"));
         // Create tables
         dynamap = new Dynamap(ddb, schemaRegistry).withPrefix("test").withObjectMapper(objectMapper);
-        dynamap.createTables(System.getProperty("aws.profile") == null);
+        dynamap.createTables(System.getProperty("aws.profile") == null, 10, 10);
     }
 
     @Test
@@ -143,7 +143,6 @@ public class DynamapTest {
 
     @Test
     public void testRateLimiters() {
-
         ReadWriteRateLimiterPair rateLimiterPair = ReadWriteRateLimiterPair.of(new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.READ, 20),
                 new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.WRITE, 20));
 
@@ -157,7 +156,7 @@ public class DynamapTest {
         TestDocumentUpdates testDocumentUpdates = doc.createUpdates();
         testDocumentUpdates.setString("new String");
         dynamap.update(new UpdateParams<>(testDocumentUpdates).withWriteLimiter(rateLimiterPair.getWriteLimiter()));
-
+        Assert.assertTrue(rateLimiterPair.getWriteLimiter().getTotalSecondsSlept() > 0);
     }
 
     @Test
@@ -843,31 +842,29 @@ public class DynamapTest {
 
 
     @Test
-    public void testBatchGetItem() {
-        String docId1 = UUID.randomUUID().toString();
-        String nestedId1 = UUID.randomUUID().toString();
-        String docId2 = UUID.randomUUID().toString();
-        String nestedId2 = UUID.randomUUID().toString();
-        dynamap.save(new SaveParams<>((new TestDocumentBean(docId1, 1).setString("String")
-                .setNestedObject(new NestedTypeBean().setId(nestedId1)))));
-        dynamap.save(new SaveParams<>(new TestDocumentBean(docId2, 1).setString("String")
-                .setNestedObject(new NestedTypeBean().setId(nestedId2))));
-
+    public void testBatchGetItemWithRateLimiter() {
+        int size = 300;
+        List<String> ids = new ArrayList<>(size);
+        List<GetObjectRequest<TestDocumentBean>> getObjectRequests = new ArrayList<>(size);
+        for (int i = 0; i < size; i++) {
+            String docId = UUID.randomUUID().toString();
+            ids.add(docId);
+            getObjectRequests.add(new GetObjectRequest<>(TestDocumentBean.class).withHashKeyValue(docId).withRangeKeyValue(i));
+            dynamap.save(new SaveParams<>((new TestDocumentBean(docId, i).setString("String")
+                    .setNestedObject(new NestedTypeBean().setId(UUID.randomUUID().toString())))));
+        }
 
         List<TestDocumentBean> testDocuments;
-
-        ReadWriteRateLimiterPair rateLimiterPair = ReadWriteRateLimiterPair.of(new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.READ, 20),
-                new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.WRITE, 20));
+        ReadWriteRateLimiterPair rateLimiterPair = ReadWriteRateLimiterPair.of(new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.READ, 70),
+                new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.WRITE, 50));
 
         BatchGetObjectParams<TestDocumentBean> batchGetObjectParams = new BatchGetObjectParams<TestDocumentBean>()
-                .withGetObjectRequests(ImmutableList.of(
-                        new GetObjectRequest<>(TestDocumentBean.class).withHashKeyValue(docId1).withRangeKeyValue(1),
-                        new GetObjectRequest<>(TestDocumentBean.class).withHashKeyValue(docId2).withRangeKeyValue(1)))
-                .withRateLimiters(rateLimiterPair);
+                .withGetObjectRequests(getObjectRequests)
+                .withRateLimiters(ImmutableMap.of(TestDocumentBean.class, rateLimiterPair));
 
         testDocuments = dynamap.batchGetObjectSingleCollection(batchGetObjectParams);
-
-        Assert.assertEquals(testDocuments.size(), 2);
+        Assert.assertEquals(testDocuments.size(), size);
+        Assert.assertTrue(rateLimiterPair.getReadLimiter().getTotalSecondsSlept() > 0);
     }
 
     @Test
@@ -992,21 +989,21 @@ public class DynamapTest {
     @Test
     public void testBatchSaveAndScanWithRateLimiter() {
         Map<Class, DynamoRateLimiter> limiterMap = new HashMap<>();
-        limiterMap.put(TestDocumentBean.class, new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.WRITE, 100));
-        limiterMap.put(DummyDocBean.class, new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.WRITE, 100));
+        limiterMap.put(TestDocumentBean.class, new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.WRITE, 70));
+        limiterMap.put(DummyDocBean.class, new DynamoRateLimiter(DynamoRateLimiter.RateLimitType.WRITE, 70));
 
         //TODO: need to do a better test the verifies correct limiter behavior
         batchSave(limiterMap);
     }
 
     private void batchSave(Map<Class, DynamoRateLimiter> limiterMap) {
-        final int TEST_DOCS_SIZE = 22;
-        final int DUMMY_DOCS_SIZE = 23;
+        final int TEST_DOCS_SIZE = 100;
+        final int DUMMY_DOCS_SIZE = 100;
         List<DynamapRecordBean> docsToSave = new ArrayList<>();
         List<String> testDocsIds = new ArrayList<>();
         List<String> dummyDocsIds = new ArrayList<>();
 
-        String bigString = new String(new char[10000]).replace('\0', 'X');
+        String bigString = new String(new char[256]).replace('\0', 'X');
 
         for (int i = 0; i < TEST_DOCS_SIZE; i++) {
             TestDocumentBean testDocument = createTestDocumentBean(createNestedTypeBean());
@@ -1022,6 +1019,10 @@ public class DynamapTest {
         }
 
         dynamap.batchSave(new BatchSaveParams<>(docsToSave).withWriteLimiters(limiterMap));
+        if (limiterMap != null) {
+            Assert.assertTrue(limiterMap.get(TestDocumentBean.class).getTotalSecondsSlept() > 0);
+            Assert.assertTrue(limiterMap.get(DummyDocBean.class).getTotalSecondsSlept() > 0);
+        }
 
         ScanRequest<TestDocumentBean> scanRequest = new ScanRequest<>(TestDocumentBean.class);
         ScanResult<TestDocumentBean> scanResult = dynamap.scan(scanRequest);
