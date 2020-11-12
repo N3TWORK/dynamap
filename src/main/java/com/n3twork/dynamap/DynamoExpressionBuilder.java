@@ -355,6 +355,7 @@ public class DynamoExpressionBuilder {
         return Joiner.on(".").join(fields);
     }
 
+    //TODO: this is used to serialize a set of custom types to dynamo, however, it does not deserialize so this is not currently supported
     private Set<String> toJsonStringSet(Set<Object> objects) {
         ObjectMapper objectMapper = getObjectMapper();
         Set<String> results = new HashSet<>();
