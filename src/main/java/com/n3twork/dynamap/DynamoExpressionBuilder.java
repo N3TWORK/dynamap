@@ -18,6 +18,7 @@ package com.n3twork.dynamap;
 
 import com.amazonaws.services.dynamodbv2.document.utils.NameMap;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
@@ -357,10 +358,14 @@ public class DynamoExpressionBuilder {
     private Set<String> toJsonStringSet(Set<Object> objects) {
         ObjectMapper objectMapper = getObjectMapper();
         Set<String> results = new HashSet<>();
-        for (Object object : objects) {
-            results.add(objectMapper.convertValue(object, new TypeReference<Map<String, Object>>() {
-            }));
+        try {
+            for (Object object : objects) {
+                results.add(objectMapper.writeValueAsString(object));
+            }
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Could not serialize objects to string", e);
         }
+
         return results;
     }
 
