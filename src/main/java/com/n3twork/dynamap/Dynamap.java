@@ -606,7 +606,7 @@ public class Dynamap {
                 } else {
                     outcome = dynamoDB.batchGetItemUnprocessed(unprocessedKeys);
                 }
-             }
+            }
 
             if (progressCallback != null) {
                 if (!progressCallback.reportProgress(totalProgress)) {
@@ -1064,7 +1064,9 @@ public class Dynamap {
             if (writeLimiterMap != null) {
                 for (ConsumedCapacity consumedCapacity : outcome.getBatchWriteItemResult().getConsumedCapacity()) {
                     DynamoRateLimiter rateLimiter = writeLimiterMap.get(consumedCapacity.getTableName());
-                    rateLimiter.setConsumedCapacity(consumedCapacity);
+                    if (rateLimiter != null) {
+                        rateLimiter.setConsumedCapacity(consumedCapacity);
+                    }
                 }
             }
 
