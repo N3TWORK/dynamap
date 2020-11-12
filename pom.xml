@@ -9,7 +9,7 @@
     <name>Dynamap</name>
     <description>A Java object model and mapping library for Amazon's DynamoDB database.</description>
     <url>https://dynamap.n3twork.com</url>
-    <version>0.9.58-SNAPSHOT</version>
+    <version>0.9.59-SNAPSHOT</version>
 
     <licenses>
         <license>
@@ -35,7 +35,7 @@
     </scm>
 
     <properties>
-        <jackson-version>2.9.10</jackson-version>
+        <jackson-version>2.11.3</jackson-version>
         <dynamodb-version>1.11.477</dynamodb-version>
     </properties>
 
@@ -71,7 +71,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>18.0</version>
+            <version>24.1.1-jre</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
