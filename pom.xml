@@ -9,7 +9,7 @@
     <name>Dynamap</name>
     <description>A Java object model and mapping library for Amazon's DynamoDB database.</description>
     <url>https://dynamap.n3twork.com</url>
-    <version>0.9.59-SNAPSHOT</version>
+    <version>0.9.60-SNAPSHOT</version>
 
     <licenses>
         <license>
