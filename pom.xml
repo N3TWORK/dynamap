@@ -126,7 +126,7 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>DynamoDBLocal</artifactId>
-            <version>[1.11,2.0)</version>
+            <version>1.13.1</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -296,6 +296,8 @@
                                 <argument>${project.basedir}/src/test/resources/DummySchema.json</argument>
                                 <argument>--schema</argument>
                                 <argument>${project.basedir}/src/test/resources/DummyLocalIndexSchema.json</argument>
+                                <argument>--schema</argument>
+                                <argument>${project.basedir}/src/test/resources/PlayerSchema.json</argument>
                                 <argument>--output</argument>
                                 <argument>${project.build.directory}/generated-test-sources</argument>
                             </arguments>

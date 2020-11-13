@@ -207,15 +207,25 @@ public class DynamoExpressionBuilder {
 
     public DynamoExpressionBuilder addCheckAttributeInMapNotExistsCondition(String parentField, String fieldName, Collection<String> attributes) {
         for (String id : attributes) {
-            conditions.add(String.format("attribute_not_exists(%s)", joinFields(parentField, fieldName, id)));
+            addAttributeNotExistsCondition(joinFields(parentField, fieldName, id));
         }
+        return this;
+    }
+
+    public DynamoExpressionBuilder addAttributeNotExistsCondition(String fieldName) {
+        conditions.add(String.format("attribute_not_exists(%s)", fieldName));
         return this;
     }
 
     public DynamoExpressionBuilder addCheckAttributeInMapExistsCondition(String parentField, String fieldName, Collection<String> attributes) {
         for (String id : attributes) {
-            conditions.add(String.format("attribute_exists(%s)", joinFields(parentField, fieldName, id)));
+            addAttributeExistsCondition(joinFields(parentField, fieldName, id));
         }
+        return this;
+    }
+
+    public DynamoExpressionBuilder addAttributeExistsCondition(String fieldName) {
+        conditions.add(String.format("attribute_exists(%s)", fieldName));
         return this;
     }
 
