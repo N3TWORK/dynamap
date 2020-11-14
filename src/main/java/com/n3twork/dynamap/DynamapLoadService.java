@@ -131,7 +131,7 @@ class DynamapLoadService {
         }
 
         if (currentVersion > tableDefinition.getVersion()) {
-            throw new RuntimeException("Document schema has been migrated to a version later than this release supports: Document version: " + currentVersion + ", Supported version: " + tableDefinition.getVersion());
+            throw new UnsupportedSchemaVersionException("Document schema has been migrated to a version later than this release supports: Document version: " + currentVersion + ", Supported version: " + tableDefinition.getVersion());
         }
 
         if (currentVersion < tableDefinition.getVersion()) {

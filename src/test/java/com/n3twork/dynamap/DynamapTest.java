@@ -667,6 +667,7 @@ public class DynamapTest {
         } catch (Exception e) {
             exceptionThrown = true;
             Assert.assertTrue(e.getMessage().contains("Document schema has been migrated to a version later than this release supports"));
+            Assert.assertTrue(e instanceof UnsupportedSchemaVersionException);
         }
         Assert.assertTrue(exceptionThrown);
 
