@@ -951,6 +951,25 @@ public class DynamapTest {
     }
 
     @Test
+    public void testMapConditionalChecks() {
+        String docId1 = UUID.randomUUID().toString();
+        TestDocumentBean doc = new TestDocumentBean(docId1, 1);
+        dynamap.save(new SaveParams<>(doc));
+
+        // add 1 to mapOfLong at key "counter" ensuring with a condition that no value exists in the map for the key before the update
+        TestDocumentUpdates testDocumentUpdates = doc.createUpdates();
+        testDocumentUpdates.setMapOfLongValue("counter", 1L);
+        testDocumentUpdates.getExpressionBuilder().addCheckAttributeInMapNotExistsCondition(null, TestDocumentBean.MAPOFLONG_FIELD, ImmutableSet.of("counter"));
+        dynamap.update(new UpdateParams<>(testDocumentUpdates));
+
+        // add another 1 at key "counter" ensuring with a condition that some value does exist in the map for the key before the update
+        testDocumentUpdates = doc.createUpdates();
+        testDocumentUpdates.incrementMapOfLongAmount("counter", 1L);
+        testDocumentUpdates.getExpressionBuilder().addCheckAttributeInMapExistsCondition(null, TestDocumentBean.MAPOFLONG_FIELD, ImmutableSet.of("counter"));
+        dynamap.update(new UpdateParams<>(testDocumentUpdates));
+    }
+
+    @Test
     public void testOptimisticLockingWithSave() {
         final String DOC_ID = "1";
         DummyDocBean doc = new DummyDocBean(DOC_ID).setName("test").setWeight(6L);
