@@ -1,0 +1,38 @@
+{
+  "tables": [
+    {
+      "table": "TestWithTtl",
+      "description": "Test Schema With TTL version B",
+      "package": "com.n3twork.dynamap.test",
+      "type": "TestDocumentWithTTL",
+      "version": 1,
+      "hashKey": "id",
+      "types": [
+        {
+          "name": "TestDocumentWithTTL",
+          "description": "Top level document",
+          "fields": [
+            {
+              "name": "id",
+              "description": "Primary key",
+              "dynamoName": "id",
+              "type": "String"
+            },
+            {
+              "name": "ttlA",
+              "dynamoName": "ttlA",
+              "type": "Long",
+              "description": "Our original TTL field. Notice its type is now Long: only one field can be of type ttl."
+            },
+            {
+              "name": "ttlB",
+              "dynamoName": "ttlB",
+              "type": "ttl",
+              "description": "Our new TTL field."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

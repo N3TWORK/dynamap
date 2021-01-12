@@ -37,6 +37,7 @@ public class SchemaRegistry {
         for (InputStream inputStream : schemaInput) {
             try {
                 Schema schema = new ObjectMapper().readValue(inputStream, Schema.class);
+                schema.validate();
                 tableDefinitions.addAll(schema.getTableDefinitions());
                 buildTableDefinitionNames(tableDefinitions);
 

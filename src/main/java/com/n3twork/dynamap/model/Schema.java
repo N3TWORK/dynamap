@@ -49,4 +49,8 @@ public class Schema {
     public TableDefinition getTableDefinition(String tableName) {
         return tableDefinitionsByName.get(tableName);
     }
+
+    public void validate() {
+        getTableDefinitions().forEach(td -> td.validate());
+    }
 }
