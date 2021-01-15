@@ -7,6 +7,8 @@ import com.n3twork.dynamap.model.TableDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -31,11 +33,38 @@ class WriteOpFactory {
         this.schemaRegistry = schemaRegistry;
     }
 
+    /**
+     * This method is deprecated: use buildPut(SaveParams<T>) instead.
+     * @Deprecated
+     * @param dynamapRecordBean
+     * @param dynamoItemFactory
+     * @param <T>
+     * @return
+     */
     public <T extends DynamapRecordBean> Put buildPut(T dynamapRecordBean, DynamoItemFactory dynamoItemFactory) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(dynamapRecordBean.getClass());
         return new Put()
                 .withTableName(tableDefinition.getTableName(tableNamePrefix))
                 .withItem(ItemUtils.toAttributeValues(dynamoItemFactory.asDynamoItem(dynamapRecordBean, tableDefinition)));
+    }
+
+    public <T extends DynamapRecordBean> Put buildPut(SaveParams<T> saveParams, DynamoItemFactory dynamoItemFactory) {
+        T dynamapRecordBean = saveParams.getDynamapRecordBean();
+        TableDefinition tableDefinition = schemaRegistry.getTableDefinition(dynamapRecordBean.getClass());
+        String hashKeyFieldName = tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName();
+        // Some code duplication between here and DynamapSaveService, TODO clean it up
+        List<String> conditionalExpressions = new ArrayList<>();
+        boolean overwrite = !saveParams.isDisableOverwrite();
+        if (!overwrite) {
+            conditionalExpressions.add("attribute_not_exists(" + hashKeyFieldName + ")");
+        }
+        Put put = new Put()
+                .withTableName(tableDefinition.getTableName(tableNamePrefix))
+                .withItem(ItemUtils.toAttributeValues(dynamoItemFactory.asDynamoItem(dynamapRecordBean, tableDefinition)));
+        if (conditionalExpressions.size() > 0) {
+            put.withConditionExpression(String.join(" AND ", conditionalExpressions));
+        }
+        return put;
     }
 
     public <T extends DynamapPersisted<U>, U extends RecordUpdates<T>> Update buildUpdate(UpdateParams<T> updateParams) {
