@@ -157,17 +157,15 @@ public class DynamapTxTest {
         // Player exists, so this second save should fail with when we disable overwriting
         WriteTx secondCreateTx = dynamap.newWriteTx();
         secondCreateTx.save(new SaveParams<>(p1).withDisableOverwrite(true));
-        RuntimeException thrown = null;
+        TransactionCanceledException thrown = null;
         try {
             secondCreateTx.exec();
-        } catch(RuntimeException e) {
+        } catch(TransactionCanceledException e) {
             thrown = e;
         }
         assertNotNull(thrown);
-        assertEquals(thrown.getCause().getClass(), TransactionCanceledException.class);
-        TransactionCanceledException tce = (TransactionCanceledException) thrown.getCause();
-        assertEquals(tce.getCancellationReasons().size(), 1);
-        assertEquals(tce.getCancellationReasons().get(0).getCode(), "ConditionalCheckFailed");
+        assertEquals(thrown.getCancellationReasons().size(), 1);
+        assertEquals(thrown.getCancellationReasons().get(0).getCode(), "ConditionalCheckFailed");
 
         // Overwrite will work when we don't explicitly disable overwriting
         WriteTx thirdCreateTx = dynamap.newWriteTx();

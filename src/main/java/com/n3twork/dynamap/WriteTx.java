@@ -5,6 +5,7 @@ import com.amazonaws.services.dynamodbv2.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -39,10 +40,7 @@ public class WriteTx {
     private static final Logger logger = LoggerFactory.getLogger(WriteTx.class);
 
     private final AmazonDynamoDB amazonDynamoDB;
-    private final Set<Update> updates = new HashSet<>();
-    private final Set<Put> puts = new HashSet<>();
-    private final Set<Delete> deletes = new HashSet<>();
-    private final Set<ConditionCheck> conditionChecks = new HashSet<>();
+    private final Collection<TransactWriteItem> items = new ArrayList<>();
     private final WriteOpFactory writeOpFactory;
     private final DynamoItemFactory dynamoItemFactory;
 
@@ -62,54 +60,36 @@ public class WriteTx {
     }
 
     public <T extends DynamapPersisted<U>, U extends RecordUpdates<T>> void update(UpdateParams<T> u) {
-        updates.add(writeOpFactory.buildUpdate(u));
+        items.add(new TransactWriteItem().withUpdate(writeOpFactory.buildUpdate(u)));
     }
 
     /**
      * This method is deprecated: use save(SaveParams<T>) instead.
+     *
      * @param dynamapRecordBean
      * @param <T>
      */
     @Deprecated
     public <T extends DynamapRecordBean> void save(T dynamapRecordBean) {
-        puts.add(writeOpFactory.buildPut(dynamapRecordBean, dynamoItemFactory));
+        items.add(new TransactWriteItem().withPut(writeOpFactory.buildPut(dynamapRecordBean, dynamoItemFactory)));
     }
 
     public <T extends DynamapRecordBean> void save(SaveParams<T> saveParams) {
-        puts.add(writeOpFactory.buildPut(saveParams, dynamoItemFactory));
+        items.add(new TransactWriteItem().withPut(writeOpFactory.buildPut(saveParams, dynamoItemFactory)));
     }
 
     public void delete(DeleteRequest deleteRequest) {
-        deletes.add(writeOpFactory.buildDelete(deleteRequest));
+        items.add(new TransactWriteItem().withDelete(writeOpFactory.buildDelete(deleteRequest)));
     }
 
     public <T extends DynamapRecordBean> void condition(WriteConditionCheck<T> writeConditionCheck) {
-        conditionChecks.add(writeOpFactory.buildConditionCheck(writeConditionCheck));
+        items.add(new TransactWriteItem().withConditionCheck(writeOpFactory.buildConditionCheck(writeConditionCheck)));
     }
 
-    public void exec() {
-        Collection<TransactWriteItem> actions = new HashSet<>(puts.size() + updates.size() + deletes.size() + conditionChecks.size());
-        puts.stream().map(p -> new TransactWriteItem().withPut(p)).forEach(actions::add);
-        updates.stream().map(u -> new TransactWriteItem().withUpdate(u)).forEach(actions::add);
-        deletes.stream().map(d -> new TransactWriteItem().withDelete(d)).forEach(actions::add);
-        conditionChecks.stream().map(c -> new TransactWriteItem().withConditionCheck(c)).forEach(actions::add);
-
-        TransactWriteItemsRequest tx = new TransactWriteItemsRequest()
-                .withTransactItems(actions)
-                .withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
-        // Execute the transaction and process the result.
-        try {
-            TransactWriteItemsResult result = amazonDynamoDB.transactWriteItems(tx);
-            logger.info("Transaction Successful: {}", result.getConsumedCapacity());
-        } catch (ResourceNotFoundException rnf) {
-            logger.error("One of the table involved in the transaction is not found {}", rnf.getMessage());
-            throw new RuntimeException(rnf);
-        } catch (InternalServerErrorException ise) {
-            logger.error("Internal Server Error {}", ise.getMessage());
-            throw new RuntimeException(ise);
-        } catch (TransactionCanceledException tce) {
-            logger.error("Transaction Canceled {}", tce.getMessage());
-            throw new RuntimeException(tce);
-        }
+    public TransactWriteItemsResult exec() {
+        return amazonDynamoDB.transactWriteItems(
+                new TransactWriteItemsRequest()
+                        .withTransactItems(items)
+                        .withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL));
     }
 }
