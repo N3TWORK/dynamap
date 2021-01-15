@@ -65,8 +65,18 @@ public class WriteTx {
         updates.add(writeOpFactory.buildUpdate(u));
     }
 
+    /**
+     * This method is deprecated: use save(SaveParams<T>) instead.
+     * @param dynamapRecordBean
+     * @param <T>
+     */
+    @Deprecated
     public <T extends DynamapRecordBean> void save(T dynamapRecordBean) {
         puts.add(writeOpFactory.buildPut(dynamapRecordBean, dynamoItemFactory));
+    }
+
+    public <T extends DynamapRecordBean> void save(SaveParams<T> saveParams) {
+        puts.add(writeOpFactory.buildPut(saveParams, dynamoItemFactory));
     }
 
     public void delete(DeleteRequest deleteRequest) {

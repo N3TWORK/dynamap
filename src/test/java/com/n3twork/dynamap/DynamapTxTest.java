@@ -21,8 +21,10 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
+import com.amazonaws.services.dynamodbv2.model.CancellationReason;
+import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
+import com.amazonaws.services.dynamodbv2.model.TransactionCanceledException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.n3twork.dynamap.*;
 import com.n3twork.dynamap.test.PlayerBean;
 import com.n3twork.dynamap.test.PlayerUpdates;
 import org.testng.annotations.BeforeMethod;
@@ -72,8 +74,8 @@ public class DynamapTxTest {
 
         // Create two players in a single transaction.
         WriteTx createTwoPlayers = dynamap.newWriteTx();
-        createTwoPlayers.save(p1);
-        createTwoPlayers.save(p2);
+        createTwoPlayers.save(new SaveParams<>(p1));
+        createTwoPlayers.save(new SaveParams<>(p2));
         createTwoPlayers.exec();
 
         PlayerBean playerOneRead = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerOne")));
@@ -104,8 +106,8 @@ public class DynamapTxTest {
 
         // Delete two players in a single transaction.
         WriteTx deleteTwoPlayers = dynamap.newWriteTx();
-        deleteTwoPlayers.delete(new DeleteRequest(PlayerBean.class).withHashKeyValue("playerOne"));
-        deleteTwoPlayers.delete(new DeleteRequest(PlayerBean.class).withHashKeyValue("playerTwo"));
+        deleteTwoPlayers.delete(new DeleteRequest<>(PlayerBean.class).withHashKeyValue("playerOne"));
+        deleteTwoPlayers.delete(new DeleteRequest<>(PlayerBean.class).withHashKeyValue("playerTwo"));
         deleteTwoPlayers.exec();
 
         playerOneRead = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerOne")));
@@ -125,8 +127,8 @@ public class DynamapTxTest {
 
         // Create two players in a single transaction but only if a third player does not exist.
         WriteTx createTwoPlayers = dynamap.newWriteTx();
-        createTwoPlayers.save(p1);
-        createTwoPlayers.save(p2);
+        createTwoPlayers.save(new SaveParams<>(p1));
+        createTwoPlayers.save(new SaveParams<>(p2));
         createTwoPlayers.condition(writeConditionCheck);
         createTwoPlayers.exec();
 
@@ -140,11 +142,44 @@ public class DynamapTxTest {
     }
 
     @Test
+    public void testSaveWithNotExistsCondition() {
+        PlayerBean p1 = new PlayerBean("playerOne", "Player One", PlayerBean.SCHEMA_VERSION);
+
+        // Initial create should succeed
+        WriteTx initialCreateTx = dynamap.newWriteTx();
+        initialCreateTx.save(new SaveParams<>(p1));
+        initialCreateTx.exec();
+
+        PlayerBean playerOneRead = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerOne")));
+        assertNotNull(playerOneRead);
+        assertEquals(playerOneRead, p1);
+
+        // Player exists, so this second save should fail with when we disable overwriting
+        WriteTx secondCreateTx = dynamap.newWriteTx();
+        secondCreateTx.save(new SaveParams<>(p1).withDisableOverwrite(true));
+        RuntimeException thrown = null;
+        try {
+            secondCreateTx.exec();
+        } catch(RuntimeException e) {
+            thrown = e;
+        }
+        assertNotNull(thrown);
+        assertEquals(thrown.getCause().getClass(), TransactionCanceledException.class);
+        TransactionCanceledException tce = (TransactionCanceledException) thrown.getCause();
+        assertEquals(tce.getCancellationReasons().size(), 1);
+        assertEquals(tce.getCancellationReasons().get(0).getCode(), "ConditionalCheckFailed");
+
+        // Overwrite will work when we don't explicitly disable overwriting
+        WriteTx thirdCreateTx = dynamap.newWriteTx();
+        thirdCreateTx.save(new SaveParams<>(p1));
+    }
+
+    @Test
     public void testReadTx() {
         PlayerBean p1 = new PlayerBean("playerOne", "Player One", PlayerBean.SCHEMA_VERSION);
         PlayerBean p2 = new PlayerBean("playerTwo", "Player Two", PlayerBean.SCHEMA_VERSION);
-        dynamap.save(new SaveParams(p1));
-        dynamap.save(new SaveParams(p2));
+        dynamap.save(new SaveParams<>(p1));
+        dynamap.save(new SaveParams<>(p2));
 
         ReadTx readTx = dynamap.newReadTx();
         readTx.get(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerOne")));
