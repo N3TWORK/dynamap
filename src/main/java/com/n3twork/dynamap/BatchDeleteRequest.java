@@ -30,8 +30,8 @@ public class BatchDeleteRequest<T extends DynamapRecordBean> {
 
     /**
      * Sets the list of invidual item delete requests
-     * @param deleteRequests
-     * @return
+     * @param deleteRequests Delete requests
+     * @return this object with new state
      */
     public BatchDeleteRequest withDeleteRequests(List<DeleteRequest> deleteRequests) {
         this.deleteRequests = deleteRequests;
@@ -40,8 +40,8 @@ public class BatchDeleteRequest<T extends DynamapRecordBean> {
 
     /**
      * Sets the rate limiters for each type being deleted
-     * @param rateLimiters
-     * @return
+     * @param rateLimiters Rate limiters
+     * @return this object with new state
      */
     public BatchDeleteRequest withRateLimiters(Map<Class, DynamoRateLimiter> rateLimiters) {
         this.rateLimiters = rateLimiters;

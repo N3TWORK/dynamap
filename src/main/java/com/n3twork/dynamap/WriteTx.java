@@ -64,10 +64,7 @@ public class WriteTx {
     }
 
     /**
-     * This method is deprecated: use save(SaveParams<T>) instead.
-     *
-     * @param dynamapRecordBean
-     * @param <T>
+     * This method is deprecated: use save(SaveParams) instead.
      */
     @Deprecated
     public <T extends DynamapRecordBean> void save(T dynamapRecordBean) {
