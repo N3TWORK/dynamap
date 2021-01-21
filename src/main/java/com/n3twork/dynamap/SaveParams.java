@@ -16,6 +16,10 @@
 
 package com.n3twork.dynamap;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 public class SaveParams<T extends DynamapRecordBean> {
 
     private T dynamapRecordBean;
@@ -24,6 +28,9 @@ public class SaveParams<T extends DynamapRecordBean> {
     private boolean disableOptimisticLocking;
     private DynamoRateLimiter writeLimiter;
     private String suffix;
+    private Map<String, Object> values;
+    private Map<String, String> names;
+    List<String> conditionExpressions = new ArrayList<>();
 
     private SaveParams() {
     }
@@ -52,6 +59,22 @@ public class SaveParams<T extends DynamapRecordBean> {
         return this;
     }
 
+    public SaveParams<T> withConditionExpressions(List<String> conditionExpressions) {
+        this.conditionExpressions = conditionExpressions;
+        return this;
+    }
+
+
+    public SaveParams<T> withNames(Map<String, String> names) {
+        this.names = names;
+        return this;
+    }
+
+    public SaveParams<T> withValues(Map<String, Object> values) {
+        this.values = values;
+        return this;
+    }
+
     ////////
 
 
@@ -73,5 +96,17 @@ public class SaveParams<T extends DynamapRecordBean> {
 
     public String getSuffix() {
         return suffix;
+    }
+
+    public Map<String, Object> getValues() {
+        return values;
+    }
+
+    public Map<String, String> getNames() {
+        return names;
+    }
+
+    public List<String> getConditionExpressions() {
+        return conditionExpressions;
     }
 }

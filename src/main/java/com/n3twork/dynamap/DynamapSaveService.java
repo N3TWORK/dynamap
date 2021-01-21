@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * All the logic necessary to save Dynamap beans in DynamoDB.
@@ -37,7 +38,10 @@ class DynamapSaveService {
         this.tableCache = tableCache;
     }
 
-    public <T extends DynamapRecordBean> void saveBean(T bean, TableDefinition tableDefinition, boolean overwrite, boolean disableOptimisticLocking, boolean isMigration, DynamoRateLimiter writeLimiter, String suffix) {
+    public <T extends DynamapRecordBean> void saveBean(T bean, TableDefinition tableDefinition, boolean overwrite,
+                                                       boolean disableOptimisticLocking, boolean isMigration,
+                                                       DynamoRateLimiter writeLimiter, String suffix,
+                                                       List<String> paramConditionExpressions, Map<String, String> names, Map<String, Object> values) {
         Item item = new DynamoItemFactory(objectMapper, disableOptimisticLocking).asDynamoItem(bean, tableDefinition);
         PutItemSpec putItemSpec = new PutItemSpec()
                 .withItem(item)
@@ -46,6 +50,15 @@ class DynamapSaveService {
         ValueMap valueMap = new ValueMap();
         NameMap nameMap = new NameMap();
         List<String> conditionalExpressions = new ArrayList<>();
+        if (paramConditionExpressions != null) {
+            conditionalExpressions.addAll(paramConditionExpressions);
+        }
+        if (names != null) {
+            nameMap.putAll(names);
+        }
+        if (values != null) {
+            valueMap.putAll(values);
+        }
         if (!overwrite) {
             conditionalExpressions.add("attribute_not_exists(" + hashKeyFieldName + ")");
         }

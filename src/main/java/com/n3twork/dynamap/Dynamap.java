@@ -217,17 +217,17 @@ public class Dynamap {
 
     /**
      * Set a table's TTL field in DynamoDB.
-     *
+     * <p>
      * Does nothing if:
-     *  - the provided TableDefinition lacks a TTL Field.
-     *  - the table already has the desired TTL ENABLED.
-     *  - the table has another field ENABLED as TTL. DynamoDB requires that you first disable the current TTL and then enable a new TTL.
-     *  - the table's TimeToLiveStatus is ENABLING or DISABLING.
-     *
+     * - the provided TableDefinition lacks a TTL Field.
+     * - the table already has the desired TTL ENABLED.
+     * - the table has another field ENABLED as TTL. DynamoDB requires that you first disable the current TTL and then enable a new TTL.
+     * - the table's TimeToLiveStatus is ENABLING or DISABLING.
+     * <p>
      * Changing the TTL on a table in DynamoDB is an asynchronous process and can take a while to apply.
      * Documents with a TTL attribute set are expired by DynamoDB using a background process and it is far
      * from exact: items may linger beyond their TTL and application code should account for this.
-     *
+     * <p>
      * Read the docs for further details: https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html
      *
      * @param tableDefinition   The table to update. Should have a TTL Field defined otherwise this call will no-op.
@@ -282,7 +282,7 @@ public class Dynamap {
                 .withTimeToLiveSpecification(new TimeToLiveSpecification().withAttributeName(ttlField.get().getDynamoName()).withEnabled(true));
         try {
             amazonDynamoDB.updateTimeToLive(updateTimeToLiveRequest);
-        } catch(ResourceInUseException e) {
+        } catch (ResourceInUseException e) {
             // This will happen if another request kicks off a TTL change between our DescribeTimeToLiveRequest
             // and UpdateTimeToLiveRequest calls.
         }
@@ -593,7 +593,10 @@ public class Dynamap {
                         saveParams.isDisableOptimisticLocking(),
                         false,
                         saveParams.getWriteLimiter(),
-                        saveParams.getSuffix());
+                        saveParams.getSuffix(),
+                        saveParams.getConditionExpressions(),
+                        saveParams.getNames(),
+                        saveParams.getValues());
     }
 
     public <T extends DynamapPersisted<U>, U extends RecordUpdates<T>, R extends UpdateResult<T, U>> R update(UpdateParams<T> updateParams) {
@@ -672,8 +675,7 @@ public class Dynamap {
 
         int unprocessedKeyCount;
         //todo: need to add exponential backoff for unprocessed items and a termination condition
-        do
-        {
+        do {
 
             if (outcome.getBatchGetItemResult().getConsumedCapacity() != null) {
                 for (ConsumedCapacity consumedCapacity : outcome.getBatchGetItemResult().getConsumedCapacity()) {
