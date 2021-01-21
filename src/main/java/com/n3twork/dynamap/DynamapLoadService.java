@@ -92,7 +92,7 @@ class DynamapLoadService {
             T result = dynamapBeanFactory.asDynamapBean(migrationResult.item, resultClass);
             if (migrationResult.wasMigrated && writeBack) {
                 new DynamapSaveService(objectMapper, tableNamePrefix, tableCache)
-                        .saveBean(result, tableDefinition, true, false, true, writeRateLimiter, suffix);
+                        .saveBean(result, tableDefinition, true, false, true, writeRateLimiter, suffix, null, null, null);
             }
             return result;
         }
