@@ -580,9 +580,9 @@ public class DynamapTest {
         queryRequest = new QueryRequest<>(TestDocumentBean.class)
                 .withKeyConditionExpression(String.format("%s = :hashKey", TestDocument.ID_FIELD))
                 .withValues(new ValueMap().withString(":hashKey", hashKey))
-                .withMaxResultSize(docCount-1);
+                .withMaxResultSize(docCount - 1);
         QueryResult<TestDocumentBean> queryResult = dynamap.queryResult(queryRequest);
-        Assert.assertEquals(queryResult.getResults().size(), docCount-1);
+        Assert.assertEquals(queryResult.getResults().size(), docCount - 1);
 
         queryRequest.withExclusiveStartKeys(queryResult.getLastEvaluatedKeys());
         Assert.assertEquals(queryRequest.getExclusiveStartKeys().length, 2);
@@ -602,9 +602,9 @@ public class DynamapTest {
                 .withIndex(TestDocumentBean.GlobalSecondaryIndex.testIndexFull)
                 .withKeyConditionExpression(String.format("%s = :hashKey", TestDocument.STRING_FIELD))
                 .withValues(new ValueMap().withString(":hashKey", secondaryIndexHash))
-                .withMaxResultSize(docCount-1);
+                .withMaxResultSize(docCount - 1);
         queryResult = dynamap.queryResult(queryRequest);
-        Assert.assertEquals(queryResult.getResults().size(), docCount-1);
+        Assert.assertEquals(queryResult.getResults().size(), docCount - 1);
 
         queryRequest.withExclusiveStartKeys(queryResult.getLastEvaluatedKeys());
         Assert.assertEquals(queryRequest.getExclusiveStartKeys().length, 4);
@@ -682,6 +682,44 @@ public class DynamapTest {
             Assert.assertTrue(e.getMessage().contains("The conditional request failed"));
         }
         Assert.assertTrue(exceptionThrown);
+
+    }
+
+    @Test
+    public void testMigrationWithOptimisticLocking() throws Exception {
+        final String DOC_ID = "1";
+        DummyDocBean doc = new DummyDocBean(DOC_ID).setName("test").setWeight(6L);
+        dynamap.save(new SaveParams<>(doc));
+        doc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
+        Assert.assertEquals(doc.getRevision().intValue(), 1);
+
+        String jsonSchema = IOUtils.toString(getClass().getResourceAsStream("/DummySchema.json"));
+        jsonSchema = jsonSchema.replace("\"version\": 1,", "\"version\": 2,");
+        schemaRegistry = new SchemaRegistry(new ByteArrayInputStream(jsonSchema.getBytes()));
+        schemaRegistry.registerMigration(DummyDocBean.class, new Migration() {
+            @Override
+            public int getVersion() {
+                return 2;
+            }
+
+            @Override
+            public void migrate(Item item, int version, Object context) {
+                item.withString("pstRfId", "newString");
+            }
+
+            @Override
+            public void postMigration(Item item, int version, Object context) {
+
+            }
+        });
+
+        Dynamap dynamap2 = new Dynamap(ddb, schemaRegistry).withPrefix("test").withObjectMapper(objectMapper);
+        DummyDocBean savedDoc = dynamap2.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
+        Assert.assertEquals(savedDoc.getName(), "newString");
+        Assert.assertEquals(savedDoc.getRevision().intValue(), 2);
+
+        // Unable to test updates because the updates object has the schema version hard coded
+
 
     }
 
@@ -1312,7 +1350,7 @@ public class DynamapTest {
         nestedTypeBean = createNestedTypeBean();
         nestedTypeBean.setMapOfLong(ImmutableMap.of("a", 1L, "b", 2L));
         updates = nestedTypeBean.createUpdates();
-        Map<String,Long> mapOfLongFromUpdates = updates.getMapOfLong();
+        Map<String, Long> mapOfLongFromUpdates = updates.getMapOfLong();
         Assert.assertEquals(mapOfLongFromUpdates.size(), 2);
         Assert.assertSame(mapOfLongFromUpdates, nestedTypeBean.getMapOfLong());
 
@@ -1332,7 +1370,7 @@ public class DynamapTest {
         Assert.assertSame(mapOfLongIds, updates.getMapOfLongIds());
 
         nestedTypeBean.setMapOfCustomType(ImmutableMap.of("a", new CustomType("name", "value", CustomType.CustomTypeEnum.VALUE_A)));
-        Map<String,CustomType> mapOfCustomTypeFromUpdates = updates.getMapOfCustomType();
+        Map<String, CustomType> mapOfCustomTypeFromUpdates = updates.getMapOfCustomType();
         Assert.assertEquals(mapOfCustomTypeFromUpdates.size(), 1);
         Assert.assertSame(mapOfCustomTypeFromUpdates, nestedTypeBean.getMapOfCustomType());
         updates.setMapOfCustomTypeItem("b", new CustomType("name2", "value2", CustomType.CustomTypeEnum.VALUE_B));
@@ -1437,6 +1475,7 @@ public class DynamapTest {
     }
 
     int seq = 0;
+
     private TestDocumentBean createTestDocumentBean(NestedTypeBean nestedTypeBean) {
         return createTestDocumentBean(UUID.randomUUID().toString(), nestedTypeBean);
     }
