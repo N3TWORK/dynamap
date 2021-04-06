@@ -38,7 +38,7 @@ class DynamapSaveService {
         this.tableCache = tableCache;
     }
 
-    public <T extends DynamapRecordBean> void saveBean(T bean, TableDefinition tableDefinition, boolean overwrite,
+    public <T extends DynamapRecordBean> Item saveBean(T bean, TableDefinition tableDefinition, boolean overwrite,
                                                        boolean disableOptimisticLocking, boolean isMigration,
                                                        DynamoRateLimiter writeLimiter, String suffix,
                                                        List<String> paramConditionExpressions, Map<String, String> names, Map<String, Object> values) {
@@ -101,6 +101,7 @@ class DynamapSaveService {
             logger.debug(getPutErrorMessage(putItemSpec));
             throw e;
         }
+        return putItemSpec.getItem();
     }
 
     private String getPutErrorMessage(PutItemSpec putItemSpec) {

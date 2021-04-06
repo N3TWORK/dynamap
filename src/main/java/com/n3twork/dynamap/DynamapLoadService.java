@@ -91,8 +91,13 @@ class DynamapLoadService {
             MigrationResult migrationResult = migrateItem(item, resultClass, this.migrationContext);
             T result = dynamapBeanFactory.asDynamapBean(migrationResult.item, resultClass);
             if (migrationResult.wasMigrated && writeBack) {
-                new DynamapSaveService(objectMapper, tableNamePrefix, tableCache)
+                Item savedItem = new DynamapSaveService(objectMapper, tableNamePrefix, tableCache)
                         .saveBean(result, tableDefinition, true, false, true, writeRateLimiter, suffix, null, null, null);
+                // if optimistic locking is enabled then the revision number will have been incremented
+                // repopulate the result bean
+                if (tableDefinition.isOptimisticLocking()) {
+                    result = dynamapBeanFactory.asDynamapBean(savedItem, resultClass);
+                }
             }
             return result;
         }
