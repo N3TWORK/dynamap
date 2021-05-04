@@ -461,6 +461,7 @@ public class DynamapTest {
         Assert.assertEquals(doc.getListOfInteger().size(), 3);
 
         updates = doc.createUpdates();
+        updates.addListOfIntegerValue(1);
         updates.clearListOfInteger();
         Assert.assertEquals(updates.getListOfInteger().size(), 0);
         dynamap.update(new UpdateParams<>(updates));
