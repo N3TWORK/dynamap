@@ -459,6 +459,13 @@ public class DynamapTest {
         dynamap.update(new UpdateParams<>(updates));
         doc = dynamap.getObject(createGetObjectParams(doc));
         Assert.assertEquals(doc.getListOfInteger().size(), 3);
+
+        updates = doc.createUpdates();
+        updates.clearListOfInteger();
+        Assert.assertEquals(updates.getListOfInteger().size(), 0);
+        dynamap.update(new UpdateParams<>(updates));
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(doc.getListOfInteger().size(), 0);
     }
 
     @Test

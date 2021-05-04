@@ -584,7 +584,11 @@ public class ${updatesName} implements ${type.name}, <#if isRoot>Record</#if>Upd
 
         <#elseif field.type == 'List'>
             <#if field.useDeltas() && !field.isCompressCollection()>
-                expression.addValuesToList(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Adds, ${field.elementType}.class);
+                if (${field.name}Clear) {
+                    expression.setMultiValue(parentDynamoFieldName, "${field.dynamoName}", Collections.emptyList(), ${field.elementType}.class);
+                } else {
+                    expression.addValuesToList(parentDynamoFieldName, "${field.dynamoName}", ${field.name}Adds, ${field.elementType}.class);
+                }
             <#else>
                 <#if field.isCompressCollection()>
                 expression.setValue(parentDynamoFieldName, "${field.dynamoName}", GZipUtil.serialize(get${field.name?cap_first}(), expression.getObjectMapper()));
