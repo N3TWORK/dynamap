@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "dynamap.root.schema.json",
+  "type": "object",
+  "description": "Dynamap Document Root Schema",
+  "properties": {
+    "tables": {
+      "type": "array",
+      "items": {
+        "$ref": "table.schema.json"
+      },
+      "minItems": 1
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "tables"
+  ]
+}

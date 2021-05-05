@@ -1,0 +1,318 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "$id": "field.schema.json",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "type"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "$comment": "The name of the generated Java property for this field."
+    },
+    "type": {
+      "type": "string",
+      "$comment": "Ideally, this is an enum with String, Long, Map, Integer, List, Set, Boolean. But unfortunately, we allow a classname here too"
+    },
+    "description": {
+      "type": "string"
+    },
+    "persist": {
+      "type": "boolean",
+      "$comment": "Should this field be persisted to DynamoDB? Optional, defaults to false"
+    },
+    "dynamoName": {
+      "type": "string",
+      "$comment": "If persist==true, this is required."
+    },
+    "default": {
+      "type": "string"
+    },
+    "elementType": {
+      "type": "string"
+    },
+    "deltas": {
+      "type": "boolean"
+    },
+    "useDefaultForNulls": {
+      "type": "boolean"
+    },
+    "compressCollection": {
+      "enum": [
+        "gzip"
+      ]
+    },
+    "serializeAsListElementId": {
+      "type": "string"
+    },
+    "replace": {
+      "type": "boolean"
+    }
+  },
+  "definitions": {
+    "mapRules": {}
+  },
+  "allOf": [
+    {
+      "$comment": "Rules for serializeAsListElementId",
+      "oneOf": [
+        {
+          "$comment": "serializeAsListElementId attr is not present",
+          "properties": {
+            "serializeAsListElementId": false
+          }
+        },
+        {
+          "$comment": "serializeAsListElementId is present, type is Map",
+          "properties": {
+            "serializeAsListElementId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "serializeAsListElementId",
+            "type"
+          ]
+        }
+      ]
+    },
+    {
+      "$comment": "Rules for compressCollection and replace",
+      "oneOf": [
+        {
+          "$comment": "compressCollection / replace attrs are not present",
+          "properties": {
+            "compressCollection": false,
+            "replace": false
+          }
+        },
+        {
+          "$comment": "compressCollection is present, replace is not present",
+          "properties": {
+            "compresscollection": {
+              "enum": [
+                "gzip"
+              ]
+            },
+            "replace": false,
+            "type": {
+              "enum": [
+                "Map",
+                "Set",
+                "List"
+              ]
+            }
+          },
+          "required": [
+            "compressCollection",
+            "type"
+          ]
+        },
+        {
+          "$comment": "replace is present, compressCollection is not present",
+          "properties": {
+            "compressCollection": false,
+            "replace": {
+              "type": "boolean"
+            },
+            "type": {
+              "enum": [
+                "Map",
+                "Set",
+                "List"
+              ]
+            }
+          },
+          "required": [
+            "replace",
+            "type"
+          ]
+        }
+      ]
+    },
+    {
+      "$comment": "Rules for elementType",
+      "oneOf": [
+        {
+          "$comment": "elementType attr is not present",
+          "properties": {
+            "elementType": false
+          }
+        },
+        {
+          "$comment": "elementType attr is present, type Map, Set or List",
+          "properties": {
+            "elementType": {
+              "type": "string"
+            },
+            "type": {
+              "enum": [
+                "Map",
+                "Set",
+                "List"
+              ]
+            }
+          },
+          "required": [
+            "elementType",
+            "type"
+          ]
+        }
+      ]
+    },
+    {
+      "$comment": "Rules for default and useDefaultForNulls",
+      "oneOf": [
+        {
+          "$comment": "default attr is not present",
+          "properties": {
+            "default": false
+          }
+        },
+        {
+          "$comment": "default attr is present, type is Long, Integer, or String",
+          "properties": {
+            "default": {
+              "type": "string"
+            },
+            "type": {
+              "enum": [
+                "Long",
+                "Integer",
+                "String",
+                "Boolean"
+              ]
+            }
+          },
+          "required": [
+            "default",
+            "type"
+          ]
+        },
+        {
+          "$comment": "default attr is present, type is Map. useDefaultForNulls must be present and true",
+          "properties": {
+            "default": {
+              "type": "string"
+            },
+            "useDefaultForNulls": {
+              "const": true
+            },
+            "type": {
+              "enum": [
+                "Map"
+              ]
+            }
+          },
+          "required": [
+            "default",
+            "type",
+            "useDefaultForNulls"
+          ]
+        }
+      ]
+    },
+    {
+      "$comment": "Rules for useDefaultForNulls",
+      "oneOf": [
+        {
+          "$comment": "useDefaultForNulls attr is not present",
+          "properties": {
+            "useDefaultForNulls": false
+          }
+        },
+        {
+          "$comment": "useDefaultForNulls attr is present, type is Map",
+          "properties": {
+            "useDefaultForNulls": {
+              "const": true
+            },
+            "type": {
+              "enum": [
+                "Map"
+              ]
+            }
+          },
+          "required": [
+            "useDefaultForNulls",
+            "type"
+          ]
+        }
+      ]
+    },
+    {
+      "$comment": "Rules for deltas",
+      "oneOf": [
+        {
+          "$comment": "deltas attr is not present",
+          "properties": {
+            "deltas": false
+          }
+        },
+        {
+          "$comment": "deltas attr is present, type must support deltas",
+          "properties": {
+            "deltas": {
+              "type": "boolean"
+            },
+            "type": {
+              "enum": [
+                "Map",
+                "List",
+                "Set",
+                "Long",
+                "Integer"
+              ]
+            }
+          },
+          "required": [
+            "deltas"
+          ]
+        }
+      ]
+    },
+    {
+      "$comment": "Rules for persist + dynamoName",
+      "oneOf": [
+        {
+          "$comment": "persist attr is present and == false, dynamoName should not be present",
+          "properties": {
+            "persist": {
+              "const": false
+            }
+          },
+          "not": {
+            "required": [
+              "persist",
+              "dynamoName"
+            ]
+          }
+        },
+        {
+          "$comment": "persist attr is present and == true, require dynamoName",
+          "properties": {
+            "persist": {
+              "const": true
+            }
+          },
+          "required": [
+            "persist",
+            "dynamoName"
+          ]
+        },
+        {
+          "$comment": "persist attr is missing, its default value is true, require dynamoName",
+          "properties": {
+            "persist": false
+          },
+          "required": [
+            "persist",
+            "dynamoName"
+          ]
+        }
+      ]
+    }
+  ]
+}

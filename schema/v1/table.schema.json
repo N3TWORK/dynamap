@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "$id": "table.schema.json",
+  "additionalProperties": false,
+  "required": [
+    "table",
+    "package",
+    "type",
+    "hashKey",
+    "version",
+    "types"
+  ],
+  "properties": {
+    "table": {
+      "description": "The name of the DynamoDB collection",
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "package": {
+      "description": "The Java package for the generated classes",
+      "type": "string"
+    },
+    "type": {
+      "description": "The object type of the DynamoDB document. This type must be defined in the type section.",
+      "type": "string"
+    },
+    "hashKey": {
+      "description": "The name of the field (not the DynamoDB field name) which represents the hash key of the collection.",
+      "type": "string"
+    },
+    "rangeKey": {
+      "description": "The name of the field which presents the range key of the collection.",
+      "type": "string"
+    },
+    "ttlField": {
+      "description": "Field to use as TTL attribute. The TTL attribute’s value must be a timestamp in Unix epoch time format in seconds.",
+      "type": "string"
+    },
+    "globalSecondaryIndexes": {
+      "description": "An array of one or more global secondary index definitions",
+      "type": "array",
+      "items": {
+        "$ref": "gsi.schema.json"
+      }
+    },
+    "localSecondaryIndexes": {
+      "description": "An array of one or more local secondary index definitions",
+      "type": "array",
+      "items": {
+        "$ref": "lsi.schema.json"
+      }
+    },
+    "optimisticLocking": {
+      "description": "boolean: `true` or `false`, default: `false`. If `true` adds a revision field and conditional checks to updates to implement optimistic locks.",
+      "type": "boolean"
+    },
+    "schemaVersionField": {
+      "type": "string"
+    },
+    "version": {
+      "description": "The version number of the schema.",
+      "type": "number"
+    },
+    "enableMigrations": {
+      "description": "Are schema migrations supported for this type? Defaults to true",
+      "type": "boolean"
+    },
+    "types": {
+      "description": "An array of one or more type definitions. This must include at least one entry - the definition for the type of the collection.",
+      "type": "array",
+      "items": {
+        "$ref": "type.schema.json"
+      },
+      "minItems": 1
+    }
+  }
+}

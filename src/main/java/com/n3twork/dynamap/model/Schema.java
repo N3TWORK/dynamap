@@ -17,11 +17,13 @@
 
 package com.n3twork.dynamap.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+@JsonIgnoreProperties(ignoreUnknown = true) // To allow for "$schema" root prop
 public class Schema {
 
     public static final String REVISION_FIELD = "_rv";

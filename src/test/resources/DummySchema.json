@@ -5,7 +5,7 @@
       "package": "com.n3twork.dynamap.test",
       "type": "DummyDoc",
       "version": 1,
-      "optimisticLocking": true,
+      "optimisticLocking": "true",
       "hashKey": "id",
       "types": [
         {

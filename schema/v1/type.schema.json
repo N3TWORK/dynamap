@@ -1,0 +1,39 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "$id": "type.schema.json",
+    "additionalProperties": false,
+    "required": [
+        "name",
+        "fields"
+    ],
+    "properties": {
+        "name": {
+            "type": "string"
+        },
+        "description": {
+            "type": "string"
+        },
+        "hashCodeFields": {
+            "type": "array",
+            "description": "Fields to include in generated hashCode method",
+            "items": {
+                "type": "string"
+            }
+        },
+        "equalsFields": {
+            "type": "array",
+            "description": "Fields to include in generated equals method",
+            "items": {
+                "type": "string"
+            }
+        },
+        "fields": {
+            "type": "array",
+            "items": {
+                "$ref": "field.schema.json"
+            },
+            "minItems": 1
+        }
+    }
+}

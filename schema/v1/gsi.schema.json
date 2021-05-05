@@ -1,0 +1,39 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "$id": "gsi.schema.json",
+    "description": "Global Secondary Index definition",
+    "required": [
+        "index",
+        "hashKey"
+    ],
+    "properties": {
+        "index": {
+            "description": "The name global secondary index",
+            "type": "string"
+        },
+        "hashKey": {
+            "description": "The name of the field to use as the hash key",
+            "type": "string"
+        },
+        "rangeKey": {
+            "description": "The name of the field to use as the range key",
+            "type": "string"
+        },
+        "nonKeyFields": {
+            "description": "An array of the non key fields to include. This is only necessary if using the projection type INCLUDE.",
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "projectionType": {
+            "description": "The projection type to indicate which non key fields to include. This corresponds to the DynamoDB projection type enumerator values: ALL, KEYS_ONLY, INCLUDE. The default value if not specified is ALL.",
+            "enum": [
+                "ALL",
+                "KEYS_ONLY",
+                "INCLUDE"
+            ]
+        }
+    }
+}
