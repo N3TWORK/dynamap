@@ -42,6 +42,7 @@ import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -1480,6 +1481,47 @@ public class DynamapTest {
         result = dynamap.update(new UpdateParams<>(testDocumentUpdates).withReturnValue(DynamapReturnValue.UPDATED_NEW));
         Assert.assertNull(result.getString());
 
+    }
+
+    @Test
+    public void testBinaryField() {
+        byte[] blobOne = "I have some bytes to save".getBytes(StandardCharsets.UTF_8);
+        TestDocumentBean doc = createTestDocumentBean(createNestedTypeBean());
+        doc.setBLOB(blobOne);
+        dynamap.save(new SaveParams<>(doc));
+
+        TestDocumentBean testDocumentBean = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(testDocumentBean.getId(), doc.getId());
+        Assert.assertEquals(testDocumentBean.getBLOB(), doc.getBLOB());
+
+        byte[] blobTwo = "Even more bytes to save".getBytes(StandardCharsets.UTF_8);
+        TestDocumentUpdates testDocumentUpdates = testDocumentBean.createUpdates();
+        testDocumentUpdates.setBLOB(blobTwo);
+        TestDocument updated = dynamap.update(new UpdateParams<>(testDocumentUpdates));
+        Assert.assertEquals(updated.getBLOB(), blobTwo);
+    }
+
+    @Test
+    public void testNullBinaryField() {
+        // null should be saved correctly
+        TestDocumentBean doc = createTestDocumentBean(createNestedTypeBean());
+        dynamap.save(new SaveParams<>(doc));
+        TestDocumentBean testDocumentBean = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(testDocumentBean.getId(), doc.getId());
+        Assert.assertNull(testDocumentBean.getBLOB());
+
+        // update with a non-null blob value
+        byte[] blob = "I aspire to be a byte array".getBytes(StandardCharsets.UTF_8);
+        TestDocumentUpdates testDocumentUpdates = testDocumentBean.createUpdates();
+        testDocumentBean.setBLOB(blob);
+        TestDocument updated = dynamap.update(new UpdateParams<>(testDocumentUpdates));
+        Assert.assertEquals(updated.getBLOB(), blob);
+
+        // update with a null blob value
+        testDocumentUpdates = testDocumentBean.createUpdates();
+        testDocumentBean.setBLOB(null);
+        updated = dynamap.update(new UpdateParams<>(testDocumentUpdates));
+        Assert.assertNull(updated.getBLOB());
     }
 
     int seq = 0;
