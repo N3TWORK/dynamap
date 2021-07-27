@@ -191,6 +191,12 @@
               "dynamoName": "ttl",
               "type": "ttl",
               "description": "A ttl field's DynamoDB type is Number. Its value is an epoch timestamp in seconds."
+            },
+            {
+              "name": "BLOB",
+              "dynamoName": "blob",
+              "type": "byte[]",
+              "description": "A Binary object. Might be used to store a serialized object instance."
             }
           ]
         },

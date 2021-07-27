@@ -36,7 +36,7 @@ public class CodeGenerator {
     private static final String OPT_SCHEMA_FILE_PATH = "schema";
     private static final String OPT_OUTPUT_PATH = "output";
 
-    private static final Set<String> BUILT_IN_TYPES = Sets.newHashSet("Integer", "Long", "Boolean", "Float", "Double", "String", "Map", "List", "Set");
+    private static final Set<String> BUILT_IN_TYPES = Sets.newHashSet("Integer", "Long", "Boolean", "Float", "Double", "String", "Map", "List", "Set", "byte[]");
 
     private final Configuration cfg;
 
