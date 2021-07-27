@@ -47,7 +47,7 @@ public class TableDefinition {
 
     @JsonCreator
     public TableDefinition(@JsonProperty("table") String tableName, @JsonProperty("description") String description, @JsonProperty("package") String packageName, @JsonProperty("type") String type, @JsonProperty("hashKey") String hashKey, @JsonProperty("rangeKey") String rangeKey,
-                           @JsonProperty("version") int version, @JsonProperty("fields") List<Field> fields, @JsonProperty("types") List<Type> types, @JsonProperty("globalSecondaryIndexes") List<Index> globalSecondaryIndexes, @JsonProperty("localSecondaryIndexes") List<Index> localSecondaryIndexes, @JsonProperty("optimisticLocking") boolean optimisticLocking,
+                           @JsonProperty("version") int version, @JsonProperty("types") List<Type> types, @JsonProperty("globalSecondaryIndexes") List<Index> globalSecondaryIndexes, @JsonProperty("localSecondaryIndexes") List<Index> localSecondaryIndexes, @JsonProperty("optimisticLocking") boolean optimisticLocking,
                            @JsonProperty("schemaVersionField") String schemaVersionField, @JsonProperty("enableMigrations") Boolean enableMigrations) {
         this.tableName = tableName;
         this.description = description;
