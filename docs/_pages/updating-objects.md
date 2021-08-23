@@ -71,7 +71,8 @@ if (bean.isCurrencyBalancesModified()) {
 
 ## Making the call to update
 
-Dynamap provides a single `update` method with an `UpdateParams` object. The UpdateParams requires the updates object and accepts additional optional settings such as write limiters and the type of return value (all updates field, just updated field etc)
+Dynamap provides a single `update` method with an `UpdateParams` object. The UpdateParams requires the updates object and accepts additional optional settings such as write limiters and the type of return value (all updates field, just updated field etc).  
+NOTE: Putting too many modifications in a single update might result in an error from DynamoDB about expression size exceeded. If you have around 50 or more updates to make, do them in separate update calls.  
 
 ```java
 User updatedUser = dynamap.update(new UpdateParams(userUpdates));
