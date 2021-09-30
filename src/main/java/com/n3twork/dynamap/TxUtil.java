@@ -13,9 +13,11 @@ class TxUtil {
      */
     static Map<String, AttributeValue> getKey(TableDefinition tableDefinition, String hashKeyValue, Object rangeKeyValue) {
         Map<String, AttributeValue> key = new HashMap<>();
-        key.put(tableDefinition.getHashKey(), new AttributeValue(hashKeyValue));
+        String hashKeyFieldName = tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName();
+        key.put(hashKeyFieldName, new AttributeValue(hashKeyValue));
         if (null != tableDefinition.getRangeKey()) {
-            key.put(tableDefinition.getRangeKey(), ItemUtils.toAttributeValue(rangeKeyValue));
+            String rangeKeyFieldName = tableDefinition.getField(tableDefinition.getRangeKey()).getDynamoName();
+            key.put(rangeKeyFieldName, ItemUtils.toAttributeValue(rangeKeyValue));
         }
         return key;
     }
