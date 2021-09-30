@@ -21,12 +21,12 @@
             {
               "name": "id",
               "description": "Player Id",
-              "dynamoName": "id",
+              "dynamoName": "i",
               "type": "String"
             },
             {
               "name": "name",
-              "dynamoName": "name",
+              "dynamoName": "n",
               "type": "String"
             }
           ]
