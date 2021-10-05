@@ -81,15 +81,7 @@ public class TableDefinition {
 
     @JsonIgnore
     public String getTableName(String prefix, String suffix) {
-        String fullTableName = "";
-        if (prefix != null) {
-            fullTableName = prefix + tableName;
-        }
-        if (suffix != null) {
-            fullTableName += suffix;
-        }
-
-        return fullTableName;
+        return TableUtil.getTableName(tableName, prefix, suffix);
     }
 
     public String getPackageName() {
