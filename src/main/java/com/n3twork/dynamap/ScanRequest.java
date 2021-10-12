@@ -37,7 +37,7 @@ public class ScanRequest<T> {
     private Integer maxResultSize;
     private Integer maxPageSize;
     private ProgressCallback progressCallback;
-    private boolean writeMigrationChange;
+    private boolean writeMigrationChange = true;
     private Select select;
     private String suffix;
 
