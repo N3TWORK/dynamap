@@ -733,6 +733,49 @@ public class DynamapTest {
     }
 
     @Test
+    public void testMigrateOnScan() throws Exception {
+        TestDocumentBean doc = createTestDocumentBean(createNestedTypeBean());
+        dynamap.save(new SaveParams<>(doc));
+
+        String jsonSchema = IOUtils.toString(getClass().getResourceAsStream("/TestSchema.json"));
+        jsonSchema = jsonSchema.replace("\"version\": 1,", "\"version\": 2,");
+        schemaRegistry = new SchemaRegistry(new ByteArrayInputStream(jsonSchema.getBytes()));
+        schemaRegistry.registerMigration(TestDocumentBean.class, new Migration() {
+            @Override
+            public int getVersion() {
+                return 2;
+            }
+
+            @Override
+            public void migrate(Item item, int version, Object context) {
+                item.withString("str", "newValue");
+            }
+
+            @Override
+            public void postMigration(Item item, int version, Object context) {
+            }
+        });
+
+        Dynamap dynamap2 = new Dynamap(ddb, schemaRegistry)
+                .withPrefix("test")
+                .withObjectMapper(objectMapper);
+        ScanRequest<TestDocumentBean> scanRequest = new ScanRequest<>(TestDocumentBean.class);
+        Assert.assertTrue(scanRequest.isWriteMigrationChange()); // Default is true
+        ScanResult<TestDocumentBean> scanResult = dynamap2.scan(new ScanRequest<>(TestDocumentBean.class));
+
+        for(TestDocumentBean b : scanResult.getResults()) {
+            Assert.assertEquals((int)b.getDynamapSchemaVersion(), 2);
+            Assert.assertEquals(b.getString(), "newValue");
+        }
+        Assert.assertEquals(scanResult.getScannedCount(), 1);
+
+        // Fetch the document after the scan to be sure the migration was persisted.
+        doc = dynamap2.getObject(createGetObjectParams(doc));
+        Assert.assertEquals((int)doc.getDynamapSchemaVersion(), 2);
+    }
+
+
+    @Test
     public void testDelete() {
 
         TestDocumentBean doc = createTestDocumentBean(createNestedTypeBean());
