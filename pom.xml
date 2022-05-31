@@ -299,6 +299,8 @@
                                 <argument>${project.basedir}/src/test/resources/DummyLocalIndexSchema.json</argument>
                                 <argument>--schema</argument>
                                 <argument>${project.basedir}/src/test/resources/PlayerSchema.json</argument>
+                                <argument>--schema</argument>
+                                <argument>${project.basedir}/src/test/resources/NoMigrationSchema.json</argument>
                                 <argument>--output</argument>
                                 <argument>${project.build.directory}/generated-test-sources</argument>
                             </arguments>
