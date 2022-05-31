@@ -48,7 +48,8 @@ public class DynamoExpressionBuilder {
 
     public enum ComparisonOperator {
 
-        EQUALS("="), NOT_EQUALS("!="), LESS_THAN("<"), LESS_THAN_EQUAL_TO("<="), GREATHER_THAN(">"), GREATER_THAN_EQUAL_TO(">=");
+        // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.OperatorsAndFunctions.html
+        EQUALS("="), NOT_EQUALS("<>"), LESS_THAN("<"), LESS_THAN_EQUAL_TO("<="), GREATHER_THAN(">"), GREATER_THAN_EQUAL_TO(">=");
 
         private final String value;
 

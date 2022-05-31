@@ -1035,6 +1035,28 @@ public class DynamapTest {
     }
 
     @Test
+    public void testNotEqualsCondition() {
+        final String DOC_ID = "1";
+        DummyDocBean doc = new DummyDocBean(DOC_ID).setName("Granny").setWeight(99L);
+        dynamap.save(new SaveParams<>(doc));
+
+        DummyDocBean savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
+        Assert.assertEquals(savedDoc.getName(), "Granny");
+        Assert.assertEquals((long)savedDoc.getWeight(), 99L);
+
+        DummyDocUpdates docUpdates = savedDoc.createUpdates();
+        docUpdates.setWeight(100L); // Granny gained a pound
+        DynamoExpressionBuilder expression = docUpdates.getExpressionBuilder();
+        // we know the value is 99, so the following NOT_EQUALS condition is true (kind of a dumb test but it tests the condition well enough)
+        expression.addCheckFieldValueCondition(null, DummyDoc.WEIGHT_FIELD, 100, DynamoExpressionBuilder.ComparisonOperator.NOT_EQUALS); // Update should only happen if name is null
+        dynamap.update(new UpdateParams<>(docUpdates));
+
+        savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
+        Assert.assertEquals(savedDoc.getName(), "Granny");
+        Assert.assertEquals((long)savedDoc.getWeight(), 100L);
+    }
+
+    @Test
     public void testConditionalChecks() {
 
         String docId1 = UUID.randomUUID().toString();
