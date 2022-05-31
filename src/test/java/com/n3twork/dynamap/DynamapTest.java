@@ -25,6 +25,7 @@ import com.amazonaws.services.dynamodbv2.document.QueryFilter;
 import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.services.dynamodbv2.model.Select;
 import com.amazonaws.util.IOUtils;
@@ -1002,6 +1003,35 @@ public class DynamapTest {
         savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
         Assert.assertEquals(savedDoc.getRevision().intValue(), 3);
 
+    }
+
+    @Test
+    public void testNullStringCondition() {
+        final String DOC_ID = "1";
+        DummyDocBean doc = new DummyDocBean(DOC_ID);
+        dynamap.save(new SaveParams<>(doc));
+
+        DummyDocBean savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
+        Assert.assertNull(savedDoc.getName());
+
+        DummyDocUpdates docUpdates = savedDoc.createUpdates();
+        docUpdates.setName("Granny");
+        DynamoExpressionBuilder expression = docUpdates.getExpressionBuilder();
+        expression.addAttributeNotExistsCondition(DummyDoc.NAME_FIELD); // Update should only happen if name is null
+        dynamap.update(new UpdateParams<>(docUpdates));
+
+        savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
+        Assert.assertEquals(savedDoc.getName(), "Granny");
+
+        docUpdates = savedDoc.createUpdates();
+        docUpdates.setName(null); // Now set it back to null again
+        expression = docUpdates.getExpressionBuilder();
+        // Update should only happen if name is Granny
+        expression.addCheckFieldValueCondition(null, DummyDoc.NAME_FIELD, "Granny", DynamoExpressionBuilder.ComparisonOperator.EQUALS);
+        dynamap.update(new UpdateParams<>(docUpdates));
+
+        savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
+        Assert.assertNull(savedDoc.getName());
     }
 
     @Test
