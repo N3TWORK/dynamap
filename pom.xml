@@ -35,7 +35,7 @@
     </scm>
 
     <properties>
-        <jackson-version>2.11.3</jackson-version>
+        <jackson-version>2.13.4</jackson-version>
         <dynamodb-version>1.12.80</dynamodb-version>
     </properties>
 
