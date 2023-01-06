@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class Dynamap {
@@ -84,10 +85,18 @@ public class Dynamap {
     }
 
     public void createTables(boolean deleteIfExists) {
-        createTables(deleteIfExists, 1, 1);
+        createTables(deleteIfExists, 1, 1, request -> {});
+    }
+
+    public void createTables(boolean deleteIfExists, Consumer<CreateTableRequest> requestTransformer) {
+        createTables(deleteIfExists, 1, 1, requestTransformer);
     }
 
     public void createTables(boolean deleteIfExists, long readProvisioning, long writeProvisioning) {
+        createTables(deleteIfExists, readProvisioning, writeProvisioning, request -> {});
+    }
+
+    public void createTables(boolean deleteIfExists, long readProvisioning, long writeProvisioning, Consumer<CreateTableRequest> requestTransformer) {
         for (TableDefinition tableDefinition : schemaRegistry.getSchema().getTableDefinitions()) {
 
             ArrayList<AttributeDefinition> attributeDefinitions = new ArrayList<>();
@@ -192,6 +201,8 @@ public class Dynamap {
             if (localSecondaryIndexes.size() > 0) {
                 request = request.withLocalSecondaryIndexes(localSecondaryIndexes);
             }
+
+            requestTransformer.accept(request);
 
             if (deleteIfExists) {
                 TableUtils.deleteTableIfExists(amazonDynamoDB, new DeleteTableRequest().withTableName(tableDefinition.getTableName(prefix)));
