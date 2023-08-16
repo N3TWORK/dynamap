@@ -1034,6 +1034,41 @@ public class DynamapTest {
         Assert.assertNull(savedDoc.getName());
     }
 
+    @Test(expectedExceptions = ConditionalCheckFailedException.class)
+    public void testNotEqualsConditionFailure() {
+        final String DOC_ID = "1";
+        DummyDocBean doc = new DummyDocBean(DOC_ID).setName("Granny");
+        dynamap.save(new SaveParams<>(doc));
+
+        DummyDocBean savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
+        DummyDocUpdates docUpdates = savedDoc.createUpdates();
+        docUpdates.setName("Granny2");
+        DynamoExpressionBuilder expression = docUpdates.getExpressionBuilder();
+
+        // Update should fail since currently-saved name is equal to "Granny"
+        expression.addCheckFieldValueCondition(null, DummyDoc.NAME_FIELD, "Granny", DynamoExpressionBuilder.ComparisonOperator.NOT_EQUALS);
+        dynamap.update(new UpdateParams<>(docUpdates));
+    }
+
+    @Test
+    public void testNotEqualsConditionSuccess() {
+        final String DOC_ID = "1";
+        DummyDocBean doc = new DummyDocBean(DOC_ID).setName("Bear");
+        dynamap.save(new SaveParams<>(doc));
+
+        DummyDocBean savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
+        DummyDocUpdates docUpdates = savedDoc.createUpdates();
+        docUpdates.setName("Granny");
+        DynamoExpressionBuilder expression = docUpdates.getExpressionBuilder();
+
+        // Update should succeed since the currently-saved value is not "Granny""
+        expression.addCheckFieldValueCondition(null, DummyDoc.NAME_FIELD, "Granny", DynamoExpressionBuilder.ComparisonOperator.NOT_EQUALS);
+        dynamap.update(new UpdateParams<>(docUpdates));
+
+        savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
+        Assert.assertEquals(savedDoc.getName(), "Granny");
+    }
+
     @Test
     public void testConditionalChecks() {
 
