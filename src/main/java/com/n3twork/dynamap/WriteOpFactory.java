@@ -4,6 +4,7 @@ import com.amazonaws.services.dynamodbv2.document.ItemUtils;
 import com.amazonaws.services.dynamodbv2.model.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.n3twork.dynamap.model.TableDefinition;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +64,7 @@ class WriteOpFactory {
                 .withItem(ItemUtils.toAttributeValues(dynamoItemFactory.asDynamoItem(dynamapRecordBean, tableDefinition)));
         if (conditionalExpressions.size() > 0) {
             put.withConditionExpression(String.join(" AND ", conditionalExpressions));
+            put.withReturnValuesOnConditionCheckFailure(saveParams.getReturnValuesOnConditionCheckFailure());
         }
         return put;
     }
@@ -81,6 +83,7 @@ class WriteOpFactory {
                 .withKey(key)
                 .withUpdateExpression(expressionBuilder.buildUpdateExpression())
                 .withConditionExpression(expressionBuilder.buildConditionalExpression())
+                .withReturnValuesOnConditionCheckFailure(updateParams.getReturnValuesOnConditionCheckFailure())
                 .withExpressionAttributeNames(expressionBuilder.getNameMap())
                 .withExpressionAttributeValues(ItemUtils.fromSimpleMap(expressionBuilder.getValueMap()));
     }
@@ -88,9 +91,14 @@ class WriteOpFactory {
     public Delete buildDelete(DeleteRequest deleteRequest) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(deleteRequest.getResultClass());
         Map<String, AttributeValue> key = TxUtil.getKey(tableDefinition, deleteRequest.getHashKeyValue(), deleteRequest.getRangeKeyValue());
-        return new Delete()
+        Delete delete = new Delete()
                 .withTableName(tableDefinition.getTableName(tableNamePrefix))
                 .withKey(key);
+        if(StringUtils.isNotEmpty(deleteRequest.getConditionExpression())) {
+            delete.withConditionExpression(deleteRequest.getConditionExpression())
+                .withReturnValuesOnConditionCheckFailure(deleteRequest.getReturnValuesOnConditionCheckFailure());
+        }
+        return delete;
     }
 
     public <T extends DynamapRecordBean> ConditionCheck buildConditionCheck(WriteConditionCheck<T> writeConditionCheck) {
@@ -98,7 +106,8 @@ class WriteOpFactory {
         ConditionCheck conditionCheck = new ConditionCheck()
                 .withTableName(tableDefinition.getTableName(tableNamePrefix))
                 .withKey(TxUtil.getKey(tableDefinition, writeConditionCheck.getHashKey(), writeConditionCheck.getRangeKey()))
-                .withConditionExpression(writeConditionCheck.getDynamoExpressionBuilder().buildConditionalExpression());
+                .withConditionExpression(writeConditionCheck.getDynamoExpressionBuilder().buildConditionalExpression())
+                .withReturnValuesOnConditionCheckFailure(writeConditionCheck.getReturnValuesOnConditionCheckFailure());
         if (!writeConditionCheck.getDynamoExpressionBuilder().getNameMap().isEmpty()) {
             conditionCheck = conditionCheck.withExpressionAttributeNames(writeConditionCheck.getDynamoExpressionBuilder().getNameMap());
         }
