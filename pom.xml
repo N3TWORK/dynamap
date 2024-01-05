@@ -37,7 +37,7 @@
     <properties>
         <jackson-core-version>2.13.4</jackson-core-version>
         <jackson-databind-version>2.13.4.2</jackson-databind-version>
-        <dynamodb-version>1.12.80</dynamodb-version>
+        <dynamodb-version>1.12.630</dynamodb-version>
     </properties>
 
     <repositories>
@@ -128,7 +128,7 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>DynamoDBLocal</artifactId>
-            <version>1.13.1</version>
+            <version>1.25.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
