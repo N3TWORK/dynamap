@@ -142,6 +142,60 @@ public class DynamapTxTest {
     }
 
     @Test
+    public void testDeleteTxWithConditionCheck() {
+
+        PlayerBean p1 = new PlayerBean("playerOne", "Player One", PlayerBean.SCHEMA_VERSION);
+        PlayerBean p2 = new PlayerBean("playerTwo", "Player Two", PlayerBean.SCHEMA_VERSION);
+
+        WriteConditionCheck<PlayerBean> writeConditionCheck = new WriteConditionCheck<>(PlayerBean.class, "playerThree", null);
+        writeConditionCheck.getDynamoExpressionBuilder().addAttributeNotExistsCondition("id");
+
+        // Create two players in a single transaction but only if a third player does not exist.
+        WriteTx createTwoPlayers = dynamap.newWriteTx();
+        createTwoPlayers.save(new SaveParams<>(p1));
+        createTwoPlayers.save(new SaveParams<>(p2));
+        createTwoPlayers.condition(writeConditionCheck);
+        createTwoPlayers.exec();
+
+        PlayerBean playerOneRead = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerOne")));
+        assertNotNull(playerOneRead);
+        assertEquals(playerOneRead, p1);
+
+        PlayerBean playerTwoRead = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerTwo")));
+        assertNotNull(playerTwoRead);
+        assertEquals(playerTwoRead, p2);
+
+        // Delete two players in a single transaction but only if they still have an id field when the transaction is running.
+        WriteConditionCheck<PlayerBean> check = new WriteConditionCheck<>(PlayerBean.class, p1.getId(), null);
+        DynamoExpressionBuilder builder = check.getDynamoExpressionBuilder();
+        builder.addAttributeExistsCondition(PlayerBean.ID_FIELD);
+
+        DeleteRequest<PlayerBean> deleteRequest = new DeleteRequest<>(PlayerBean.class)
+                .withHashKeyValue(p1.getId())
+                .withRangeKeyValue(p1.getRangeKeyValue())
+                .withConditionExpression(builder.buildConditionalExpression());
+
+        WriteConditionCheck<PlayerBean> check2 = new WriteConditionCheck<>(PlayerBean.class, p2.getId(), null);
+        DynamoExpressionBuilder builder2 = check2.getDynamoExpressionBuilder();
+        builder2.addAttributeExistsCondition(PlayerBean.ID_FIELD);
+
+        DeleteRequest<PlayerBean> deleteRequest2 = new DeleteRequest<>(PlayerBean.class)
+                .withHashKeyValue(p2.getId())
+                .withRangeKeyValue(p2.getRangeKeyValue())
+                .withConditionExpression(builder2.buildConditionalExpression());
+
+        WriteTx deleteTwoPlayers = dynamap.newWriteTx();
+        deleteTwoPlayers.delete(deleteRequest);
+        deleteTwoPlayers.delete(deleteRequest2);
+        deleteTwoPlayers.exec();
+
+        PlayerBean deletedPlayer1 = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerOne")));
+        assertNull(deletedPlayer1);
+        PlayerBean deletedPlayer2 = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerTwo")));
+        assertNull(deletedPlayer2);
+    }
+
+    @Test
     public void testSaveWithNotExistsCondition() {
         PlayerBean p1 = new PlayerBean("playerOne", "Player One", PlayerBean.SCHEMA_VERSION);
 
