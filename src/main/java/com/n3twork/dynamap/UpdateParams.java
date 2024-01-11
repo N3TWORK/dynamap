@@ -16,12 +16,15 @@
 
 package com.n3twork.dynamap;
 
+import com.amazonaws.services.dynamodbv2.model.ReturnValuesOnConditionCheckFailure;
+
 public class UpdateParams<T extends DynamapPersisted<? extends RecordUpdates<T>>> {
 
     private RecordUpdates<T> updates;
     private DynamoRateLimiter writeLimiter;
     private String suffix;
     private DynamapReturnValue dynamapReturnValue = DynamapReturnValue.ALL_NEW;
+    private ReturnValuesOnConditionCheckFailure returnValuesOnConditionCheckFailure = ReturnValuesOnConditionCheckFailure.NONE;
 
     private UpdateParams() {
     }
@@ -45,6 +48,11 @@ public class UpdateParams<T extends DynamapPersisted<? extends RecordUpdates<T>>
         return this;
     }
 
+    public UpdateParams<T> withReturnValuesOnConditionCheckFailure(ReturnValuesOnConditionCheckFailure returnValuesOnConditionCheckFailure) {
+        this.returnValuesOnConditionCheckFailure = returnValuesOnConditionCheckFailure;
+        return this;
+    }
+
     ////////
 
 
@@ -63,4 +71,6 @@ public class UpdateParams<T extends DynamapPersisted<? extends RecordUpdates<T>>
     public DynamapReturnValue getDynamapReturnValue() {
         return dynamapReturnValue;
     }
+
+    public ReturnValuesOnConditionCheckFailure getReturnValuesOnConditionCheckFailure() { return returnValuesOnConditionCheckFailure; }
 }
