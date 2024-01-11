@@ -35,15 +35,16 @@
     </scm>
 
     <properties>
-        <jackson-version>2.11.3</jackson-version>
+        <jackson-core-version>2.13.4</jackson-core-version>
+        <jackson-databind-version>2.13.4.2</jackson-databind-version>
         <dynamodb-version>1.12.80</dynamodb-version>
     </properties>
 
     <repositories>
         <repository>
-            <id>dynamodb-local-oregon</id>
+            <id>dynamodb-local-us-west</id>
             <name>DynamoDB Local Release Repository</name>
-            <url>https://repository.mulesoft.org/nexus/content/repositories/public/</url>
+            <url>https://s3-us-west-2.amazonaws.com/dynamodb-local/release/</url>
         </repository>
     </repositories>
 
@@ -76,12 +77,12 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>${jackson-version}</version>
+            <version>${jackson-core-version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${jackson-version}</version>
+            <version>${jackson-databind-version}</version>
         </dependency>
         <dependency>
             <groupId>org.freemarker</groupId>
@@ -127,7 +128,7 @@
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>DynamoDBLocal</artifactId>
-            <version>1.13.1</version>
+            <version>1.23.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -299,6 +300,8 @@
                                 <argument>${project.basedir}/src/test/resources/DummyLocalIndexSchema.json</argument>
                                 <argument>--schema</argument>
                                 <argument>${project.basedir}/src/test/resources/PlayerSchema.json</argument>
+                                <argument>--schema</argument>
+                                <argument>${project.basedir}/src/test/resources/NoMigrationSchema.json</argument>
                                 <argument>--output</argument>
                                 <argument>${project.build.directory}/generated-test-sources</argument>
                             </arguments>
@@ -339,4 +342,3 @@
     </build>
 
 </project>
-

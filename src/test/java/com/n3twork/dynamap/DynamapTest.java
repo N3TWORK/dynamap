@@ -77,7 +77,8 @@ public class DynamapTest {
     public void setup() {
         schemaRegistry = new SchemaRegistry(getClass().getResourceAsStream("/TestSchema.json"),
                 getClass().getResourceAsStream("/DummySchema.json"),
-                getClass().getResourceAsStream("/DummyLocalIndexSchema.json"));
+                getClass().getResourceAsStream("/DummyLocalIndexSchema.json"),
+                getClass().getResourceAsStream("/NoMigrationSchema.json"));
         // Create tables
         dynamap = new Dynamap(ddb, schemaRegistry).withPrefix("test").withObjectMapper(objectMapper);
         dynamap.createTables(System.getProperty("aws.profile") == null, 10, 10);
@@ -1034,6 +1035,41 @@ public class DynamapTest {
         Assert.assertNull(savedDoc.getName());
     }
 
+    @Test(expectedExceptions = ConditionalCheckFailedException.class)
+    public void testNotEqualsConditionFailure() {
+        final String DOC_ID = "1";
+        DummyDocBean doc = new DummyDocBean(DOC_ID).setName("Granny");
+        dynamap.save(new SaveParams<>(doc));
+
+        DummyDocBean savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
+        DummyDocUpdates docUpdates = savedDoc.createUpdates();
+        docUpdates.setName("Granny2");
+        DynamoExpressionBuilder expression = docUpdates.getExpressionBuilder();
+
+        // Update should fail since currently-saved name is equal to "Granny"
+        expression.addCheckFieldValueCondition(null, DummyDoc.NAME_FIELD, "Granny", DynamoExpressionBuilder.ComparisonOperator.NOT_EQUALS);
+        dynamap.update(new UpdateParams<>(docUpdates));
+    }
+
+    @Test
+    public void testNotEqualsConditionSuccess() {
+        final String DOC_ID = "1";
+        DummyDocBean doc = new DummyDocBean(DOC_ID).setName("Bear");
+        dynamap.save(new SaveParams<>(doc));
+
+        DummyDocBean savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
+        DummyDocUpdates docUpdates = savedDoc.createUpdates();
+        docUpdates.setName("Granny");
+        DynamoExpressionBuilder expression = docUpdates.getExpressionBuilder();
+
+        // Update should succeed since the currently-saved value is not "Granny""
+        expression.addCheckFieldValueCondition(null, DummyDoc.NAME_FIELD, "Granny", DynamoExpressionBuilder.ComparisonOperator.NOT_EQUALS);
+        dynamap.update(new UpdateParams<>(docUpdates));
+
+        savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
+        Assert.assertEquals(savedDoc.getName(), "Granny");
+    }
+
     @Test
     public void testNotEqualsCondition() {
         final String DOC_ID = "1";
@@ -1617,6 +1653,43 @@ public class DynamapTest {
         testDocumentBean.setBLOB(null);
         updated = dynamap.update(new UpdateParams<>(testDocumentUpdates));
         Assert.assertNull(updated.getBLOB());
+    }
+
+    @Test
+    public void testUpdateOfNonMigratingDoc() {
+        // NoMigrationSchema.json has `enableMigrations: false` in it. This means we explicitly opt-out of Dynamap schema
+        // migrations and, importantly, the conditional check that otherwise happens automatically on every document update
+        // to check the current schema version.
+        // This test exists to test for a bug we were seeing that would happen when:
+        // 1. We define a schema with `enableMigrations: false`
+        // 2. We try to update an instance of the code generated document.
+        // 3. We get an unexpected ConditionalCheckException that was a result of the generated code still performing
+        //    the conditional check on the schema version even though the schema version was no longer present in the
+        //    rest of the generated code.
+        final String DOC_ID = "1";
+        NoMigrationDocBean doc = new NoMigrationDocBean(DOC_ID);
+        dynamap.save(new SaveParams<>(doc));
+
+        NoMigrationDocBean savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(NoMigrationDocBean.class).withHashKeyValue(DOC_ID)));
+        Assert.assertNull(savedDoc.getName());
+
+        // Save with no conditions
+        NoMigrationDocUpdates docUpdates = savedDoc.createUpdates();
+        docUpdates.setName("Granny");
+        dynamap.update(new UpdateParams<>(docUpdates));
+
+        savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(NoMigrationDocBean.class).withHashKeyValue(DOC_ID)));
+        Assert.assertEquals(savedDoc.getName(), "Granny");
+
+        // Save with an equals condition
+        docUpdates = savedDoc.createUpdates();
+        docUpdates.setName(null); // Now set it back to null again
+        DynamoExpressionBuilder expression = docUpdates.getExpressionBuilder();
+        expression.addCheckFieldValueCondition(null, NoMigrationDoc.NAME_FIELD, "Granny", DynamoExpressionBuilder.ComparisonOperator.EQUALS); // Update should only happen if name is null
+        dynamap.update(new UpdateParams<>(docUpdates));
+
+        savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(NoMigrationDocBean.class).withHashKeyValue(DOC_ID)));
+        Assert.assertNull(savedDoc.getName());
     }
 
     int seq = 0;

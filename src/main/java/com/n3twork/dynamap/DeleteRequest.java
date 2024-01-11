@@ -16,6 +16,8 @@
 
 package com.n3twork.dynamap;
 
+import com.amazonaws.services.dynamodbv2.model.ReturnValuesOnConditionCheckFailure;
+
 import java.util.Map;
 
 public class DeleteRequest<T extends DynamapRecordBean> {
@@ -26,6 +28,7 @@ public class DeleteRequest<T extends DynamapRecordBean> {
     private Map<String, Object> values;
     private Map<String, String> names;
     private String suffix;
+    private ReturnValuesOnConditionCheckFailure returnValuesOnConditionCheckFailure = ReturnValuesOnConditionCheckFailure.NONE;
 
     public DeleteRequest(Class<T> resultClass) {
         this.resultClass = resultClass;
@@ -47,6 +50,10 @@ public class DeleteRequest<T extends DynamapRecordBean> {
         return this;
     }
 
+    public DeleteRequest<T> withReturnValuesOnConditionalCheckFailure(ReturnValuesOnConditionCheckFailure returnValuesOnConditionCheckFailure) {
+        this.returnValuesOnConditionCheckFailure = returnValuesOnConditionCheckFailure;
+        return this;
+    }
 
     public DeleteRequest<T> withNames(Map<String, String> names) {
         this.names = names;
@@ -78,6 +85,8 @@ public class DeleteRequest<T extends DynamapRecordBean> {
     public String getConditionExpression() {
         return conditionExpression;
     }
+
+    public ReturnValuesOnConditionCheckFailure getReturnValuesOnConditionCheckFailure() { return returnValuesOnConditionCheckFailure; }
 
     public Map<String, Object> getValues() {
         return values;

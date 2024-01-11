@@ -16,6 +16,8 @@
 
 package com.n3twork.dynamap;
 
+import com.amazonaws.services.dynamodbv2.model.ReturnValuesOnConditionCheckFailure;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +32,8 @@ public class SaveParams<T extends DynamapRecordBean> {
     private String suffix;
     private Map<String, Object> values;
     private Map<String, String> names;
-    List<String> conditionExpressions = new ArrayList<>();
+    private List<String> conditionExpressions = new ArrayList<>();
+    private ReturnValuesOnConditionCheckFailure returnValuesOnConditionCheckFailure = ReturnValuesOnConditionCheckFailure.NONE;
 
     private SaveParams() {
     }
@@ -64,6 +67,10 @@ public class SaveParams<T extends DynamapRecordBean> {
         return this;
     }
 
+    public SaveParams<T> withReturnValuesOnConditionCheckFailure(ReturnValuesOnConditionCheckFailure returnValuesOnConditionCheckFailure) {
+        this.returnValuesOnConditionCheckFailure = returnValuesOnConditionCheckFailure;
+        return this;
+    }
 
     public SaveParams<T> withNames(Map<String, String> names) {
         this.names = names;
@@ -109,4 +116,6 @@ public class SaveParams<T extends DynamapRecordBean> {
     public List<String> getConditionExpressions() {
         return conditionExpressions;
     }
+
+    public ReturnValuesOnConditionCheckFailure getReturnValuesOnConditionCheckFailure() { return returnValuesOnConditionCheckFailure; }
 }

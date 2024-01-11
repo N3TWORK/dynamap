@@ -1,0 +1,29 @@
+{
+  "tables": [
+    {
+      "table": "NoMigrationTable",
+      "package": "com.n3twork.dynamap.test",
+      "type": "NoMigrationDoc",
+      "version": 1,
+      "enableMigrations": false,
+      "hashKey": "id",
+      "types": [
+        {
+          "name": "NoMigrationDoc",
+          "fields": [
+            {
+              "name": "id",
+              "dynamoName": "id",
+              "type": "String"
+            },
+            {
+              "name": "name",
+              "dynamoName": "n",
+              "type": "String"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
