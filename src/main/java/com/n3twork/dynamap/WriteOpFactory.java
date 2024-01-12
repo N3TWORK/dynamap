@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * The DynamoDB write transactions API works in terms of Put, Update, and Delete instances.
@@ -88,7 +89,7 @@ class WriteOpFactory {
                 .withExpressionAttributeValues(ItemUtils.fromSimpleMap(expressionBuilder.getValueMap()));
     }
 
-    public Delete buildDelete(DeleteRequest deleteRequest) {
+    public Delete buildDelete(DeleteRequest<?> deleteRequest) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(deleteRequest.getResultClass());
         Map<String, AttributeValue> key = TxUtil.getKey(tableDefinition, deleteRequest.getHashKeyValue(), deleteRequest.getRangeKeyValue());
         Delete delete = new Delete()
@@ -97,6 +98,14 @@ class WriteOpFactory {
         if(StringUtils.isNotEmpty(deleteRequest.getConditionExpression())) {
             delete.withConditionExpression(deleteRequest.getConditionExpression())
                 .withReturnValuesOnConditionCheckFailure(deleteRequest.getReturnValuesOnConditionCheckFailure());
+
+            if (deleteRequest.getNames() != null) {
+                delete.withExpressionAttributeNames(deleteRequest.getNames());
+            }
+            if (deleteRequest.getValues() != null) {
+                delete.withExpressionAttributeValues(deleteRequest.getValues().entrySet().stream()
+                        .collect(Collectors.toMap(Map.Entry::getKey, entry -> ItemUtils.toAttributeValue(entry.getValue()))));
+            }
         }
         return delete;
     }

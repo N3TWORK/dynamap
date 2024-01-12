@@ -23,6 +23,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
 import com.amazonaws.services.dynamodbv2.model.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.n3twork.BatchSaveParams;
 import com.n3twork.dynamap.test.Player;
 import com.n3twork.dynamap.test.PlayerBean;
 import com.n3twork.dynamap.test.PlayerUpdates;
@@ -30,6 +31,8 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -160,7 +163,7 @@ public class DynamapTxTest {
         TransactionCanceledException thrown = null;
         try {
             secondCreateTx.exec();
-        } catch(TransactionCanceledException e) {
+        } catch (TransactionCanceledException e) {
             thrown = e;
         }
         assertNotNull(thrown);
@@ -170,6 +173,54 @@ public class DynamapTxTest {
         // Overwrite will work when we don't explicitly disable overwriting
         WriteTx thirdCreateTx = dynamap.newWriteTx();
         thirdCreateTx.save(new SaveParams<>(p1));
+    }
+
+    @Test
+    public void testWriteTx_DeleteWithConditionalExpressionThatPasses() {
+        PlayerBean p1 = new PlayerBean("playerOne", "Player One", PlayerBean.SCHEMA_VERSION);
+        PlayerBean p2 = new PlayerBean("playerTwo", "Player Two", PlayerBean.SCHEMA_VERSION);
+
+        dynamap.batchSave(new BatchSaveParams<>(Arrays.asList(p1, p2)));
+
+        // Delete player one only if its "name" field has the expected value
+        WriteTx deletePlayerOne = dynamap.newWriteTx();
+        deletePlayerOne
+                .delete(
+                        new DeleteRequest<>(PlayerBean.class)
+                                .withHashKeyValue("playerOne")
+                                .withConditionExpression("#field = :val")
+                                .withNames(Collections.singletonMap("#field", PlayerBean.NAME_FIELD))
+                                .withValues(Collections.singletonMap(":val", "Player One"))
+                );
+        deletePlayerOne.exec();
+
+        PlayerBean playerOneRead = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerOne")));
+        assertNull(playerOneRead);
+
+        PlayerBean playerTwoRead = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerTwo")));
+        assertNotNull(playerTwoRead);
+        assertEquals(playerTwoRead, p2);
+    }
+
+    @Test(expectedExceptions = TransactionCanceledException.class, expectedExceptionsMessageRegExp = "Transaction cancelled, please refer cancellation reasons for specific reasons \\[ConditionalCheckFailed] .+")
+    public void testWriteTx_DeleteWithConditionalExpressionThatFails() {
+        PlayerBean p1 = new PlayerBean("playerOne", "Player One", PlayerBean.SCHEMA_VERSION);
+        PlayerBean p2 = new PlayerBean("playerTwo", "Player Two", PlayerBean.SCHEMA_VERSION);
+
+        dynamap.batchSave(new BatchSaveParams<>(Arrays.asList(p1, p2)));
+
+        // Delete player one only if its "name" field has the expected value; expected to fail
+        WriteTx deletePlayerOne = dynamap.newWriteTx();
+        deletePlayerOne
+                .delete(
+                        new DeleteRequest<>(PlayerBean.class)
+                                .withHashKeyValue("playerOne")
+                                .withConditionExpression("#field = :val")
+                                .withNames(Collections.singletonMap("#field", PlayerBean.NAME_FIELD))
+                                .withValues(Collections.singletonMap(":val", "Different Value"))
+                );
+
+        deletePlayerOne.exec();
     }
 
     @Test
@@ -212,7 +263,7 @@ public class DynamapTxTest {
         TransactionCanceledException thrown = null;
         try {
             secondCreateTx.exec();
-        } catch(TransactionCanceledException e) {
+        } catch (TransactionCanceledException e) {
             thrown = e;
         }
         assertNotNull(thrown);
@@ -255,7 +306,7 @@ public class DynamapTxTest {
         TransactionCanceledException thrown = null;
         try {
             tx.exec();
-        } catch(TransactionCanceledException e) {
+        } catch (TransactionCanceledException e) {
             thrown = e;
         }
         assertNotNull(thrown);
@@ -288,7 +339,7 @@ public class DynamapTxTest {
         TransactionCanceledException thrown = null;
         try {
             tx.exec();
-        } catch(TransactionCanceledException e) {
+        } catch (TransactionCanceledException e) {
             thrown = e;
         }
         assertNotNull(thrown);
@@ -317,7 +368,7 @@ public class DynamapTxTest {
         TransactionCanceledException thrown = null;
         try {
             deleteWithCondition.exec();
-        } catch( TransactionCanceledException e ) {
+        } catch (TransactionCanceledException e) {
             thrown = e;
         }
         assertNotNull(thrown);
