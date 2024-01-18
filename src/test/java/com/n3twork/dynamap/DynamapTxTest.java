@@ -165,10 +165,10 @@ public class DynamapTxTest {
         assertNotNull(playerTwoRead);
         assertEquals(playerTwoRead, p2);
 
-        // Delete two players in a single transaction but only if they still have an id field when the transaction is running.
+        // Delete two players in a single transaction but fail because the name is wrong.
         WriteConditionCheck<PlayerBean> check = new WriteConditionCheck<>(PlayerBean.class, p1.getId(), null);
         DynamoExpressionBuilder builder = check.getDynamoExpressionBuilder();
-        builder.addAttributeExistsCondition(PlayerBean.ID_FIELD);
+        builder.addCheckFieldValueCondition(null, "name", "Player Five Hundred", DynamoExpressionBuilder.ComparisonOperator.EQUALS);
 
         DeleteRequest<PlayerBean> deleteRequest = new DeleteRequest<>(PlayerBean.class)
                 .withHashKeyValue(p1.getId())
@@ -184,14 +184,50 @@ public class DynamapTxTest {
                 .withRangeKeyValue(p2.getRangeKeyValue())
                 .withConditionExpression(builder2.buildConditionalExpression());
 
-        WriteTx deleteTwoPlayers = dynamap.newWriteTx();
+        WriteTx deleteTwoPlayers;
+        try {
+            deleteTwoPlayers = dynamap.newWriteTx();
+            deleteTwoPlayers.delete(deleteRequest);
+            deleteTwoPlayers.delete(deleteRequest2);
+            deleteTwoPlayers.exec();
+
+            fail();
+        }
+        catch (Exception e) {
+            // pass
+        }
+        PlayerBean deletedPlayer1 = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerOne")));
+        assertNotNull(deletedPlayer1);
+        PlayerBean deletedPlayer2 = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerTwo")));
+        assertNotNull(deletedPlayer2);
+
+        // Delete two players in a single transaction (correctly this time).
+        check = new WriteConditionCheck<>(PlayerBean.class, p1.getId(), null);
+        builder = check.getDynamoExpressionBuilder();
+        builder.addCheckFieldValueCondition(null, "name", "Player One", DynamoExpressionBuilder.ComparisonOperator.EQUALS);
+
+        deleteRequest = new DeleteRequest<>(PlayerBean.class)
+                .withHashKeyValue(p1.getId())
+                .withRangeKeyValue(p1.getRangeKeyValue())
+                .withConditionExpression(builder.buildConditionalExpression());
+
+        check2 = new WriteConditionCheck<>(PlayerBean.class, p2.getId(), null);
+        builder2 = check2.getDynamoExpressionBuilder();
+        builder2.addAttributeExistsCondition(PlayerBean.ID_FIELD);
+
+        deleteRequest2 = new DeleteRequest<>(PlayerBean.class)
+                .withHashKeyValue(p2.getId())
+                .withRangeKeyValue(p2.getRangeKeyValue())
+                .withConditionExpression(builder2.buildConditionalExpression());
+
+        deleteTwoPlayers = dynamap.newWriteTx();
         deleteTwoPlayers.delete(deleteRequest);
         deleteTwoPlayers.delete(deleteRequest2);
         deleteTwoPlayers.exec();
 
-        PlayerBean deletedPlayer1 = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerOne")));
+        deletedPlayer1 = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerOne")));
         assertNull(deletedPlayer1);
-        PlayerBean deletedPlayer2 = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerTwo")));
+        deletedPlayer2 = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerTwo")));
         assertNull(deletedPlayer2);
     }
 
