@@ -21,17 +21,20 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
-import com.amazonaws.services.dynamodbv2.model.CancellationReason;
-import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
-import com.amazonaws.services.dynamodbv2.model.TransactionCanceledException;
+import com.amazonaws.services.dynamodbv2.model.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.n3twork.BatchSaveParams;
+import com.n3twork.dynamap.test.Player;
 import com.n3twork.dynamap.test.PlayerBean;
 import com.n3twork.dynamap.test.PlayerUpdates;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static org.testng.Assert.*;
 
@@ -142,6 +145,107 @@ public class DynamapTxTest {
     }
 
     @Test
+    public void testDeleteTxWithConditionCheck() {
+
+        PlayerBean p1 = new PlayerBean("playerOne", "Player One", PlayerBean.SCHEMA_VERSION);
+        PlayerBean p2 = new PlayerBean("playerTwo", "Player Two", PlayerBean.SCHEMA_VERSION);
+
+        WriteConditionCheck<PlayerBean> writeConditionCheck = new WriteConditionCheck<>(PlayerBean.class, "playerThree", null);
+        writeConditionCheck.getDynamoExpressionBuilder().addAttributeNotExistsCondition("id");
+
+
+        // Create two players in a single transaction but only if a third player does not exist.
+
+        WriteTx createTwoPlayers = dynamap.newWriteTx();
+        createTwoPlayers.save(new SaveParams<>(p1));
+        createTwoPlayers.save(new SaveParams<>(p2));
+        createTwoPlayers.condition(writeConditionCheck);
+        createTwoPlayers.exec();
+
+        PlayerBean playerOneRead = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerOne")));
+        assertNotNull(playerOneRead);
+        assertEquals(playerOneRead, p1);
+
+        PlayerBean playerTwoRead = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerTwo")));
+        assertNotNull(playerTwoRead);
+        assertEquals(playerTwoRead, p2);
+
+
+        // Delete two players in a single transaction but fail because the name is wrong.
+
+        WriteConditionCheck<PlayerBean> check = new WriteConditionCheck<>(PlayerBean.class, p1.getId(), null);
+        DynamoExpressionBuilder builder = check.getDynamoExpressionBuilder();
+        builder.addCheckFieldValueCondition(null, PlayerBean.NAME_FIELD, "Player Five Hundred", DynamoExpressionBuilder.ComparisonOperator.EQUALS);
+
+        DeleteRequest<PlayerBean> deleteRequest = new DeleteRequest<>(PlayerBean.class)
+                .withHashKeyValue(p1.getId())
+                .withRangeKeyValue(p1.getRangeKeyValue())
+                .withConditionExpression(builder.buildConditionalExpression())
+                .withNames(builder.getNameMap())
+                .withValues(builder.getValueMap());
+
+        WriteConditionCheck<PlayerBean> check2 = new WriteConditionCheck<>(PlayerBean.class, p2.getId(), null);
+        DynamoExpressionBuilder builder2 = check2.getDynamoExpressionBuilder();
+        builder2.addAttributeExistsCondition(PlayerBean.ID_FIELD);
+
+        DeleteRequest<PlayerBean> deleteRequest2 = new DeleteRequest<>(PlayerBean.class)
+                .withHashKeyValue(p2.getId())
+                .withRangeKeyValue(p2.getRangeKeyValue())
+                .withConditionExpression(builder2.buildConditionalExpression());
+
+        WriteTx deleteTwoPlayers;
+        try {
+            deleteTwoPlayers = dynamap.newWriteTx();
+            deleteTwoPlayers.delete(deleteRequest);
+            deleteTwoPlayers.delete(deleteRequest2);
+            deleteTwoPlayers.exec();
+
+            fail();
+        }
+        catch (Exception e) {
+            // test correctly threw an exception - test passed
+        }
+
+        PlayerBean deletedPlayer1 = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerOne")));
+        assertNotNull(deletedPlayer1);
+        PlayerBean deletedPlayer2 = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerTwo")));
+        assertNotNull(deletedPlayer2);
+
+
+        // Delete two players in a single transaction (correctly this time).
+
+        check = new WriteConditionCheck<>(PlayerBean.class, p1.getId(), null);
+        builder = check.getDynamoExpressionBuilder();
+        builder.addCheckFieldValueCondition(null, PlayerBean.NAME_FIELD, "Player One", DynamoExpressionBuilder.ComparisonOperator.EQUALS);
+
+        deleteRequest = new DeleteRequest<>(PlayerBean.class)
+                .withHashKeyValue(p1.getId())
+                .withRangeKeyValue(p1.getRangeKeyValue())
+                .withConditionExpression(builder.buildConditionalExpression())
+                .withNames(builder.getNameMap())
+                .withValues(builder.getValueMap());
+
+        check2 = new WriteConditionCheck<>(PlayerBean.class, p2.getId(), null);
+        builder2 = check2.getDynamoExpressionBuilder();
+        builder2.addAttributeExistsCondition(PlayerBean.ID_FIELD);
+
+        deleteRequest2 = new DeleteRequest<>(PlayerBean.class)
+                .withHashKeyValue(p2.getId())
+                .withRangeKeyValue(p2.getRangeKeyValue())
+                .withConditionExpression(builder2.buildConditionalExpression());
+
+        deleteTwoPlayers = dynamap.newWriteTx();
+        deleteTwoPlayers.delete(deleteRequest);
+        deleteTwoPlayers.delete(deleteRequest2);
+        deleteTwoPlayers.exec();
+
+        deletedPlayer1 = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerOne")));
+        assertNull(deletedPlayer1);
+        deletedPlayer2 = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerTwo")));
+        assertNull(deletedPlayer2);
+    }
+
+    @Test
     public void testSaveWithNotExistsCondition() {
         PlayerBean p1 = new PlayerBean("playerOne", "Player One", PlayerBean.SCHEMA_VERSION);
 
@@ -160,7 +264,7 @@ public class DynamapTxTest {
         TransactionCanceledException thrown = null;
         try {
             secondCreateTx.exec();
-        } catch(TransactionCanceledException e) {
+        } catch (TransactionCanceledException e) {
             thrown = e;
         }
         assertNotNull(thrown);
@@ -170,6 +274,54 @@ public class DynamapTxTest {
         // Overwrite will work when we don't explicitly disable overwriting
         WriteTx thirdCreateTx = dynamap.newWriteTx();
         thirdCreateTx.save(new SaveParams<>(p1));
+    }
+
+    @Test
+    public void testWriteTx_DeleteWithConditionalExpressionThatPasses() {
+        PlayerBean p1 = new PlayerBean("playerOne", "Player One", PlayerBean.SCHEMA_VERSION);
+        PlayerBean p2 = new PlayerBean("playerTwo", "Player Two", PlayerBean.SCHEMA_VERSION);
+
+        dynamap.batchSave(new BatchSaveParams<>(Arrays.asList(p1, p2)));
+
+        // Delete player one only if its "name" field has the expected value
+        WriteTx deletePlayerOne = dynamap.newWriteTx();
+        deletePlayerOne
+                .delete(
+                        new DeleteRequest<>(PlayerBean.class)
+                                .withHashKeyValue("playerOne")
+                                .withConditionExpression("#field = :val")
+                                .withNames(Collections.singletonMap("#field", PlayerBean.NAME_FIELD))
+                                .withValues(Collections.singletonMap(":val", "Player One"))
+                );
+        deletePlayerOne.exec();
+
+        PlayerBean playerOneRead = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerOne")));
+        assertNull(playerOneRead);
+
+        PlayerBean playerTwoRead = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerTwo")));
+        assertNotNull(playerTwoRead);
+        assertEquals(playerTwoRead, p2);
+    }
+
+    @Test(expectedExceptions = TransactionCanceledException.class, expectedExceptionsMessageRegExp = "Transaction cancelled, please refer cancellation reasons for specific reasons \\[ConditionalCheckFailed] .+")
+    public void testWriteTx_DeleteWithConditionalExpressionThatFails() {
+        PlayerBean p1 = new PlayerBean("playerOne", "Player One", PlayerBean.SCHEMA_VERSION);
+        PlayerBean p2 = new PlayerBean("playerTwo", "Player Two", PlayerBean.SCHEMA_VERSION);
+
+        dynamap.batchSave(new BatchSaveParams<>(Arrays.asList(p1, p2)));
+
+        // Delete player one only if its "name" field has the expected value; expected to fail
+        WriteTx deletePlayerOne = dynamap.newWriteTx();
+        deletePlayerOne
+                .delete(
+                        new DeleteRequest<>(PlayerBean.class)
+                                .withHashKeyValue("playerOne")
+                                .withConditionExpression("#field = :val")
+                                .withNames(Collections.singletonMap("#field", PlayerBean.NAME_FIELD))
+                                .withValues(Collections.singletonMap(":val", "Different Value"))
+                );
+
+        deletePlayerOne.exec();
     }
 
     @Test
@@ -189,5 +341,147 @@ public class DynamapTxTest {
         assertEquals(result.get(0), p1);
         assertNull(result.get(1));
         assertEquals(result.get(2), p2);
+    }
+
+    @Test
+    public void testSaveTx_ReturnsValuesOnFailure() {
+        PlayerBean p1 = new PlayerBean("playerOne", "Player One", PlayerBean.SCHEMA_VERSION);
+
+        // Initial create should succeed
+        WriteTx initialCreateTx = dynamap.newWriteTx();
+        initialCreateTx.save(new SaveParams<>(p1));
+        initialCreateTx.exec();
+
+        PlayerBean playerOneRead = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue("playerOne")));
+        assertNotNull(playerOneRead);
+        assertEquals(playerOneRead, p1);
+
+        // Player exists, so this second save should fail with when we disable overwriting
+        WriteTx secondCreateTx = dynamap.newWriteTx();
+        SaveParams<PlayerBean> saveParams = new SaveParams<>(p1).withDisableOverwrite(true); // this should fail
+        saveParams.withReturnValuesOnConditionCheckFailure(ReturnValuesOnConditionCheckFailure.ALL_OLD); // request all document attributes on failure
+        secondCreateTx.save(saveParams);
+        TransactionCanceledException thrown = null;
+        try {
+            secondCreateTx.exec();
+        } catch (TransactionCanceledException e) {
+            thrown = e;
+        }
+        assertNotNull(thrown);
+        assertEquals(thrown.getCancellationReasons().size(), 1);
+        assertEquals(thrown.getCancellationReasons().get(0).getCode(), "ConditionalCheckFailed");
+        Map<String, AttributeValue> oldItem = thrown.getCancellationReasons().get(0).getItem();
+        assertNotNull(oldItem);
+        assertEquals(oldItem.get(PlayerBean.ID_FIELD).getS(), p1.getId()); // all document attributes were returned as requested
+
+        // Overwrite will work when we don't explicitly disable overwriting
+        WriteTx thirdCreateTx = dynamap.newWriteTx();
+        thirdCreateTx.save(new SaveParams<>(p1));
+
+        // delete and confirm.
+        dynamap.delete(new DeleteRequest<>(PlayerBean.class).withHashKeyValue(p1.getId()));
+        playerOneRead = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue(p1.getId())));
+        assertNull(playerOneRead);
+    }
+
+    @Test
+    public void testUpdateTx_ReturnsValuesOnFailure() {
+        PlayerBean p1 = new PlayerBean("playerOne", "Player One", PlayerBean.SCHEMA_VERSION);
+
+        // Create p1.
+        dynamap.save(new SaveParams<>(p1));
+
+        PlayerBean playerOneRead = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue(p1.getId())));
+        assertNotNull(playerOneRead);
+        assertEquals(playerOneRead, p1);
+
+        // Update p1 in a transaction.
+        PlayerUpdates playerOneUpdates = playerOneRead.createUpdates();
+        playerOneUpdates.setName("I am Player One");
+        playerOneUpdates.getExpressionBuilder().addAttributeNotExistsCondition(PlayerBean.ID_FIELD); // this should fail
+
+        WriteTx tx = dynamap.newWriteTx();
+        UpdateParams<Player> updateParams = new UpdateParams<>(playerOneUpdates);
+        updateParams.withReturnValuesOnConditionCheckFailure(ReturnValuesOnConditionCheckFailure.ALL_OLD); // request all document attributes on failure
+        tx.update(updateParams);
+        TransactionCanceledException thrown = null;
+        try {
+            tx.exec();
+        } catch (TransactionCanceledException e) {
+            thrown = e;
+        }
+        assertNotNull(thrown);
+        assertEquals(thrown.getCancellationReasons().size(), 1);
+        assertEquals(thrown.getCancellationReasons().get(0).getCode(), "ConditionalCheckFailed");
+        Map<String, AttributeValue> oldItem = thrown.getCancellationReasons().get(0).getItem();
+        assertNotNull(oldItem);
+        assertEquals(oldItem.get(PlayerBean.ID_FIELD).getS(), p1.getId()); // all document attributes were returned as requested
+
+        // delete and confirm.
+        dynamap.delete(new DeleteRequest<>(PlayerBean.class).withHashKeyValue(p1.getId()));
+        playerOneRead = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue(p1.getId())));
+        assertNull(playerOneRead);
+    }
+
+    @Test
+    public void testWriteCondition_ReturnsValuesOnFailure() {
+        PlayerBean p1 = new PlayerBean("playerOne", "Player One", PlayerBean.SCHEMA_VERSION);
+
+        // save p1
+        dynamap.save(new SaveParams<>(p1));
+
+        // Attempt a doomed WriteCondition in a Tx
+        WriteConditionCheck<PlayerBean> writeConditionCheck = new WriteConditionCheck<>(PlayerBean.class, p1.getId(), null);
+        writeConditionCheck.getDynamoExpressionBuilder().addAttributeNotExistsCondition(PlayerBean.ID_FIELD); // this should fail
+        writeConditionCheck.setReturnValuesOnConditionCheckFailure(ReturnValuesOnConditionCheckFailure.ALL_OLD); // request all document attributes on failure
+
+        WriteTx tx = dynamap.newWriteTx();
+        tx.condition(writeConditionCheck);
+        TransactionCanceledException thrown = null;
+        try {
+            tx.exec();
+        } catch (TransactionCanceledException e) {
+            thrown = e;
+        }
+        assertNotNull(thrown);
+        assertEquals(thrown.getCancellationReasons().size(), 1);
+        assertEquals(thrown.getCancellationReasons().get(0).getCode(), "ConditionalCheckFailed");
+        Map<String, AttributeValue> oldItem = thrown.getCancellationReasons().get(0).getItem();
+        assertNotNull(oldItem);
+        assertEquals(oldItem.get(PlayerBean.ID_FIELD).getS(), p1.getId()); // all document attributes were returned as requested
+    }
+
+    @Test
+    public void testDeleteTx_ReturnsValuesOnFailure() {
+        PlayerBean p1 = new PlayerBean("playerOne", "Player One", PlayerBean.SCHEMA_VERSION);
+
+        // Create p1.
+        dynamap.save(new SaveParams<>(p1));
+
+        // Delete p1 in a tx with a condition that's doomed to fail.
+        WriteTx deleteWithCondition = dynamap.newWriteTx();
+
+        DeleteRequest<PlayerBean> deleteRequest = new DeleteRequest<>(PlayerBean.class).withHashKeyValue(p1.getId());
+        deleteRequest.withConditionExpression(String.format("attribute_not_exists(%s)", PlayerBean.ID_FIELD)); // this should fail
+        deleteRequest.withReturnValuesOnConditionalCheckFailure(ReturnValuesOnConditionCheckFailure.ALL_OLD); // request all document attributes on failure
+
+        deleteWithCondition.delete(deleteRequest);
+        TransactionCanceledException thrown = null;
+        try {
+            deleteWithCondition.exec();
+        } catch (TransactionCanceledException e) {
+            thrown = e;
+        }
+        assertNotNull(thrown);
+        assertEquals(thrown.getCancellationReasons().size(), 1);
+        assertEquals(thrown.getCancellationReasons().get(0).getCode(), "ConditionalCheckFailed");
+        Map<String, AttributeValue> oldItem = thrown.getCancellationReasons().get(0).getItem();
+        assertNotNull(oldItem);
+        assertEquals(oldItem.get(PlayerBean.ID_FIELD).getS(), p1.getId()); // all document attributes were returned as requested
+
+        // delete and confirm
+        dynamap.delete(new DeleteRequest<>(PlayerBean.class).withHashKeyValue(p1.getId()));
+        PlayerBean playerOneRead = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(PlayerBean.class).withHashKeyValue(p1.getId())));
+        assertNull(playerOneRead);
     }
 }
