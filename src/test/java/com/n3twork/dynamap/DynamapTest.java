@@ -775,7 +775,6 @@ public class DynamapTest {
         Assert.assertEquals((int)doc.getDynamapSchemaVersion(), 2);
     }
 
-
     @Test
     public void testDelete() {
 
@@ -794,9 +793,8 @@ public class DynamapTest {
         Assert.assertNull(doc);
     }
 
-
-    @Test
-    public void testDeleteWithCondition() {
+    @Test(expectedExceptions = ConditionalCheckFailedException.class)
+    public void testDeleteWithConditionFailsCorrectly() {
 
         TestDocumentBean doc = createTestDocumentBean(createNestedTypeBean());
         dynamap.save(new SaveParams<>(doc));
@@ -806,21 +804,22 @@ public class DynamapTest {
 
         WriteConditionCheck<TestDocumentBean> failCheck = new WriteConditionCheck<>(TestDocumentBean.class, doc.getId(), null);
         DynamoExpressionBuilder failBuilder = failCheck.getDynamoExpressionBuilder();
-        failBuilder.addAttributeExistsCondition(String.join("", UUID.randomUUID().toString().split("-")));  // check for an attribute that doesn't exist to purposefully fail
+        failBuilder.addAttributeExistsCondition("afieldthatdoesnotexist");  // check for an attribute that doesn't exist to purposefully fail
 
         DeleteRequest<TestDocumentBean> failDeleteRequest = new DeleteRequest<>(TestDocumentBean.class)
                 .withHashKeyValue(doc.getId())
                 .withRangeKeyValue(doc.getRangeKeyValue())
                 .withConditionExpression(failBuilder.buildConditionalExpression());
 
-        try {
-            dynamap.delete(failDeleteRequest);
-            Assert.fail();
-        }
-        catch(ConditionalCheckFailedException ccfe) {
-            // pass
-            Assert.assertNotNull(ccfe);
-        }
+        dynamap.delete(failDeleteRequest);
+    }
+
+    @Test
+    public void testDeleteWithCondition() {
+
+        TestDocumentBean doc = createTestDocumentBean(createNestedTypeBean());
+        dynamap.save(new SaveParams<>(doc));
+
         doc = dynamap.getObject(createGetObjectParams(doc));
         Assert.assertNotNull(doc);
 
