@@ -20,6 +20,11 @@
           "projectionType": "INCLUDE"
         },
         {
+          "index": "testIndexProjectionKeysOnly",
+          "hashKey": "string",
+          "projectionType": "KEYS_ONLY"
+        },
+        {
           "index": "testIndexFull",
           "hashKey": "string",
           "rangeKey": "integerField"

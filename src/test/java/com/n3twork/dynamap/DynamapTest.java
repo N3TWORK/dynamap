@@ -765,15 +765,15 @@ public class DynamapTest {
         Assert.assertTrue(scanRequest.isWriteMigrationChange()); // Default is true
         ScanResult<TestDocumentBean> scanResult = dynamap2.scan(new ScanRequest<>(TestDocumentBean.class));
 
-        for(TestDocumentBean b : scanResult.getResults()) {
-            Assert.assertEquals((int)b.getDynamapSchemaVersion(), 2);
+        for (TestDocumentBean b : scanResult.getResults()) {
+            Assert.assertEquals((int) b.getDynamapSchemaVersion(), 2);
             Assert.assertEquals(b.getString(), "newValue");
         }
         Assert.assertEquals(scanResult.getScannedCount(), 1);
 
         // Fetch the document after the scan to be sure the migration was persisted.
         doc = dynamap2.getObject(createGetObjectParams(doc));
-        Assert.assertEquals((int)doc.getDynamapSchemaVersion(), 2);
+        Assert.assertEquals((int) doc.getDynamapSchemaVersion(), 2);
     }
 
     @Test
@@ -1121,7 +1121,7 @@ public class DynamapTest {
 
         DummyDocBean savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
         Assert.assertEquals(savedDoc.getName(), "Granny");
-        Assert.assertEquals((long)savedDoc.getWeight(), 99L);
+        Assert.assertEquals((long) savedDoc.getWeight(), 99L);
 
         DummyDocUpdates docUpdates = savedDoc.createUpdates();
         docUpdates.setWeight(100L); // Granny gained a pound
@@ -1132,7 +1132,7 @@ public class DynamapTest {
 
         savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
         Assert.assertEquals(savedDoc.getName(), "Granny");
-        Assert.assertEquals((long)savedDoc.getWeight(), 100L);
+        Assert.assertEquals((long) savedDoc.getWeight(), 100L);
     }
 
     @Test
@@ -1504,6 +1504,37 @@ public class DynamapTest {
         List<TestDocumentBean> docs = dynamap.query(queryRequest);
         Assert.assertEquals(docs.size(), 5);
         Assert.assertEquals(docs.get(0).getSetOfString().size(), 0); // ensure that non projected fields are not populated
+    }
+
+    @Test
+    public void testKeysOnlyGlobalSecondaryIndex() {
+        TestDocumentBean bean1 = createTestDocumentBean(null)
+                .setString("test1")
+                .setSequence(1)
+                .setIntegerField(1);
+        TestDocumentBean bean2 = createTestDocumentBean(null)
+                .setString("test2")
+                .setSequence(2)
+                .setIntegerField(2);
+        dynamap.save(new SaveParams<>(bean1));
+        dynamap.save(new SaveParams<>(bean2));
+
+        QueryRequest<TestDocumentBean> queryRequest = new QueryRequest<>(TestDocumentBean.class)
+                .withHashKeyValue("test2")
+                .withIndex(TestDocumentBean.GlobalSecondaryIndex.testIndexProjectionKeysOnly);
+
+        List<TestDocumentBean> docs = dynamap.query(queryRequest);
+        Assert.assertEquals(docs.size(), 1);
+
+        TestDocument doc = docs.get(0);
+
+        // Hash and range keys id and sequence are projected in this index
+        Assert.assertEquals(doc.getId(), bean2.getId());
+        Assert.assertEquals(doc.getString(), "test2");
+        Assert.assertEquals(doc.getSequence(), 2);
+
+        // integerField is not projected
+        Assert.assertNull(doc.getIntegerField());
     }
 
     @Test
