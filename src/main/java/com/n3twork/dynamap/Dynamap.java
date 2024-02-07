@@ -115,12 +115,13 @@ public class Dynamap {
 
             if (tableDefinition.getGlobalSecondaryIndexes() != null) {
                 for (com.n3twork.dynamap.model.Index index : tableDefinition.getGlobalSecondaryIndexes()) {
+                    Projection projection = new Projection().withProjectionType(index.getProjectionType());
                     GlobalSecondaryIndex gsi = new GlobalSecondaryIndex()
                             .withIndexName(index.getIndexName())
                             .withProvisionedThroughput(new ProvisionedThroughput()
                                     .withReadCapacityUnits(1L)
                                     .withWriteCapacityUnits(1L))
-                            .withProjection(new Projection().withProjectionType(ProjectionType.ALL));
+                            .withProjection(projection);
                     ArrayList<KeySchemaElement> indexKeySchema = new ArrayList<>();
                     Field field = tableDefinition.getField(index.getHashKey());
                     indexKeySchema.add(new KeySchemaElement()
@@ -142,15 +143,12 @@ public class Dynamap {
                     }
                     gsi.setKeySchema(indexKeySchema);
                     if (index.getNonKeyFields() != null) {
-                        Projection projection = new Projection()
-                                .withProjectionType(index.getProjectionType());
                         List<String> nonKeyAttributes = new ArrayList<>();
                         for (String nonKeyField : index.getNonKeyFields()) {
                             Field nkf = tableDefinition.getField(nonKeyField);
                             nonKeyAttributes.add(nkf.getDynamoName());
                         }
                         projection.withNonKeyAttributes(nonKeyAttributes);
-                        gsi.setProjection(projection);
                     }
                     globalSecondaryIndexes.add(gsi);
                 }
