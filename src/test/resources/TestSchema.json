@@ -131,6 +131,12 @@
               "elementType": "Integer"
             },
             {
+              "name": "listOfByteArrays",
+              "dynamoName": "byteArrList",
+              "type": "List",
+              "elementType": "byte[]"
+            },
+            {
               "name": "notPersistedString",
               "dynamoName": "notPersistedStr",
               "type": "String",

@@ -473,6 +473,41 @@ public class DynamapTest {
     }
 
     @Test
+    public void testListOfByteArrays() {
+        NestedTypeBean nested = createNestedTypeBean();
+        TestDocumentBean doc = createTestDocumentBean(nested);
+        dynamap.save(new SaveParams<>(doc));
+
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(doc.getListOfByteArrays().size(), 0);
+        TestDocumentUpdates updates = doc.createUpdates();
+        updates.addListOfByteArraysItem("My test bytes".getBytes());
+        dynamap.update(new UpdateParams<>(updates));
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(doc.getListOfByteArrays().size(), 1);
+        Assert.assertEquals(new String(doc.getListOfByteArrays().get(0), StandardCharsets.UTF_8), "My test bytes");
+
+        updates = doc.createUpdates();
+        updates.addListOfByteArraysItem("My test bytes 1".getBytes());
+        updates.addListOfByteArraysItem("My test bytes 2".getBytes());
+        Assert.assertEquals(updates.getListOfByteArrays().size(), 3);
+        dynamap.update(new UpdateParams<>(updates));
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(doc.getListOfByteArrays().size(), 3);
+        Assert.assertEquals(new String(doc.getListOfByteArrays().get(0), StandardCharsets.UTF_8), "My test bytes");
+        Assert.assertEquals(new String(doc.getListOfByteArrays().get(1), StandardCharsets.UTF_8), "My test bytes 1");
+        Assert.assertEquals(new String(doc.getListOfByteArrays().get(2), StandardCharsets.UTF_8), "My test bytes 2");
+
+        updates = doc.createUpdates();
+        updates.addListOfByteArraysItem("My test bytes 1 ".getBytes());
+        updates.clearListOfByteArrays();
+        Assert.assertEquals(updates.getListOfByteArrays().size(), 0);
+        dynamap.update(new UpdateParams<>(updates));
+        doc = dynamap.getObject(createGetObjectParams(doc));
+        Assert.assertEquals(doc.getListOfByteArrays().size(), 0);
+    }
+
+    @Test
     public void testGzipList() {
 
         NestedTypeBean nested = createNestedTypeBean();
