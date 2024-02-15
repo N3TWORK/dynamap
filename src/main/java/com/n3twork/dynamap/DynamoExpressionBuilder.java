@@ -22,7 +22,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableSet;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -31,7 +30,7 @@ public class DynamoExpressionBuilder {
 
     private ObjectMapper objectMapper;
 
-    private static final Set<String> SUPPORTED_JAVA_TYPES = ImmutableSet.of("java.lang.Integer", "java.lang.Long", "java.lang.Float", "java.lang.Double", "java.lang.Number", "java.lang.BigDecimal", "java.lang.String", "[B");
+    private static final Set<Class<?>> SUPPORTED_JAVA_TYPES = Set.of(Integer.class, Long.class, Float.class, Double.class, Number.class, BigDecimal.class, String.class, byte[].class);
 
     private final List<String> addSection = new ArrayList<>();
     private final List<String> setSection = new ArrayList<>();
@@ -123,7 +122,7 @@ public class DynamoExpressionBuilder {
     }
 
     public DynamoExpressionBuilder addValuesToList(String parentField, String fieldName, List adds, Class type) {
-        if (adds.size() > 0) {
+        if (!adds.isEmpty()) {
             String fieldAlias = joinFields(parentField, fieldName);
             setSection.add(String.format("%s=list_append(%s,%s)", fieldAlias, fieldAlias, processValueAlias(vals, adds, type)));
         }
@@ -131,14 +130,14 @@ public class DynamoExpressionBuilder {
     }
 
     public DynamoExpressionBuilder addSetValuesToSet(String parentField, String fieldName, Set value, Class type) {
-        if (value.size() > 0) {
+        if (!value.isEmpty()) {
             addSection.add(String.format("%s %s", joinFields(parentField, fieldName), processValueAlias(vals, value, type)));
         }
         return this;
     }
 
     public DynamoExpressionBuilder deleteValuesFromSet(String parentField, String fieldName, Set values, Class type) {
-        if (values.size() > 0) {
+        if (!values.isEmpty()) {
             deleteSection.add(String.format("%s %s", joinFields(parentField, fieldName), processValueAlias(vals, values, type)));
         }
         return this;
@@ -154,7 +153,7 @@ public class DynamoExpressionBuilder {
         return this;
     }
 
-    public <N extends Number, T extends Object> DynamoExpressionBuilder updateMap(String parentField, String fieldName, Map<String, N> deltas, Set<String> currentIds, N defaultValue, Map<String, T> updates, Collection<String> deletes, boolean clear, Class type) {
+    public <N extends Number, T> DynamoExpressionBuilder updateMap(String parentField, String fieldName, Map<String, N> deltas, Set<String> currentIds, N defaultValue, Map<String, T> updates, Collection<String> deletes, boolean clear, Class type) {
         if (clear) {
             setSection.add(String.format("%s=%s", joinFields(parentField, fieldName), processValueAlias(vals, Collections.emptyMap(), type)));
         }
@@ -254,13 +253,13 @@ public class DynamoExpressionBuilder {
                 // if keys do not exist and defaults values are provided, then need to add the default value to the delta
                 if (!currentIds.contains(entry.getKey())) {
                     if (delta instanceof Integer && defaultValue.intValue() != 0) {
-                        delta = (N) new Integer(delta.intValue() + defaultValue.intValue());
+                        delta = (N) Integer.valueOf(delta.intValue() + defaultValue.intValue());
                     } else if (delta instanceof Long && defaultValue.longValue() != 0L) {
-                        delta = (N) new Long(delta.longValue() + defaultValue.longValue());
+                        delta = (N) Long.valueOf(delta.longValue() + defaultValue.longValue());
                     } else if (delta instanceof Float && defaultValue.floatValue() != 0f) {
-                        delta = (N) new Float(delta.floatValue() + defaultValue.floatValue());
+                        delta = (N) Float.valueOf(delta.floatValue() + defaultValue.floatValue());
                     } else if (delta instanceof Double && defaultValue.doubleValue() != 0d) {
-                        delta = (N) new Double(delta.doubleValue() + defaultValue.doubleValue());
+                        delta = (N) Double.valueOf(delta.doubleValue() + defaultValue.doubleValue());
                     }
                 }
             }
@@ -284,8 +283,7 @@ public class DynamoExpressionBuilder {
         return processValueAlias(aliasGenerator, value, null);
     }
 
-    private String processValueAlias(Alias aliasGenerator, Object value, Class type) {
-        ObjectMapper objectMapper = getObjectMapper();
+    private String processValueAlias(Alias aliasGenerator, Object value, Class<?> type) {
         String alias = aliasGenerator.next();
         if (value instanceof Integer) {
             valueMap = valueMap.withInt(alias, (Integer) value);
@@ -297,7 +295,7 @@ public class DynamoExpressionBuilder {
             if (type == null) {
                 throw new IllegalArgumentException("Must provide the object type for Map");
             } else {
-                if (!SUPPORTED_JAVA_TYPES.contains(type.getName())) {
+                if (!SUPPORTED_JAVA_TYPES.contains(type)) {
                     valueMap = valueMap.withMap(alias, objectMapper.convertValue(value, new TypeReference<Map<String, Object>>() {
                     }));
                 } else {
@@ -308,12 +306,12 @@ public class DynamoExpressionBuilder {
             if (type == null) {
                 throw new IllegalArgumentException("Must provide the object type for Set");
             }
-            if (type.getName().equals("java.lang.Number") || type.getName().equals("java.lang.Integer") || type.getName().equals("java.lang.Long")) {
+            if (type == Number.class || type == Integer.class || type == Long.class) {
                 valueMap = valueMap.withNumberSet(alias, toBigDecimalSet((Set) value));
-            } else if (type.getName().equals("java.lang.BigDecimal"))
+            } else if (type == BigDecimal.class)
                 valueMap = valueMap.withNumberSet(alias, (Set) value);
-            else if (type.getName().equals("java.lang.String")) {
-                if (((Set) value).size() == 0) {
+            else if (type == String.class) {
+                if (((Set<?>) value).isEmpty()) {
                     valueMap = valueMap.withNull(alias);
                 } else {
                     valueMap = valueMap.withStringSet(alias, (Set) value);
@@ -325,11 +323,11 @@ public class DynamoExpressionBuilder {
             if (type == null) {
                 throw new IllegalArgumentException("Must provide the object type for List");
             }
-            if (SUPPORTED_JAVA_TYPES.contains(type.getName())) {
-                valueMap = valueMap.withList(alias, (List) value);
+            if (SUPPORTED_JAVA_TYPES.contains(type)) {
+                valueMap = valueMap.withList(alias, (List<?>) value);
             } else {
                 List<Object> values = new ArrayList<>();
-                for (Object object : (List) value) {
+                for (Object object : (List<?>) value) {
                     values.add(objectMapper.convertValue(object, new TypeReference<Map<String, Object>>() {
                     }));
                 }
@@ -368,7 +366,6 @@ public class DynamoExpressionBuilder {
 
     //TODO: this is used to serialize a set of custom types to dynamo, however, it does not deserialize so this is not currently supported
     private Set<String> toJsonStringSet(Set<Object> objects) {
-        ObjectMapper objectMapper = getObjectMapper();
         Set<String> results = new HashSet<>();
         try {
             for (Object object : objects) {
@@ -388,14 +385,14 @@ public class DynamoExpressionBuilder {
     }
 
     private static Set<BigDecimal> toBigDecimalSet(Number... val) {
-        Set<BigDecimal> set = new LinkedHashSet<BigDecimal>(val.length);
+        Set<BigDecimal> set = new LinkedHashSet<>(val.length);
         for (Number n : val)
             set.add(toBigDecimal(n));
         return set;
     }
 
     private static Set<BigDecimal> toBigDecimalSet(Set<Number> vals) {
-        Set<BigDecimal> set = new LinkedHashSet<BigDecimal>(vals.size());
+        Set<BigDecimal> set = new LinkedHashSet<>(vals.size());
         for (Number n : vals)
             set.add(toBigDecimal(n));
         return set;
