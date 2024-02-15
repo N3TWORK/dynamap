@@ -31,7 +31,7 @@ public class DynamoExpressionBuilder {
 
     private ObjectMapper objectMapper;
 
-    private static final Set<String> SUPPORTED_JAVA_TYPES = ImmutableSet.of("java.lang.Integer", "java.lang.Long", "java.lang.Float", "java.lang.Double", "java.lang.Number", "java.lang.BigDecimal", "java.lang.String");
+    private static final Set<String> SUPPORTED_JAVA_TYPES = ImmutableSet.of("java.lang.Integer", "java.lang.Long", "java.lang.Float", "java.lang.Double", "java.lang.Number", "java.lang.BigDecimal", "java.lang.String", "[B");
 
     private final List<String> addSection = new ArrayList<>();
     private final List<String> setSection = new ArrayList<>();
