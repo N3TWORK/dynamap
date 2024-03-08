@@ -16,6 +16,7 @@
 
 package com.n3twork.dynamap;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
@@ -1168,6 +1169,86 @@ public class DynamapTest {
         savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
         Assert.assertEquals(savedDoc.getName(), "Granny");
         Assert.assertEquals((long) savedDoc.getWeight(), 100L);
+    }
+
+    @Test
+    public void testBooleanEqualsCondition() {
+        final String DOC_ID = "1";
+        DummyDocBean doc = new DummyDocBean(DOC_ID).setName("Granny").setExpirationRecorded(false);
+        dynamap.save(new SaveParams<>(doc));
+
+        DummyDocBean savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
+        Assert.assertEquals(savedDoc.getName(), "Granny");
+        Assert.assertEquals(savedDoc.getExpirationRecorded(), false);
+
+        DummyDocUpdates docUpdates = savedDoc.createUpdates();
+        docUpdates.setWeight(100L); // Granny gained a pound
+        DynamoExpressionBuilder expression = docUpdates.getExpressionBuilder();
+        //Check if expired is false before updating the doc
+        expression.addCheckFieldValueCondition(null, DummyDoc.EXPIRATIONRECORDED_FIELD, Boolean.FALSE, DynamoExpressionBuilder.ComparisonOperator.EQUALS); // Update should only happen if expired is false
+        dynamap.update(new UpdateParams<>(docUpdates));
+
+        savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
+        Assert.assertEquals(savedDoc.getName(), "Granny");
+        Assert.assertEquals((long) savedDoc.getWeight(), 100L);
+    }
+
+    @Test(expectedExceptions = ConditionalCheckFailedException.class)
+    public void testBooleanEqualsConditionFails() {
+        final String DOC_ID = "1";
+        DummyDocBean doc = new DummyDocBean(DOC_ID).setName("Granny").setExpirationRecorded(true); //Sorry granny
+        dynamap.save(new SaveParams<>(doc));
+
+        DummyDocBean savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
+        Assert.assertEquals(savedDoc.getName(), "Granny");
+        Assert.assertEquals(savedDoc.getExpirationRecorded(), true);
+
+        DummyDocUpdates docUpdates = savedDoc.createUpdates();
+        docUpdates.setWeight(100L); // Granny gained a pound
+        DynamoExpressionBuilder expression = docUpdates.getExpressionBuilder();
+        //Check if expired is false before updating the doc
+        expression.addCheckFieldValueCondition(null, DummyDoc.EXPIRATIONRECORDED_FIELD, Boolean.FALSE, DynamoExpressionBuilder.ComparisonOperator.EQUALS); // Update should only happen if expired is false
+        dynamap.update(new UpdateParams<>(docUpdates));
+    }
+
+    @Test
+    public void testBooleanNotEqualsConditionFails() {
+        final String DOC_ID = "1";
+        DummyDocBean doc = new DummyDocBean(DOC_ID).setName("Granny").setExpirationRecorded(true); //Sorry granny
+        dynamap.save(new SaveParams<>(doc));
+
+        DummyDocBean savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
+        Assert.assertEquals(savedDoc.getName(), "Granny");
+        Assert.assertEquals(savedDoc.getExpirationRecorded(), true);
+
+        DummyDocUpdates docUpdates = savedDoc.createUpdates();
+        docUpdates.setWeight(100L); // Granny gained a pound
+        DynamoExpressionBuilder expression = docUpdates.getExpressionBuilder();
+        //Check if expired is false before updating the doc
+        expression.addCheckFieldValueCondition(null, DummyDoc.EXPIRATIONRECORDED_FIELD, Boolean.FALSE, DynamoExpressionBuilder.ComparisonOperator.NOT_EQUALS); // Update should only happen if expired is true
+        dynamap.update(new UpdateParams<>(docUpdates));
+
+        savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
+        Assert.assertEquals(savedDoc.getName(), "Granny");
+        Assert.assertEquals((long) savedDoc.getWeight(), 100L); // even in death weight gain is inevitable
+    }
+
+    @Test(expectedExceptions = AmazonServiceException.class)
+    public void testBooleanLessThanConditionFails() {
+        final String DOC_ID = "1";
+        DummyDocBean doc = new DummyDocBean(DOC_ID).setName("Granny").setExpirationRecorded(false);
+        dynamap.save(new SaveParams<>(doc));
+
+        DummyDocBean savedDoc = dynamap.getObject(new GetObjectParams<>(new GetObjectRequest<>(DummyDocBean.class).withHashKeyValue(DOC_ID)));
+        Assert.assertEquals(savedDoc.getName(), "Granny");
+        Assert.assertEquals(savedDoc.getExpirationRecorded(), false);
+
+        DummyDocUpdates docUpdates = savedDoc.createUpdates();
+        docUpdates.setWeight(100L); // Granny gained a pound
+        DynamoExpressionBuilder expression = docUpdates.getExpressionBuilder();
+        //Check if expired is false before updating the doc
+        expression.addCheckFieldValueCondition(null, DummyDoc.EXPIRATIONRECORDED_FIELD, Boolean.FALSE, DynamoExpressionBuilder.ComparisonOperator.LESS_THAN); // Update should only happen if expired is false
+        dynamap.update(new UpdateParams<>(docUpdates));
     }
 
     @Test

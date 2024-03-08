@@ -291,6 +291,8 @@ public class DynamoExpressionBuilder {
             valueMap = valueMap.withLong(alias, (Long) value);
         } else if (value instanceof String) {
             valueMap = valueMap.withString(alias, (String) value);
+        } else if (value instanceof Boolean) {
+            valueMap = valueMap.withBoolean(alias, (Boolean) value);
         } else if (value instanceof Map) {
             if (type == null) {
                 throw new IllegalArgumentException("Must provide the object type for Map");
