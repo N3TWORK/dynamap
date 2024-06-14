@@ -1,28 +1,29 @@
 package com.n3twork.dynamap;
 
-import com.amazonaws.services.dynamodbv2.document.DynamoDB;
-import com.amazonaws.services.dynamodbv2.document.Table;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.DescribeTableResponse;
+import software.amazon.awssdk.services.dynamodb.model.TableDescription;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class TableCache {
-    private final DynamoDB dynamoDB;
-    private final Map<String, Table> tableCache = new HashMap<>();
+    private final DynamoDbEnhancedClient enhancedClient;
+    private final DynamoDbClient dynamoDbClient;
+    private final Map<String, TableDescription> tableCacheMap = new HashMap<>();
 
-    public TableCache(DynamoDB dynamoDB) {
-        if (null == dynamoDB) {
+    public TableCache(DynamoDbClient dynamoDbClient) {
+        if (null == dynamoDbClient) {
             throw new IllegalArgumentException();
         }
-        this.dynamoDB = dynamoDB;
+        this.enhancedClient = DynamoDbEnhancedClient.builder().dynamoDbClient(dynamoDbClient).build();
+        this.dynamoDbClient = dynamoDbClient;
     }
 
-    public Table getTable(String tableName) {
-        Table table = tableCache.get(tableName);
-        if (table == null) {
-            table = dynamoDB.getTable(tableName);
-            tableCache.put(tableName, table);
-        }
-        return table;
+    public TableDescription getTable(String tableName) {
+        return tableCacheMap.computeIfAbsent(tableName, k -> dynamoDbClient.describeTable(r -> r.tableName(tableName)).table());
     }
 }

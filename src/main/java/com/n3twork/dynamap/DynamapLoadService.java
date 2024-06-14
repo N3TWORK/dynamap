@@ -6,8 +6,12 @@ import com.n3twork.dynamap.model.Field;
 import com.n3twork.dynamap.model.TableDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.List;
+import java.util.Map;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * All the logic for loading a raw DynamoDB Item including:
@@ -80,8 +84,8 @@ class DynamapLoadService {
     /**
      * Take a raw DynamoDB item, migrate as needed, convert to a Dynamap bean.
      */
-    public <T extends DynamapRecordBean> T loadItem(Item item, Class<T> resultClass) {
-        if (null == item) {
+    public <T extends DynamapRecordBean> T loadItem(Map<String, AttributeValue> item, Class<T> resultClass) {
+        if (null == item || item.isEmpty()) {
             return null;
         }
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(resultClass);
@@ -105,9 +109,9 @@ class DynamapLoadService {
 
     private static class MigrationResult {
         private final boolean wasMigrated;
-        private final Item item;
+        private final Map<String, AttributeValue> item;
 
-        MigrationResult(boolean wasMigrated, Item item) {
+        MigrationResult(boolean wasMigrated, Map<String,AttributeValue> item) {
             this.wasMigrated = wasMigrated;
             this.item = item;
         }
@@ -116,8 +120,8 @@ class DynamapLoadService {
     /**
      * Migrate an Item if necessary.
      */
-    private <T extends DynamapRecordBean> MigrationResult migrateItem(Item item, Class<T> resultClass, Object migrationContext) {
-        if (item == null) {
+    private <T extends DynamapRecordBean> MigrationResult migrateItem(Map<String, AttributeValue> item, Class<T> resultClass, Object migrationContext) {
+        if (null == item || item.isEmpty()) {
             return new MigrationResult(false, null);
         }
 
@@ -128,11 +132,11 @@ class DynamapLoadService {
 
         String schemaField = tableDefinition.getSchemaVersionField();
         int currentVersion = 0;
-        if (!item.hasAttribute(schemaField)) {
+        if (!item.containsKey(schemaField)) {
             Field field = tableDefinition.getField(tableDefinition.getHashKey());
             logger.warn("Schema version field does not exist for {} on item with hash key {}. Migrating item to current version", tableDefinition.getTableName(), item.get(field.getDynamoName()));
         } else {
-            currentVersion = item.getInt(schemaField);
+            currentVersion = Integer.parseInt(schemaField);
         }
 
         if (currentVersion > tableDefinition.getVersion()) {
@@ -153,7 +157,8 @@ class DynamapLoadService {
                     }
                 }
             }
-            item = item.withInt(schemaField, tableDefinition.getVersion());
+
+            item.put(schemaField, AttributeValue.builder().n(String.valueOf(tableDefinition.getVersion())).build());
             return new MigrationResult(true, item);
         }
         return new MigrationResult(false, item);

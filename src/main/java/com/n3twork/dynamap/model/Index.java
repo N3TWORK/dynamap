@@ -16,7 +16,7 @@
 
 package com.n3twork.dynamap.model;
 
-import com.amazonaws.services.dynamodbv2.model.ProjectionType;
+import software.amazon.awssdk.services.dynamodb.model.ProjectionType;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;

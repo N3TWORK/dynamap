@@ -27,7 +27,7 @@ import com.google.common.collect.ImmutableMap;
 import com.n3twork.dynamap.*;
 import com.amazonaws.services.dynamodbv2.document.PrimaryKey;
 import com.amazonaws.services.dynamodbv2.document.spec.UpdateItemSpec;
-import com.amazonaws.services.dynamodbv2.model.ReturnValue;
+import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Maps;

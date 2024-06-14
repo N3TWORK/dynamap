@@ -16,7 +16,7 @@
 
 package com.n3twork.dynamap;
 
-import com.amazonaws.services.dynamodbv2.model.ReturnValuesOnConditionCheckFailure;
+import software.amazon.awssdk.services.dynamodb.model.ReturnValuesOnConditionCheckFailure;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -117,5 +117,5 @@ public class SaveParams<T extends DynamapRecordBean> {
         return conditionExpressions;
     }
 
-    public ReturnValuesOnConditionCheckFailure getReturnValuesOnConditionCheckFailure() { return returnValuesOnConditionCheckFailure; }
+    public String getReturnValuesOnConditionCheckFailure() { return returnValuesOnConditionCheckFailure; }
 }

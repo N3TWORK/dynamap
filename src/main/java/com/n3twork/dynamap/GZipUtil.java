@@ -12,6 +12,10 @@ import java.util.zip.GZIPOutputStream;
 
 public class GZipUtil {
 
+    private GZipUtil() {
+        throw new IllegalStateException("Utility class");
+    }
+
     private static final Charset UTF8 = StandardCharsets.UTF_8;
 
     public static byte[] serialize(Object data, ObjectMapper objectMapper) {

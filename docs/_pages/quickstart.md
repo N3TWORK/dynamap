@@ -135,7 +135,7 @@ Dynamap will generate the following 3 java classes:
 First create an instance of Dynamap, providing the handle to DynamoDB and a pointer to the schema file:
 
 ```java
- AmazonDynamoDB ddb = DynamoDBEmbedded.create().amazonDynamoDB(); // use Local DynamoDB library
+ DynamoDbClient ddb = DynamoDBEmbedded.create().dynamoDbClient(); // use Local DynamoDB library
  SchemaRegistry schemaRegistry = new SchemaRegistry(getClass().getResourceAsStream("/<your-schema>.json"));
  Dynamap dynamap = new Dynamap(ddb, schemaRegistry);
  dynamap.createTables(false); // create tables, do not delete if they already exist

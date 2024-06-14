@@ -17,18 +17,19 @@
 package com.n3twork.dynamap;
 
 import com.amazonaws.AmazonServiceException;
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.QueryFilter;
 import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
-import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
-import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
-import com.amazonaws.services.dynamodbv2.model.Select;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClientBuilder;
+import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
+import software.amazon.awssdk.services.dynamodb.model.Select;
 import com.amazonaws.util.IOUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
@@ -52,7 +53,7 @@ import java.util.stream.Stream;
 
 public class DynamapTest {
 
-    private AmazonDynamoDB ddb;
+    private DynamoDbClient ddb;
     private Dynamap dynamap;
     private SchemaRegistry schemaRegistry;
 
@@ -64,13 +65,13 @@ public class DynamapTest {
         // This test can be run against an AWS account.
         // This is necessary for testing the UpdateResult behavior because currently local dynamodb does not correctly implement UPDATE_NEW return values.
         if (System.getProperty("aws.profile") != null) {
-            AmazonDynamoDBClientBuilder builder = AmazonDynamoDBClient.builder();
-            builder.setCredentials(new ProfileCredentialsProvider((System.getProperty("aws.profile"))));
-            builder.setRegion("us-east-1");
+            DynamoDbClientBuilder builder = DynamoDbClient.builder();
+            builder.credentialsProvider(ProfileCredentialsProvider.create((System.getProperty("aws.profile"))));
+            builder.region(Region.US_EAST_1);
             ddb = builder.build();
         } else {
             System.setProperty("sqlite4java.library.path", "native-libs");
-            ddb = DynamoDBEmbedded.create().amazonDynamoDB();
+            ddb = DynamoDBEmbedded.create().dynamoDbClient();
         }
     }
 
@@ -546,7 +547,7 @@ public class DynamapTest {
 
         //Legacy API
         queryRequest = new QueryRequest<>(TestDocumentBean.class).withHashKeyValue(hashKey)
-                .withRangeKeyCondition(new RangeKeyCondition(TestDocumentBean.SEQUENCE_FIELD).eq(doc1.getSequence()));
+                .withRangeKeyCondition(Expression.builder().putExpressionName(TestDocumentBean.SEQUENCE_FIELD).eq(doc1.getSequence()));
         testDocuments = dynamap.query(queryRequest);
         Assert.assertEquals(testDocuments.size(), 1);
         Assert.assertEquals(testDocuments.get(0).getSequence(), doc1.getSequence());

@@ -1,11 +1,8 @@
 package com.n3twork.dynamap;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
-import com.amazonaws.services.dynamodbv2.model.BillingMode;
-import com.amazonaws.services.dynamodbv2.model.DescribeTableRequest;
-import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndex;
-import com.amazonaws.services.dynamodbv2.model.TableDescription;
+
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -16,13 +13,13 @@ import static org.testng.Assert.assertEquals;
 public class DynamapCreateTableTest {
     private final static ObjectMapper objectMapper = new ObjectMapper();
 
-    private AmazonDynamoDB ddb;
+    private DynamoDbClient ddb;
     private Dynamap dynamap;
 
     @BeforeClass
     public void setUpClass() {
         System.setProperty("sqlite4java.library.path", "native-libs");
-        ddb = DynamoDBEmbedded.create().amazonDynamoDB();
+        ddb = DynamoDbClient.builder().build();
     }
 
     @BeforeMethod
@@ -34,25 +31,25 @@ public class DynamapCreateTableTest {
     @Test
     public void testCreateProvisionedTable() {
         dynamap.createTables(true, 10, 11);
-        TableDescription description = ddb.describeTable(new DescribeTableRequest().withTableName("create-table-test.Test")).getTable();
-        assertEquals((long) description.getProvisionedThroughput().getReadCapacityUnits(), 10);
-        assertEquals((long) description.getProvisionedThroughput().getWriteCapacityUnits(), 11);
+        TableDescription description = ddb.describeTable(DescribeTableRequest.builder().tableName("create-table-test.Test").build()).table();
+        assertEquals((long) description.provisionedThroughput().readCapacityUnits(), 10);
+        assertEquals((long) description.provisionedThroughput().writeCapacityUnits(), 11);
     }
 
     @Test
     public void testCreatePayPerRequestTable() {
         dynamap.createTables(true, request -> {
-            request
-                    .withBillingMode(BillingMode.PAY_PER_REQUEST)
-                    .withProvisionedThroughput(null);
+            CreateTableRequest builder = request.toBuilder()
+                    .billingMode(BillingMode.PAY_PER_REQUEST)
+                    .provisionedThroughput(null);
 
-            if (request.getGlobalSecondaryIndexes() != null) {
-                for (GlobalSecondaryIndex gsi : request.getGlobalSecondaryIndexes()) {
-                    gsi.withProvisionedThroughput(null);
+            if (request.globalSecondaryIndexes() != null) {
+                for (GlobalSecondaryIndex gsi : request.globalSecondaryIndexes()) {
+                    gsi.provisionedThroughput(null);
                 }
             }
         });
-        TableDescription description = ddb.describeTable(new DescribeTableRequest().withTableName("create-table-test.Test")).getTable();
-        assertEquals(description.getBillingModeSummary().getBillingMode(), "PAY_PER_REQUEST");
+        TableDescription description = ddb.describeTable(DescribeTableRequest.builder().tableName("create-table-test.Test").build()).table();
+        assertEquals(description.billingModeSummary().billingMode(), BillingMode.PAY_PER_REQUEST);
     }
 }

@@ -1,8 +1,8 @@
 package com.n3twork.dynamap;
 
-import com.amazonaws.services.dynamodbv2.model.AttributeValue;
-import com.amazonaws.services.dynamodbv2.model.Get;
 import com.n3twork.dynamap.model.TableDefinition;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.Get;
 
 import java.util.Map;
 
@@ -26,8 +26,9 @@ class ReadOpFactory {
         GetObjectRequest<T> getObjectRequest = getObjectParams.getGetObjectRequest();
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(getObjectRequest.getResultClass());
         Map<String, AttributeValue> key = TxUtil.getKey(tableDefinition, getObjectRequest.getHashKeyValue(), getObjectRequest.getRangeKeyValue());
-        return new Get()
-                .withTableName(tableDefinition.getTableName(tableNamePrefix))
-                .withKey(key);
+        return Get.builder()
+                .tableName(tableDefinition.getTableName(tableNamePrefix))
+                .key(key)
+                .build();
     }
 }

@@ -1,8 +1,6 @@
 package com.n3twork.dynamap;
 
-import com.amazonaws.services.dynamodbv2.model.ReturnValuesOnConditionCheckFailure;
-import com.n3twork.dynamap.DynamapRecordBean;
-import com.n3twork.dynamap.DynamoExpressionBuilder;
+import software.amazon.awssdk.services.dynamodb.model.ReturnValuesOnConditionCheckFailure;
 
 public class WriteConditionCheck<T extends DynamapRecordBean> {
     private final Class<T> beanClass;
@@ -39,7 +37,7 @@ public class WriteConditionCheck<T extends DynamapRecordBean> {
         return rangeKey;
     }
 
-    public ReturnValuesOnConditionCheckFailure getReturnValuesOnConditionCheckFailure() {
+    public String getReturnValuesOnConditionCheckFailure() {
         return returnValuesOnConditionCheckFailure;
     }
 }

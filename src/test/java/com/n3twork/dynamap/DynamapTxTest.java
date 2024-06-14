@@ -16,12 +16,14 @@
 
 package com.n3twork.dynamap;
 
-import com.amazonaws.auth.profile.ProfileCredentialsProvider;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
-import com.amazonaws.services.dynamodbv2.model.*;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClientBuilder;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.ReturnValuesOnConditionCheckFailure;
+import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.n3twork.BatchSaveParams;
 import com.n3twork.dynamap.test.Player;
@@ -40,7 +42,7 @@ import static org.testng.Assert.*;
 
 public class DynamapTxTest {
 
-    private AmazonDynamoDB ddb;
+    private DynamoDbClient ddb;
     private Dynamap dynamap;
     private SchemaRegistry schemaRegistry;
 
@@ -52,13 +54,13 @@ public class DynamapTxTest {
         // This test can be run against an AWS account.
         // This is necessary for testing the UpdateResult behavior because currently local dynamodb does not correctly implement UPDATE_NEW return values.
         if (System.getProperty("aws.profile") != null) {
-            AmazonDynamoDBClientBuilder builder = AmazonDynamoDBClient.builder();
-            builder.setCredentials(new ProfileCredentialsProvider((System.getProperty("aws.profile"))));
-            builder.setRegion("us-east-1");
+            DynamoDbClientBuilder builder = DynamoDbClient.builder();
+            builder.credentialsProvider(ProfileCredentialsProvider.create(System.getProperty("aws.profile")));
+            builder.region(Region.US_EAST_1);
             ddb = builder.build();
         } else {
             System.setProperty("sqlite4java.library.path", "native-libs");
-            ddb = DynamoDBEmbedded.create().amazonDynamoDB();
+            ddb = DynamoDBEmbedded.create().dynamoDbClient();
         }
     }
 

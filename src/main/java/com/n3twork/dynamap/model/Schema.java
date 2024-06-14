@@ -51,6 +51,6 @@ public class Schema {
     }
 
     public void validate() {
-        getTableDefinitions().forEach(td -> td.validate());
+        getTableDefinitions().forEach(TableDefinition::validate);
     }
 }

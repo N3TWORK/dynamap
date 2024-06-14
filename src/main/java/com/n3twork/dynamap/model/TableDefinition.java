@@ -21,7 +21,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -157,11 +160,10 @@ public class TableDefinition {
     }
 
     private List<PersistAsFieldItem> buildPersistAsListFields() {
-        List<PersistAsFieldItem> paths = new ArrayList<>();
-        Set<String> typeNames = getTypes().stream().map(t -> t.getName()).collect(Collectors.toSet());
+        Set<String> typeNames = getTypes().stream().map(Type::getName).collect(Collectors.toSet());
 
         Type rootType = getTypes().stream().filter(t -> t.getName().equals(getType())).findFirst().get();
-        paths.addAll(getPersistAsFieldItem(rootType, null));
+        List<PersistAsFieldItem> paths = new ArrayList<>(getPersistAsFieldItem(rootType, null));
 
         for (Field field : rootType.getFields()) {
             if (typeNames.contains(field.getType())) {
@@ -182,11 +184,10 @@ public class TableDefinition {
     }
 
     private List<CompressCollectionItem> buildCompressFields() {
-        List<CompressCollectionItem> paths = new ArrayList<>();
-        Set<String> typeNames = getTypes().stream().map(t -> t.getName()).collect(Collectors.toSet());
+        Set<String> typeNames = getTypes().stream().map(Type::getName).collect(Collectors.toSet());
 
         Type rootType = getTypes().stream().filter(t -> t.getName().equals(getType())).findFirst().get();
-        paths.addAll(getCompressFieldItem(rootType, null));
+        List<CompressCollectionItem> paths = new ArrayList<>(getCompressFieldItem(rootType, null));
 
         for (Field field : rootType.getFields()) {
             if (typeNames.contains(field.getType())) {
@@ -233,7 +234,7 @@ public class TableDefinition {
     // Ideally, we would do validation using a strict JSON Schema. But until we add something like that, it's
     // important to catch critical errors in code.
     public void validate() {
-        List<Field> ttlFields = types.stream().map(t -> t.getFields()).flatMap(List::stream).filter(Field::isTtl).collect(Collectors.toList());
+        List<Field> ttlFields = types.stream().map(Type::getFields).flatMap(List::stream).filter(Field::isTtl).collect(Collectors.toList());
         if (ttlFields.size() > 1) {
             String msg = String.format("Table %s has %d ttl fields defined. At most one is allowed.", this.getTableName(), ttlFields.size());
             throw new IllegalArgumentException(msg);

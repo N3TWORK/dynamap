@@ -22,6 +22,10 @@ import java.util.*;
 
 public class MergeUtil {
 
+    private MergeUtil() {
+        throw new IllegalStateException("Utility class");
+    }
+
     public static <K, V> Map<K, V> mergeUpdatesAndDeletes(Map<K, V> orig, Map<K, V> updates, Set<K> deleted, boolean clear) {
         if (clear) {
             return Collections.emptyMap();
@@ -65,7 +69,7 @@ public class MergeUtil {
         if (clear) {
             return Collections.emptyList();
         }
-        List<V> values = new ArrayList();
+        List<V> values = new ArrayList<>();
         if (orig != null) {
             values.addAll(orig);
         }
@@ -75,7 +79,7 @@ public class MergeUtil {
         return values;
     }
 
-    public static <V extends Number> V getLatestNumericValue(Class type, V orig, V delta, V update, boolean modified, V defaultValue) {
+    public static <V extends Number> V getLatestNumericValue(Class<?> type, V orig, V delta, V update, boolean modified, V defaultValue) {
         if (update != null) {
             return update;
         }
@@ -99,7 +103,7 @@ public class MergeUtil {
         }
     }
 
-    public static <K, V extends Number> V getLatestNumericValue(Class type, K key, V orig, Map<K, V> deltas, Map<K, V> setUpdates, Set<K> deletes, boolean clear) {
+    public static <K, V extends Number> V getLatestNumericValue(Class<?> type, K key, V orig, Map<K, V> deltas, Map<K, V> setUpdates, Set<K> deletes, boolean clear) {
         if (clear) {
             return null;
         }

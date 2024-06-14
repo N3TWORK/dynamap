@@ -28,7 +28,7 @@ public class BatchSaveParams<T extends DynamapRecordBean> {
 
     private boolean disableOverwrite;
     private boolean disableOptimisticLocking;
-    private Map<Class, DynamoRateLimiter> writeLimiters;
+    private Map<Class<?>, DynamoRateLimiter> writeLimiters;
     private String suffix;
 
     private BatchSaveParams() {
@@ -48,7 +48,7 @@ public class BatchSaveParams<T extends DynamapRecordBean> {
         return this;
     }
 
-    public BatchSaveParams<T> withWriteLimiters(Map<Class, DynamoRateLimiter> writeLimiters) {
+    public BatchSaveParams<T> withWriteLimiters(Map<Class<?>, DynamoRateLimiter> writeLimiters) {
         this.writeLimiters = writeLimiters;
         return this;
     }
@@ -73,7 +73,7 @@ public class BatchSaveParams<T extends DynamapRecordBean> {
         return disableOptimisticLocking;
     }
 
-    public Map<Class, DynamoRateLimiter> getWriteLimiters() {
+    public Map<Class<?>, DynamoRateLimiter> getWriteLimiters() {
         return writeLimiters;
     }
 

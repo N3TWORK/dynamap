@@ -16,15 +16,15 @@
 
 package com.n3twork.dynamap;
 
-import com.amazonaws.services.dynamodbv2.document.Table;
-import com.amazonaws.services.dynamodbv2.model.ConsumedCapacity;
-import com.amazonaws.services.dynamodbv2.model.GlobalSecondaryIndexDescription;
-import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughputDescription;
+
+import software.amazon.awssdk.services.dynamodb.model.ConsumedCapacity;
+import software.amazon.awssdk.services.dynamodb.model.GlobalSecondaryIndexDescription;
+import software.amazon.awssdk.services.dynamodb.model.ProvisionedThroughputDescription;
 import com.google.common.util.concurrent.RateLimiter;
+import software.amazon.awssdk.services.dynamodb.model.TableDescription;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class DynamoRateLimiter {
     public enum RateLimitType {READ, WRITE}
@@ -45,8 +45,8 @@ public class DynamoRateLimiter {
         this.targetPercent = targetPercent;
     }
 
-    public void init(Table table) {
-        init(table, null);
+    public void init(TableDescription tableDescription) {
+        init(tableDescription, null);
     }
 
     public Integer getTargetPercent() {
@@ -69,30 +69,29 @@ public class DynamoRateLimiter {
         this.targetPercent = targetPercent;
     }
 
-    public void init(Table table, String indexName) {
+    public void init(TableDescription tableDescription, String indexName) {
         if (targetPercent == null) {
             throw new IllegalStateException("Target percent has not been set");
         }
         if (rateLimiter == null) {
-            table.describe();
-            if (table.getDescription() != null) {
+            if (tableDescription != null) {
                 ProvisionedThroughputDescription provisionedThroughputDescription;
                 if (indexName != null) {
-                    Optional<GlobalSecondaryIndexDescription> indexDescription = table.getDescription().getGlobalSecondaryIndexes()
-                            .stream().filter(i -> i.getIndexName().equals(indexName)).findFirst();
+                    Optional<GlobalSecondaryIndexDescription> indexDescription = tableDescription.globalSecondaryIndexes()
+                            .stream().filter(i -> i.indexName().equals(indexName)).findFirst();
                     if (indexDescription.isPresent()) {
-                        provisionedThroughputDescription = indexDescription.get().getProvisionedThroughput();
+                        provisionedThroughputDescription = indexDescription.get().provisionedThroughput();
                     } else {
-                        throw new RuntimeException("Cannot find provisioned throughput description for " + indexName + " on table " + table.getTableName());
+                        throw new RuntimeException("Cannot find provisioned throughput description for " + indexName + " on table " + tableDescription.tableName());
                     }
                 } else {
-                    provisionedThroughputDescription = table.getDescription().getProvisionedThroughput();
+                    provisionedThroughputDescription = tableDescription.provisionedThroughput();
                 }
                 if (RateLimitType.READ.equals(rateLimitType)) {
-                    double permitsPerSec = provisionedThroughputDescription.getReadCapacityUnits() / (100.0 / targetPercent);
+                    double permitsPerSec = provisionedThroughputDescription.readCapacityUnits() / (100.0 / targetPercent);
                     rateLimiter = RateLimiter.create(Math.max(1, permitsPerSec)); // units per second
                 } else {
-                    double permitsPerSec = provisionedThroughputDescription.getWriteCapacityUnits() / (100.0 / targetPercent);
+                    double permitsPerSec = provisionedThroughputDescription.writeCapacityUnits() / (100.0 / targetPercent);
                     rateLimiter = RateLimiter.create(Math.max(1, permitsPerSec)); // units per second
                 }
             }
@@ -114,7 +113,7 @@ public class DynamoRateLimiter {
 
     public void setConsumedCapacity(ConsumedCapacity consumedCapacity) {
         if (consumedCapacity != null) {
-            permitsToConsume = (int) (consumedCapacity.getCapacityUnits() - 1.0);
+            permitsToConsume = (int) (consumedCapacity.capacityUnits() - 1.0);
             if (permitsToConsume <= 0) {
                 permitsToConsume = 1;
             }
@@ -123,7 +122,7 @@ public class DynamoRateLimiter {
 
     public void setConsumedCapacity(List<ConsumedCapacity> consumedCapacities) {
         if (consumedCapacities != null) {
-            double totalUnits = consumedCapacities.stream().mapToDouble(ConsumedCapacity::getCapacityUnits).sum();
+            double totalUnits = consumedCapacities.stream().mapToDouble(ConsumedCapacity::capacityUnits).sum();
             permitsToConsume = (int) (totalUnits - 1.0);
             if (permitsToConsume <= 0) {
                 permitsToConsume = 1;

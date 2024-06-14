@@ -31,8 +31,6 @@ public abstract class ItemIterator<T> implements Iterator<T> {
         return itemCollection.getAccumulatedScannedCount();
     }
 
-    public abstract T next();
-
     public KeyAttribute[] getLastEvaluatedKeys() {
         Map<String, AttributeValue> lastEvaluatedKeyMap = getLowLevelLastEvaluatedKey();
         if (lastEvaluatedKeyMap == null) {

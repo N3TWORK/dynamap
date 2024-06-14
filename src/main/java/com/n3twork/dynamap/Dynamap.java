@@ -16,21 +16,30 @@
 
 package com.n3twork.dynamap;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.document.*;
-import com.amazonaws.services.dynamodbv2.document.spec.*;
-import com.amazonaws.services.dynamodbv2.model.*;
-import com.amazonaws.services.dynamodbv2.util.TableUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+
 import com.google.common.collect.Multimap;
 import com.n3twork.BatchSaveParams;
 import com.n3twork.dynamap.model.Field;
+import com.n3twork.dynamap.model.Index;
 import com.n3twork.dynamap.model.TableDefinition;
+import com.n3twork.dynamap.model.TableUtil;
+import com.n3twork.dynamap.utils.TableUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
+import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
+import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
+import software.amazon.awssdk.enhanced.dynamodb.document.EnhancedDocument;
+import software.amazon.awssdk.enhanced.dynamodb.model.*;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.*;
+
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -42,8 +51,8 @@ public class Dynamap {
 
     private static final Logger logger = LoggerFactory.getLogger(Dynamap.class);
 
-    private final AmazonDynamoDB amazonDynamoDB;
-    private final DynamoDB dynamoDB;
+    DynamoDbEnhancedClient dynamoDbEnhancedClient;
+    private final DynamoDbClient dynamoDbClient;
     private final SchemaRegistry schemaRegistry;
     private final TableCache tableCache;
     private String prefix;
@@ -56,10 +65,10 @@ public class Dynamap {
     private static final int MAX_BATCH_SIZE = 25;
     private static final int MAX_BATCH_GET_SIZE = 100;
 
-    public Dynamap(AmazonDynamoDB amazonDynamoDB, SchemaRegistry schemaRegistry) {
-        this.amazonDynamoDB = amazonDynamoDB;
-        this.dynamoDB = new DynamoDB(amazonDynamoDB);
-        this.tableCache = new TableCache(this.dynamoDB);
+    public Dynamap(DynamoDbClient dynamoDbClient, SchemaRegistry schemaRegistry) {
+        this.dynamoDbClient = dynamoDbClient;
+        this.dynamoDbEnhancedClient = DynamoDbEnhancedClient.builder().dynamoDbClient(dynamoDbClient).build();
+        this.tableCache = new TableCache(this.dynamoDbClient);
         this.schemaRegistry = schemaRegistry;
         this.objectMapper = new ObjectMapper();
         this.writeOpFactory = new WriteOpFactory(objectMapper, this.prefix, schemaRegistry);
@@ -105,107 +114,113 @@ public class Dynamap {
             List<LocalSecondaryIndex> localSecondaryIndexes = new ArrayList<>();
 
             Field hashField = tableDefinition.getField(tableDefinition.getHashKey());
-            attributeDefinitions.add(new AttributeDefinition().withAttributeName(hashField.getDynamoName()).withAttributeType("S"));
-            keySchema.add(new KeySchemaElement().withAttributeName(hashField.getDynamoName()).withKeyType(KeyType.HASH));
+            attributeDefinitions.add(AttributeDefinition.builder().attributeName(hashField.getDynamoName()).attributeType("S").build());
+            keySchema.add(KeySchemaElement.builder().attributeName(hashField.getDynamoName()).keyType(KeyType.HASH).build());
             if (tableDefinition.getRangeKey() != null) {
                 Field field = tableDefinition.getField(tableDefinition.getRangeKey());
-                attributeDefinitions.add(new AttributeDefinition().withAttributeName(field.getDynamoName()).withAttributeType(field.getElementType().equals("String") ? "S" : "N"));
-                keySchema.add(new KeySchemaElement().withAttributeName(field.getDynamoName()).withKeyType(KeyType.RANGE));
+                attributeDefinitions.add(AttributeDefinition.builder().attributeName(field.getDynamoName()).attributeType(field.getElementType().equals("String") ? "S" : "N").build());
+                keySchema.add(KeySchemaElement.builder().attributeName(field.getDynamoName()).keyType(KeyType.RANGE).build());
             }
 
             if (tableDefinition.getGlobalSecondaryIndexes() != null) {
                 for (com.n3twork.dynamap.model.Index index : tableDefinition.getGlobalSecondaryIndexes()) {
-                    Projection projection = new Projection().withProjectionType(index.getProjectionType());
-                    GlobalSecondaryIndex gsi = new GlobalSecondaryIndex()
-                            .withIndexName(index.getIndexName())
-                            .withProvisionedThroughput(new ProvisionedThroughput()
-                                    .withReadCapacityUnits(1L)
-                                    .withWriteCapacityUnits(1L))
-                            .withProjection(projection);
-                    ArrayList<KeySchemaElement> indexKeySchema = new ArrayList<>();
+                    List<KeySchemaElement> indexKeySchema = new ArrayList<>();
                     Field field = tableDefinition.getField(index.getHashKey());
-                    indexKeySchema.add(new KeySchemaElement()
-                            .withAttributeName(field.getDynamoName())
-                            .withKeyType(KeyType.HASH));
+                    indexKeySchema.add(
+                            KeySchemaElement.builder().attributeName(field.getDynamoName()).keyType(KeyType.HASH).build()
+                    );
                     if (!hasAttributeDefinition(attributeDefinitions, field.getDynamoName())) {
-                        attributeDefinitions.add(new AttributeDefinition().withAttributeName(field.getDynamoName()).withAttributeType(field.getElementType().equals("String") ? "S" : "N"));
+                        attributeDefinitions.add(
+                                AttributeDefinition.builder()
+                                        .attributeName(field.getDynamoName())
+                                        .attributeType(field.getElementType().equals("String") ? "S" : "N")
+                                        .build());
                     }
 
                     if (index.getRangeKey() != null) {
                         Field rangeField = tableDefinition.getField(index.getRangeKey());
-                        indexKeySchema.add(new KeySchemaElement()
-                                .withAttributeName(rangeField.getDynamoName())
-                                .withKeyType(KeyType.RANGE));
+                        indexKeySchema.add(KeySchemaElement.builder()
+                                .attributeName(rangeField.getDynamoName())
+                                .keyType(KeyType.RANGE).build());
 
                         if (!hasAttributeDefinition(attributeDefinitions, rangeField.getDynamoName())) {
-                            attributeDefinitions.add(new AttributeDefinition().withAttributeName(rangeField.getDynamoName()).withAttributeType(rangeField.getElementType().equals("String") ? "S" : "N"));
+                            attributeDefinitions.add(AttributeDefinition.builder().attributeName(rangeField.getDynamoName()).attributeType(rangeField.getElementType().equals("String") ? "S" : "N").build());
                         }
                     }
-                    gsi.setKeySchema(indexKeySchema);
+
+                    List<String> nonKeyAttributes = new ArrayList<>();
                     if (index.getNonKeyFields() != null) {
-                        List<String> nonKeyAttributes = new ArrayList<>();
                         for (String nonKeyField : index.getNonKeyFields()) {
                             Field nkf = tableDefinition.getField(nonKeyField);
                             nonKeyAttributes.add(nkf.getDynamoName());
                         }
-                        projection.withNonKeyAttributes(nonKeyAttributes);
                     }
+
+                    GlobalSecondaryIndex gsi = GlobalSecondaryIndex.builder()
+                            .indexName(index.getIndexName())
+                            .provisionedThroughput(pt -> pt.readCapacityUnits(1L).writeCapacityUnits(1L))
+                            .projection(projection -> projection.projectionType(index.getProjectionType()).nonKeyAttributes(nonKeyAttributes))
+                            .keySchema(indexKeySchema)
+                            .build();
+
                     globalSecondaryIndexes.add(gsi);
                 }
             }
 
             if (tableDefinition.getLocalSecondaryIndexes() != null) {
                 for (com.n3twork.dynamap.model.Index index : tableDefinition.getLocalSecondaryIndexes()) {
-                    LocalSecondaryIndex lsi = new LocalSecondaryIndex()
-                            .withIndexName(index.getIndexName())
-                            .withProjection(new Projection().withProjectionType(ProjectionType.ALL));
+                    LocalSecondaryIndex lsi = LocalSecondaryIndex.builder()
+                            .indexName(index.getIndexName())
+                            .projection(p -> p.projectionType(ProjectionType.ALL))
+                            .build();
                     ArrayList<KeySchemaElement> indexKeySchema = new ArrayList<>();
                     Field field = tableDefinition.getField(index.getHashKey());
-                    indexKeySchema.add(new KeySchemaElement()
-                            .withAttributeName(field.getDynamoName())
-                            .withKeyType(KeyType.HASH));
+                    indexKeySchema.add(KeySchemaElement.builder()
+                            .attributeName(field.getDynamoName())
+                            .keyType(KeyType.HASH).build());
                     if (!hasAttributeDefinition(attributeDefinitions, field.getDynamoName())) {
-                        attributeDefinitions.add(new AttributeDefinition().withAttributeName(field.getDynamoName()).withAttributeType(field.getElementType().equals("String") ? "S" : "N"));
+                        attributeDefinitions.add(AttributeDefinition.builder().attributeName(field.getDynamoName()).attributeType(field.getElementType().equals("String") ? "S" : "N").build());
                     }
 
                     Field rangeField = tableDefinition.getField(index.getRangeKey());
-                    indexKeySchema.add(new KeySchemaElement()
-                            .withAttributeName(rangeField.getDynamoName())
-                            .withKeyType(KeyType.RANGE));
+                    indexKeySchema.add(KeySchemaElement.builder()
+                            .attributeName(rangeField.getDynamoName())
+                            .keyType(KeyType.RANGE).build());
 
                     if (!hasAttributeDefinition(attributeDefinitions, rangeField.getDynamoName())) {
-                        attributeDefinitions.add(new AttributeDefinition().withAttributeName(rangeField.getDynamoName()).withAttributeType(rangeField.getElementType().equals("String") ? "S" : "N"));
+                        attributeDefinitions.add(AttributeDefinition.builder().attributeName(rangeField.getDynamoName()).attributeType(rangeField.getElementType().equals("String") ? "S" : "N").build());
                     }
 
-                    lsi.setKeySchema(indexKeySchema);
+                    lsi.toBuilder().keySchema(indexKeySchema);
                     localSecondaryIndexes.add(lsi);
                 }
             }
 
-            CreateTableRequest request = new CreateTableRequest()
-                    .withTableName(tableDefinition.getTableName(prefix))
-                    .withKeySchema(keySchema)
-                    .withAttributeDefinitions(attributeDefinitions)
-                    .withProvisionedThroughput(new ProvisionedThroughput()
-                            .withReadCapacityUnits(readProvisioning)
-                            .withWriteCapacityUnits(writeProvisioning));
+            CreateTableRequest request = CreateTableRequest.builder()
+                    .tableName(tableDefinition.getTableName(prefix))
+                    .keySchema(keySchema)
+                    .attributeDefinitions(attributeDefinitions)
+                    .provisionedThroughput(pt -> pt
+                            .readCapacityUnits(readProvisioning)
+                            .writeCapacityUnits(writeProvisioning))
+                    .build();
 
             createTableRequests.put(tableDefinition.getTableName(), request);
 
-            if (globalSecondaryIndexes.size() > 0) {
-                request = request.withGlobalSecondaryIndexes(globalSecondaryIndexes);
+            if (!globalSecondaryIndexes.isEmpty() && request != null) {
+                request = request.toBuilder().globalSecondaryIndexes(globalSecondaryIndexes).build();
             }
 
-            if (localSecondaryIndexes.size() > 0) {
-                request = request.withLocalSecondaryIndexes(localSecondaryIndexes);
+            if (!localSecondaryIndexes.isEmpty() && request != null) {
+                request = request.toBuilder().localSecondaryIndexes(localSecondaryIndexes).build();
             }
 
             requestTransformer.accept(request);
 
             if (deleteIfExists) {
-                TableUtils.deleteTableIfExists(amazonDynamoDB, new DeleteTableRequest().withTableName(tableDefinition.getTableName(prefix)));
+                TableUtils.deleteTableIfExists(dynamoDbClient, tableDefinition.getTableName(prefix));
             }
-            boolean wasCreated = TableUtils.createTableIfNotExists(amazonDynamoDB, request);
+            TableUtils.createTableIfNotExists(dynamoDbClient, request);
             updateTableTtl(tableDefinition, Optional.empty());
         }
     }
@@ -214,11 +229,11 @@ public class Dynamap {
     public boolean createTableFromExisting(String baseTableName, String newTableName, boolean deleteIfExists) {
         CreateTableRequest createTableRequest = createTableRequests.get(baseTableName);
         String fullNewTableName = prefix + newTableName;
-        createTableRequest.withTableName(fullNewTableName);
+        createTableRequest = createTableRequest.toBuilder().tableName(fullNewTableName).build();
         if (deleteIfExists) {
-            TableUtils.deleteTableIfExists(amazonDynamoDB, new DeleteTableRequest().withTableName(fullNewTableName));
+            TableUtils.deleteTableIfExists(dynamoDbClient, fullNewTableName);
         }
-        boolean wasCreated = TableUtils.createTableIfNotExists(amazonDynamoDB, createTableRequest);
+        boolean wasCreated = TableUtils.createTableIfNotExists(dynamoDbClient, createTableRequest);
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(baseTableName);
         updateTableTtl(tableDefinition, Optional.of(newTableName));
         return wasCreated;
@@ -250,8 +265,8 @@ public class Dynamap {
         // Describe current TTL settings for the table.
         String tableName = tableNameOverride.isPresent() ? tableNameOverride.get() : tableDefinition.getTableName(prefix);
         TimeToLiveDescription timeToLiveDescription =
-                amazonDynamoDB.describeTimeToLive(new DescribeTimeToLiveRequest().withTableName(tableName)).getTimeToLiveDescription();
-        TimeToLiveStatus timeToLiveStatus = TimeToLiveStatus.fromValue(timeToLiveDescription.getTimeToLiveStatus());
+                dynamoDbClient.describeTimeToLive(DescribeTimeToLiveRequest.builder().tableName(tableName).build()).timeToLiveDescription();
+        TimeToLiveStatus timeToLiveStatus = timeToLiveDescription.timeToLiveStatus();
 
         logger.debug("TimeToLiveDescription for table {} is {}", tableName, timeToLiveDescription);
         switch (timeToLiveStatus) {
@@ -262,44 +277,50 @@ public class Dynamap {
                 break;
             }
             case ENABLED:
-                if (ttlField.get().getDynamoName().equals(timeToLiveDescription.getAttributeName())) {
+                if (ttlField.get().getDynamoName().equals(timeToLiveDescription.attributeName())) {
                     // TTL is already enabled on the correct field. Nothing to do.
                     logger.info("TTL for table {} is set to field {}.", tableDefinition.getTableName(prefix), ttlField.get().getDynamoName());
                 } else {
                     // TTL is ENABLED but not on the desired field.
-                    logger.warn("Failed to set TTL for table {} and field {}. Table already has TTL field {}. You must disable this TTL field before choosing a new one.", tableDefinition.getTableName(prefix), ttlField.get().getDynamoName(), timeToLiveStatus, timeToLiveDescription.getAttributeName());
+                    logger.warn("Failed to set TTL for table {} and field {}. TimeToLiveStatus is currently {} and table already has TTL field {}. " +
+                            "You must disable this TTL field before choosing a new one.",
+                            tableDefinition.getTableName(prefix), ttlField.get().getDynamoName(), timeToLiveStatus, timeToLiveDescription.attributeName());
                 }
                 break;
             case ENABLING:
-                if (ttlField.get().getDynamoName().equals(timeToLiveDescription.getAttributeName())) {
+                if (ttlField.get().getDynamoName().equals(timeToLiveDescription.attributeName())) {
                     // TTL is enabling on the correct field. Nothing to do but wait for DynamoDB.
-                    logger.info("TTL for table {} and field {} is ENABLING.", tableDefinition.getTableName(prefix), ttlField.get().getDynamoName());
+                    logger.info("TTL for table {} and field {} is ENABLING.",
+                            tableDefinition.getTableName(prefix), ttlField.get().getDynamoName());
                 } else {
-                    logger.warn("Failed to set TTL for table {} and field {}. TimeToLiveStatus is currently {} on field {}", tableDefinition.getTableName(prefix), ttlField.get().getDynamoName(), timeToLiveStatus, timeToLiveDescription.getAttributeName());
+                    logger.warn("Failed to set TTL for table {} and field {}. TimeToLiveStatus is currently {} on field {}",
+                            tableDefinition.getTableName(prefix), ttlField.get().getDynamoName(), timeToLiveStatus, timeToLiveDescription.attributeName());
                 }
                 break;
             case DISABLING:
-                logger.warn("Failed to set TTL for table {} and field {}. TimeToLiveStatus is currently {} on field {}", tableDefinition.getTableName(prefix), ttlField.get().getDynamoName(), timeToLiveStatus, timeToLiveDescription.getAttributeName());
+                logger.warn("Failed to set TTL for table {} and field {}. TimeToLiveStatus is currently {} on field {}",
+                        tableDefinition.getTableName(prefix), ttlField.get().getDynamoName(), timeToLiveStatus, timeToLiveDescription.attributeName());
                 break;
         }
     }
 
     // Make the DynamoDB call, handle errors.
     private void updateTimeToLive(TableDefinition tableDefinition, Optional<String> tableNameOverride, Optional<Field> ttlField) {
-        UpdateTimeToLiveRequest updateTimeToLiveRequest = new UpdateTimeToLiveRequest()
-                .withTableName(tableNameOverride.isPresent() ? tableNameOverride.get() : tableDefinition.getTableName(prefix))
-                .withTimeToLiveSpecification(new TimeToLiveSpecification().withAttributeName(ttlField.get().getDynamoName()).withEnabled(true));
+        UpdateTimeToLiveRequest updateTimeToLiveRequest = UpdateTimeToLiveRequest.builder()
+                .tableName(tableNameOverride.orElseGet(() -> tableDefinition.getTableName(prefix)))
+                .timeToLiveSpecification(timeToLiveSpecification -> timeToLiveSpecification.attributeName(ttlField.get().getDynamoName()).enabled(true))
+                .build();
         try {
-            amazonDynamoDB.updateTimeToLive(updateTimeToLiveRequest);
+            dynamoDbClient.updateTimeToLive(updateTimeToLiveRequest);
         } catch (ResourceInUseException e) {
             // This will happen if another request kicks off a TTL change between our DescribeTimeToLiveRequest
             // and UpdateTimeToLiveRequest calls.
         }
     }
 
-    public <T extends DynamapRecordBean> T getObject(GetObjectParams<T> getObjectParams) {
+    public <T extends DynamapRecordBean<?>> T getObject(GetObjectParams<T> getObjectParams) {
         BatchGetObjectParams<T> batchGetObjectParams = new BatchGetObjectParams<T>()
-                .withGetObjectRequests(Arrays.asList(getObjectParams.getGetObjectRequest()))
+                .withGetObjectRequests(Collections.singletonList(getObjectParams.getGetObjectRequest()))
                 .withMigrationContext(getObjectParams.getMigrationContext())
                 .withWriteMigrationChange(getObjectParams.isWriteMigrationChange());
         if (getObjectParams.getRateLimiters() != null) {
@@ -307,7 +328,7 @@ public class Dynamap {
         }
         Map<Class, List<Object>> results = batchGetObject(batchGetObjectParams);
         List<Object> resultList = results.values().iterator().next();
-        if (resultList.size() > 0) {
+        if (!resultList.isEmpty()) {
             return (T) resultList.get(0);
         }
         return null;
@@ -336,7 +357,7 @@ public class Dynamap {
             for (GetObjectRequest getObjectRequest : getObjectRequestBatch) {
                 TableDefinition tableDefinition = schemaRegistry.getTableDefinition(getObjectRequest.getResultClass());
                 String tableName = tableDefinition.getTableName(prefix, getObjectRequest.getSuffix());
-                TableKeysAndAttributes keysAndAttributes;
+                Map<String, AttributeValue> keysAndAttributes;
                 if (queryInfos.get(tableName) != null) {
                     keysAndAttributes = queryInfos.get(tableName).keysAndAttributes;
                 } else {
@@ -364,11 +385,7 @@ public class Dynamap {
             for (GetItemInfo getItemInfo : queryInfos.values()) {
 
                 Collection<Item> items = allItems.get(getItemInfo.tableDefinition.getTableName(prefix, getItemInfo.getObjectRequest.getSuffix()));
-                List<Object> resultsForClass = results.get(getItemInfo.getObjectRequest.getResultClass());
-                if (resultsForClass == null) {
-                    resultsForClass = new ArrayList<>();
-                    results.put(getItemInfo.getObjectRequest.getResultClass(), resultsForClass);
-                }
+                List<Object> resultsForClass = results.computeIfAbsent(getItemInfo.getObjectRequest.getResultClass(), k -> new ArrayList<>());
                 for (Item item : items) {
                     DynamoRateLimiter writeLimiter = null;
                     if (rateLimiters != null) {
@@ -392,7 +409,7 @@ public class Dynamap {
     @SuppressWarnings("unchecked")
     public <T extends DynamapRecordBean> List<T> batchGetObjectSingleCollection(BatchGetObjectParams<T> batchGetObjectParams) {
         Collection<GetObjectRequest<T>> getObjectRequests = batchGetObjectParams.getGetObjectRequests();
-        if (getObjectRequests.size() == 0) {
+        if (getObjectRequests.isEmpty()) {
             return Collections.emptyList();
         }
         // ensure that only one result class has been specified
@@ -414,8 +431,8 @@ public class Dynamap {
 
     public <T extends DynamapRecordBean> QueryResult<T> queryResult(QueryRequest<T> queryRequest) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(queryRequest.getResultClass());
-        Table table = tableCache.getTable(tableDefinition.getTableName(prefix, queryRequest.getSuffix()));
-        QuerySpec querySpec = new QuerySpec()
+        DynamoDbTable table = tableCache.getTable(tableDefinition.getTableName(prefix, queryRequest.getSuffix()));
+        QueryRequest querySpec = new QueryRequest()
                 .withConsistentRead(queryRequest.isConsistentRead())
                 .withKeyConditionExpression(queryRequest.getKeyConditionExpression())
                 .withFilterExpression(queryRequest.getFilterExpression())
@@ -442,7 +459,7 @@ public class Dynamap {
             querySpec.withSelect(select);
         }
 
-        final ItemCollection<QueryOutcome> items;
+        final ItemCollection<QueryResponse> items;
         if (queryRequest.getIndex() != null) {
             com.n3twork.dynamap.model.Index indexDef = null;
             if (tableDefinition.getGlobalSecondaryIndexes() != null) {
@@ -505,7 +522,7 @@ public class Dynamap {
 
     public <T extends DynamapRecordBean> ScanResult<T> scan(ScanRequest<T> scanRequest) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(scanRequest.getResultClass());
-        Table table = tableCache.getTable(tableDefinition.getTableName(prefix, scanRequest.getSuffix()));
+        DynamoDbTable table = tableCache.getTable(tableDefinition.getTableName(prefix, scanRequest.getSuffix()));
 
         ScanSpec scanspec = new ScanSpec();
         if (scanRequest.getNames() != null) {
@@ -615,7 +632,7 @@ public class Dynamap {
 
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(updates.getTableName());
         UpdateItemSpec updateItemSpec = getUpdateItemSpec(updates, tableDefinition, updateParams.getDynamapReturnValue());
-        Table table = tableCache.getTable(tableDefinition.getTableName(prefix, suffix));
+        DynamoDbTable<?> table = tableCache.getTable(tableDefinition.getTableName(prefix, suffix));
 
         logger.debug("About to submit DynamoDB Update: Update expression: {}, Conditional expression: {}, Values {}, Names: {}", updateItemSpec.getUpdateExpression(), updateItemSpec.getConditionExpression(), updateItemSpec.getValueMap(), updateItemSpec.getNameMap());
         try {
@@ -665,62 +682,19 @@ public class Dynamap {
     }
 
     private static class GetItemInfo {
-        public TableKeysAndAttributes keysAndAttributes;
+        public Map<String, AttributeValue> keysAndAttributes;
         public TableDefinition tableDefinition;
         public GetObjectRequest getObjectRequest;
-        public Table table;
+        public TableDescription tableDescription;
     }
 
-    private Multimap<String, Item> doBatchGetItem(Map<String, GetItemInfo> queryInfos, Map<String, ReadWriteRateLimiterPair> rateLimiters, int totalProgress, ProgressCallback progressCallback) {
-        Multimap<String, Item> results = ArrayListMultimap.create();
-        TableKeysAndAttributes[] tableKeysAndAttributes = new TableKeysAndAttributes[queryInfos.size()];
-        int index = 0;
-        for (GetItemInfo getItemInfo : queryInfos.values()) {
-            tableKeysAndAttributes[index++] = getItemInfo.keysAndAttributes;
-        }
-
-        initRateLimiterAndAcquire(rateLimiters, false);
-        BatchGetItemOutcome outcome = dynamoDB.batchGetItem(ReturnConsumedCapacity.TOTAL, tableKeysAndAttributes);
-
-        int unprocessedKeyCount;
-        //todo: need to add exponential backoff for unprocessed items and a termination condition
-        do {
-
-            if (outcome.getBatchGetItemResult().getConsumedCapacity() != null) {
-                for (ConsumedCapacity consumedCapacity : outcome.getBatchGetItemResult().getConsumedCapacity()) {
-                    setConsumedUnits(rateLimiters, consumedCapacity, false);
-                }
-            }
-
-            Map<String, List<Item>> tableItems = outcome.getTableItems();
-            for (String tableName : tableItems.keySet()) {
-                List<Item> items = tableItems.get(tableName);
-                totalProgress += items.size();
-                results.putAll(tableName, items);
-            }
-            // Check for unprocessed keys which could happen if it exceeds provisioned
-            // throughput or reach the limit on response size.
-            Map<String, KeysAndAttributes> unprocessedKeys = outcome.getUnprocessedKeys();
-
-            unprocessedKeyCount = unprocessedKeys.size();
-            if (unprocessedKeyCount != 0) {
-                initRateLimiterAndAcquire(rateLimiters, false);
-                if (rateLimiters != null) {
-                    outcome = dynamoDB.batchGetItemUnprocessed(ReturnConsumedCapacity.TOTAL, unprocessedKeys);
-                } else {
-                    outcome = dynamoDB.batchGetItemUnprocessed(unprocessedKeys);
-                }
-            }
-
-            if (progressCallback != null) {
-                if (!progressCallback.reportProgress(totalProgress)) {
-                    return results;
-                }
-            }
-
-        } while (unprocessedKeyCount > 0);
-
-        return results;
+    private Multimap<String, EnhancedDocument> doBatchGetItem(Map<String, GetItemInfo> queryInfos, Map<String, ReadWriteRateLimiterPair> rateLimiters, int totalProgress, ProgressCallback progressCallback) {
+        BatchGetResultPageIterable outcome = dynamoDbEnhancedClient.batchGetItem(b ->
+                b.readBatches(BatchGetItemEnhancedRequest.builder()
+                        .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL)
+                        .readBatches(ReadBatch.builder().
+                                queryInfos.values().stream().map(info -> info.keysAndAttributes).collect(Collectors.toCollection(ArrayList::new))
+                        ).build()));
 
     }
 
@@ -729,7 +703,7 @@ public class Dynamap {
             return;
         }
 
-        ReadWriteRateLimiterPair rateLimiterPair = rateLimiters.get(consumedCapacity.getTableName());
+        ReadWriteRateLimiterPair rateLimiterPair = rateLimiters.get(consumedCapacity.tableName());
         if (rateLimiterPair != null) {
             DynamoRateLimiter rateLimiter = write ? rateLimiterPair.getWriteLimiter() : rateLimiterPair.getReadLimiter();
             if (rateLimiter != null) {
@@ -741,7 +715,8 @@ public class Dynamap {
     private void initRateLimiterAndAcquire(Map<String, ReadWriteRateLimiterPair> rateLimiters, boolean write) {
         if (rateLimiters != null) {
             for (String tableName : rateLimiters.keySet()) {
-                Table table = tableCache.getTable(tableName);
+                dynamoDbClient.describeTable(DescribeTableRequest.builder().tableName(tableName).build());
+                TableDescription table = tableCache.getTable(tableName);
                 for (ReadWriteRateLimiterPair dynamoRateLimiters : rateLimiters.values()) {
                     DynamoRateLimiter rateLimiter = write ? dynamoRateLimiters.getWriteLimiter() : dynamoRateLimiters.getReadLimiter();
                     if (rateLimiter != null) {
@@ -753,7 +728,7 @@ public class Dynamap {
         }
     }
 
-    private void initRateLimiter(DynamoRateLimiter readRateLimiter, Table table, String indexName) {
+    private void initRateLimiter(DynamoRateLimiter readRateLimiter, TableDescription table, String indexName) {
         if (readRateLimiter != null) {
             readRateLimiter.init(table, indexName);
         }
@@ -761,44 +736,35 @@ public class Dynamap {
 
 
     private boolean hasAttributeDefinition(Collection<AttributeDefinition> attributeDefinitions, String name) {
-        return attributeDefinitions.stream().anyMatch(d -> d.getAttributeName().equals(name));
+        return attributeDefinitions.stream().anyMatch(d -> d.attributeName().equals(name));
     }
 
-    private UpdateItemSpec getUpdateItemSpec(RecordUpdates updates, TableDefinition tableDefinition, DynamapReturnValue returnValue) {
-        DynamoExpressionBuilder expressionBuilder = updates.getExpressionBuilder();
-        expressionBuilder.setObjectMapper(objectMapper);
-        updates.processUpdateExpression();
-
-        UpdateItemSpec updateItemSpec = new UpdateItemSpec().withReturnValues(ReturnValue.fromValue(returnValue.toString()));
+    private UpdateItemRequest getUpdateItemSpec(UpdateItemRequest updates, TableDefinition tableDefinition, DynamapReturnValue returnValue) {
+        UpdateItemRequest.Builder updateItemBuilder = updates.toBuilder();
+        updateItemBuilder.returnValues(returnValue.toString());
         Field hashField = tableDefinition.getField(tableDefinition.getHashKey());
-        if (updates.getRangeKeyValue() != null) {
+        if (updates.rangeKeyValue() != null) {
             Field rangeField = tableDefinition.getField(tableDefinition.getRangeKey());
-            updateItemSpec.withPrimaryKey(hashField.getDynamoName(), updates.getHashKeyValue(), rangeField.getDynamoName(), updates.getRangeKeyValue());
+            updateItemBuilder.key(hashField.getDynamoName(), updates.getHashKeyValue(), rangeField.getDynamoName(), updates.getRangeKeyValue());
         } else {
-            updateItemSpec.withPrimaryKey(hashField.getDynamoName(), updates.getHashKeyValue());
+            updateItemBuilder.withPrimaryKey(hashField.getDynamoName(), updates.getHashKeyValue());
         }
         String conditionalExpression = expressionBuilder.buildConditionalExpression();
-        if (null != conditionalExpression && !"".equals(conditionalExpression)) {
-            updateItemSpec = updateItemSpec.withConditionExpression(conditionalExpression);
+        if (null != conditionalExpression && !conditionalExpression.isEmpty()) {
+            updateItemBuilder = updateItemBuilder.conditionExpression(conditionalExpression);
         }
         String updateExpression = expressionBuilder.buildUpdateExpression();
-        if (null != updateExpression && !"".equals(updateExpression)) {
-            updateItemSpec = updateItemSpec.withUpdateExpression(updateExpression);
-        }
-        if (!expressionBuilder.getNameMap().isEmpty()) {
-            updateItemSpec = updateItemSpec.withNameMap(expressionBuilder.getNameMap());
-        }
-        if (!expressionBuilder.getValueMap().isEmpty()) {
-            updateItemSpec = updateItemSpec.withValueMap(expressionBuilder.getValueMap());
+        if (null != updateExpression && !updateExpression.isEmpty()) {
+            updateItemBuilder = updateItemBuilder.updateExpression(updateExpression);
         }
 
-        return updateItemSpec;
+        return updateItemBuilder.build();
     }
 
 
     public void delete(DeleteRequest deleteRequest) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(deleteRequest.getResultClass());
-        Table table = tableCache.getTable(tableDefinition.getTableName(prefix, deleteRequest.getSuffix()));
+        TableDescription table = tableCache.getTable(tableDefinition.getTableName(prefix, deleteRequest.getSuffix()));
 
         DeleteItemSpec deleteItemSpec = new DeleteItemSpec();
         Field hashField = tableDefinition.getField(tableDefinition.getHashKey());
@@ -817,7 +783,7 @@ public class Dynamap {
                 deleteItemSpec.withValueMap(deleteRequest.getValues());
             }
         }
-        table.deleteItem(deleteItemSpec);
+        dynamoDbClient.deleteItem(r -> r.).deleteItem(deleteItemSpec);
     }
 
     public void batchDelete(BatchDeleteRequest batchDeleteRequest) {
@@ -929,10 +895,10 @@ public class Dynamap {
     }
 
     public WriteTx newWriteTx() {
-        return new WriteTx(amazonDynamoDB, writeOpFactory, new DynamoItemFactory(objectMapper));
+        return new WriteTx(dynamoDbClient, writeOpFactory, new DynamoItemFactory(objectMapper));
     }
 
     public ReadTx newReadTx() {
-        return new ReadTx(amazonDynamoDB, readOpFactory, new DynamapLoadService(schemaRegistry, dynamapBeanFactory, objectMapper, prefix, tableCache));
+        return new ReadTx(dynamoDbClient, readOpFactory, new DynamapLoadService(schemaRegistry, dynamapBeanFactory, objectMapper, prefix, tableCache));
     }
 }

@@ -16,14 +16,16 @@
 
 package com.n3twork.dynamap;
 
-import com.amazonaws.services.dynamodbv2.document.Item;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+
+import java.util.Map;
 
 public interface Migration {
 
     int getVersion();
 
-    void migrate(Item item, int version, Object context);
+    void migrate(Map<String, AttributeValue> item, int version, Object context);
 
-    void postMigration(Item item, int version, Object context);
+    void postMigration(Map<String, AttributeValue> item, int version, Object context);
 
 }

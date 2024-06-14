@@ -6,7 +6,7 @@ import com.amazonaws.services.dynamodbv2.document.Table;
 import com.amazonaws.services.dynamodbv2.document.spec.PutItemSpec;
 import com.amazonaws.services.dynamodbv2.document.utils.NameMap;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
-import com.amazonaws.services.dynamodbv2.model.ReturnValue;
+import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.n3twork.dynamap.model.Schema;
 import com.n3twork.dynamap.model.TableDefinition;
@@ -24,9 +24,9 @@ class DynamapSaveService {
     private static final Logger logger = LoggerFactory.getLogger(DynamapSaveService.class);
     private final ObjectMapper objectMapper;
     private final String tableNamePrefix;
-    private final TableCache tableCache;
+    private final TableCache<?> tableCache;
 
-    public DynamapSaveService(ObjectMapper objectMapper, String tableNamePrefix, TableCache tableCache) {
+    public DynamapSaveService(ObjectMapper objectMapper, String tableNamePrefix, TableCache<?> tableCache) {
         if (null == objectMapper) {
             throw new IllegalArgumentException();
         }

@@ -17,7 +17,7 @@
 package com.n3twork.dynamap;
 
 import com.amazonaws.services.dynamodbv2.document.KeyAttribute;
-import com.amazonaws.services.dynamodbv2.model.Select;
+import software.amazon.awssdk.services.dynamodb.model.Select;
 
 import java.util.Map;
 

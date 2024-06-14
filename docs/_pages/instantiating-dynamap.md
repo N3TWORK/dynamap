@@ -21,7 +21,7 @@ SchemaRegistry schemaRegistry = new SchemaRegistry(
         getClass().getResourceAsStream("/<your-schema>.json"),
         getClass().getResourceAsStream("/<another-schema>.json"));
 
-Dynamap dynamap = new Dynamap(new AmazonDynamoDBClient(),schemaRegistry)
+Dynamap dynamap = new Dynamap(new DynamoDbClient(),schemaRegistry)
           .withObjectMapper(customObjectMapper)
           .withPrefix("prod");
 

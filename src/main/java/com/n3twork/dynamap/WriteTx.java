@@ -1,14 +1,14 @@
 package com.n3twork.dynamap;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.ReturnConsumedCapacity;
+import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
+import software.amazon.awssdk.services.dynamodb.model.TransactWriteItemsResponse;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * A DynamoDB Write Transaction - A synchronous write operation that groups up to 25 action requests. These
@@ -39,12 +39,12 @@ import java.util.Set;
 public class WriteTx {
     private static final Logger logger = LoggerFactory.getLogger(WriteTx.class);
 
-    private final AmazonDynamoDB amazonDynamoDB;
+    private final DynamoDbClient amazonDynamoDB;
     private final Collection<TransactWriteItem> items = new ArrayList<>();
     private final WriteOpFactory writeOpFactory;
     private final DynamoItemFactory dynamoItemFactory;
 
-    WriteTx(AmazonDynamoDB amazonDynamoDB, WriteOpFactory writeOpFactory, DynamoItemFactory dynamoItemFactory) {
+    WriteTx(DynamoDbClient amazonDynamoDB, WriteOpFactory writeOpFactory, DynamoItemFactory dynamoItemFactory) {
         if (null == amazonDynamoDB) {
             throw new NullPointerException();
         }
@@ -60,7 +60,7 @@ public class WriteTx {
     }
 
     public <T extends DynamapPersisted<U>, U extends RecordUpdates<T>> void update(UpdateParams<T> u) {
-        items.add(new TransactWriteItem().withUpdate(writeOpFactory.buildUpdate(u)));
+        items.add(TransactWriteItem.builder().update(writeOpFactory.buildUpdate(u)).build());
     }
 
     /**
@@ -68,25 +68,24 @@ public class WriteTx {
      */
     @Deprecated
     public <T extends DynamapRecordBean> void save(T dynamapRecordBean) {
-        items.add(new TransactWriteItem().withPut(writeOpFactory.buildPut(dynamapRecordBean, dynamoItemFactory)));
+        items.add(TransactWriteItem.builder().put(writeOpFactory.buildPut(dynamapRecordBean, dynamoItemFactory)).build());
     }
 
     public <T extends DynamapRecordBean> void save(SaveParams<T> saveParams) {
-        items.add(new TransactWriteItem().withPut(writeOpFactory.buildPut(saveParams, dynamoItemFactory)));
+        items.add(TransactWriteItem.builder().put(writeOpFactory.buildPut(saveParams, dynamoItemFactory)).build());
     }
 
     public void delete(DeleteRequest deleteRequest) {
-        items.add(new TransactWriteItem().withDelete(writeOpFactory.buildDelete(deleteRequest)));
+        items.add(TransactWriteItem.builder().delete(writeOpFactory.buildDelete(deleteRequest)).build());
     }
 
     public <T extends DynamapRecordBean> void condition(WriteConditionCheck<T> writeConditionCheck) {
-        items.add(new TransactWriteItem().withConditionCheck(writeOpFactory.buildConditionCheck(writeConditionCheck)));
+        items.add(TransactWriteItem.builder().conditionCheck(writeOpFactory.buildConditionCheck(writeConditionCheck)).build());
     }
 
-    public TransactWriteItemsResult exec() {
-        return amazonDynamoDB.transactWriteItems(
-                new TransactWriteItemsRequest()
-                        .withTransactItems(items)
-                        .withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL));
+    public TransactWriteItemsResponse exec() {
+        return amazonDynamoDB.transactWriteItems(r ->
+                r.transactItems(items).returnConsumedCapacity(ReturnConsumedCapacity.TOTAL).build()
+        );
     }
 }

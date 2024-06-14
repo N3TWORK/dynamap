@@ -55,13 +55,9 @@ public class SchemaRegistry {
         if (!getTableDefinition(resultClass).isEnableMigrations()) {
             throw new RuntimeException("Migrations have not been enabled for " + resultClass.getCanonicalName());
         }
-        List<Migration> migrations = tableMigrations.get(resultClass);
-        if (migrations == null) {
-            migrations = new ArrayList<>();
-            tableMigrations.put(resultClass, migrations);
-        }
+        List<Migration> migrations = tableMigrations.computeIfAbsent(resultClass, k -> new ArrayList<>());
         migrations.add(migration);
-        migrations.sort(Comparator.comparingInt(m -> m.getVersion()));
+        migrations.sort(Comparator.comparingInt(Migration::getVersion));
     }
 
     public List<Migration> getMigrations(Class<? extends DynamapRecordBean> resultClass) {

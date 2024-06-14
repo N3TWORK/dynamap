@@ -37,20 +37,21 @@ class WriteOpFactory {
 
     /**
      * This method is deprecated: use buildPut(SaveParams<T>) instead.
-     * @Deprecated
+     *
      * @param dynamapRecordBean
      * @param dynamoItemFactory
      * @param <T>
      * @return
+     * @Deprecated
      */
-    public <T extends DynamapRecordBean> Put buildPut(T dynamapRecordBean, DynamoItemFactory dynamoItemFactory) {
+    public <T extends DynamapRecordBean> software.amazon.awssdk.services.dynamodb.model.Put buildPut(T dynamapRecordBean, DynamoItemFactory dynamoItemFactory) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(dynamapRecordBean.getClass());
         return new Put()
                 .withTableName(tableDefinition.getTableName(tableNamePrefix))
                 .withItem(ItemUtils.toAttributeValues(dynamoItemFactory.asDynamoItem(dynamapRecordBean, tableDefinition)));
     }
 
-    public <T extends DynamapRecordBean> Put buildPut(SaveParams<T> saveParams, DynamoItemFactory dynamoItemFactory) {
+    public <T extends DynamapRecordBean> software.amazon.awssdk.services.dynamodb.model.Put buildPut(SaveParams<T> saveParams, DynamoItemFactory dynamoItemFactory) {
         T dynamapRecordBean = saveParams.getDynamapRecordBean();
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(dynamapRecordBean.getClass());
         String hashKeyFieldName = tableDefinition.getField(tableDefinition.getHashKey()).getDynamoName();
@@ -70,7 +71,7 @@ class WriteOpFactory {
         return put;
     }
 
-    public <T extends DynamapPersisted<U>, U extends RecordUpdates<T>> Update buildUpdate(UpdateParams<T> updateParams) {
+    public <T extends DynamapPersisted<U>, U extends RecordUpdates<T>> software.amazon.awssdk.services.dynamodb.model.Update buildUpdate(UpdateParams<T> updateParams) {
         RecordUpdates<T> updates = updateParams.getUpdates();
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(updates.getTableName());
         Map<String, AttributeValue> key = TxUtil.getKey(tableDefinition, updates.getHashKeyValue(), updates.getRangeKeyValue());
@@ -89,7 +90,7 @@ class WriteOpFactory {
                 .withExpressionAttributeValues(ItemUtils.fromSimpleMap(expressionBuilder.getValueMap()));
     }
 
-    public Delete buildDelete(DeleteRequest<?> deleteRequest) {
+    public software.amazon.awssdk.services.dynamodb.model.Delete buildDelete(DeleteRequest<?> deleteRequest) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(deleteRequest.getResultClass());
         Map<String, AttributeValue> key = TxUtil.getKey(tableDefinition, deleteRequest.getHashKeyValue(), deleteRequest.getRangeKeyValue());
         Delete delete = new Delete()
@@ -110,7 +111,7 @@ class WriteOpFactory {
         return delete;
     }
 
-    public <T extends DynamapRecordBean> ConditionCheck buildConditionCheck(WriteConditionCheck<T> writeConditionCheck) {
+    public <T extends DynamapRecordBean> software.amazon.awssdk.services.dynamodb.model.ConditionCheck buildConditionCheck(WriteConditionCheck<T> writeConditionCheck) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(writeConditionCheck.getBeanClass());
         ConditionCheck conditionCheck = new ConditionCheck()
                 .withTableName(tableDefinition.getTableName(tableNamePrefix))

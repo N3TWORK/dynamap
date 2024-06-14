@@ -3,6 +3,7 @@ package com.n3twork.dynamap;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.n3twork.dynamap.model.TableDefinition;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.HashMap;
 import java.util.List;
@@ -26,19 +27,18 @@ class DynamapBeanFactory {
         this.objectMapper = objectMapper;
     }
 
-    public <T extends DynamapRecordBean> T asDynamapBean(Item item, Class<T> resultClass) {
+    public <T extends DynamapRecordBean> T asDynamapBean(Map<String, AttributeValue> item, Class<T> resultClass) {
         TableDefinition tableDefinition = schemaRegistry.getTableDefinition(resultClass);
-        Map<String, Object> itemMap = item.asMap();
-        processDeserializationConversions(tableDefinition, itemMap);
-        return objectMapper.convertValue(itemMap, resultClass);
+        processDeserializationConversions(tableDefinition, item);
+        return objectMapper.convertValue(item, resultClass);
     }
 
-    private void processDeserializationConversions(TableDefinition tableDefinition, Map<String, Object> map) {
+    private void processDeserializationConversions(TableDefinition tableDefinition, Map<String, AttributeValue> map) {
         // decompress gzip byte arrays
         for (TableDefinition.CompressCollectionItem compressCollectionItem : tableDefinition.getCompressCollectionItems()) {
             byte[] bytes = null;
             if (compressCollectionItem.parentKey != null) {
-                Map<String, Object> parent = (Map<String, Object>) map.get(compressCollectionItem.parentKey);
+                Map<String, Object> parent = (Map<String, AttributeValue>) map.get(compressCollectionItem.parentKey);
                 if (parent != null) {
                     bytes = (byte[]) parent.get(compressCollectionItem.itemKey);
                 }
@@ -57,18 +57,18 @@ class DynamapBeanFactory {
 
         // convert lists to map for persistAsList fields
         for (TableDefinition.PersistAsFieldItem persistAsFieldItem : tableDefinition.getPersistAsFieldItems()) {
-            List<Map<String, Object>> list = null;
+            List<Map<String, AttributeValue>> list = null;
             if (persistAsFieldItem.parentKey != null) {
-                Map<String, Object> parent = (Map<String, Object>) map.get(persistAsFieldItem.parentKey);
+                Map<String, AttributeValue> parent = (Map<String, AttributeValue>) map.get(persistAsFieldItem.parentKey);
                 if (parent != null) {
-                    list = (List<Map<String, Object>>) parent.get(persistAsFieldItem.itemKey);
+                    list = (List<Map<String, AttributeValue>>) parent.get(persistAsFieldItem.itemKey);
                 }
             } else {
-                list = (List<Map<String, Object>>) map.get(persistAsFieldItem.itemKey);
+                list = (List<Map<String, AttributeValue>>) map.get(persistAsFieldItem.itemKey);
             }
             if (list != null) {
-                Map<String, Object> converted = new HashMap<>();
-                for (Map<String, Object> item : list) {
+                Map<String, AttributeValue> converted = new HashMap<>();
+                for (Map<String, AttributeValue> item : list) {
                     converted.put((String) item.get(persistAsFieldItem.idKey), item);
                 }
                 if (persistAsFieldItem.parentKey != null) {

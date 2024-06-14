@@ -1,10 +1,11 @@
 package com.n3twork.dynamap;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.document.ItemUtils;
-import com.amazonaws.services.dynamodbv2.model.*;
+import com.amazonaws.services.dynamodbv2.model.TransactGetItemsResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,12 +34,12 @@ import java.util.stream.Collectors;
  */
 public class ReadTx {
     private static final Logger logger = LoggerFactory.getLogger(ReadTx.class);
-    private final AmazonDynamoDB amazonDynamoDB;
+    private final DynamoDbClient amazonDynamoDB;
     private final ReadOpFactory readOpFactory;
     private final List<GetObjectParams> gets = new ArrayList<>();
     private final DynamapLoadService dynamapBeanLoader;
 
-    ReadTx(AmazonDynamoDB amazonDynamoDB, ReadOpFactory readOpFactory, DynamapLoadService dynamapBeanLoader) {
+    ReadTx(DynamoDbClient amazonDynamoDB, ReadOpFactory readOpFactory, DynamapLoadService dynamapBeanLoader) {
         if (null == amazonDynamoDB) {
             throw new NullPointerException();
         }
@@ -58,14 +59,14 @@ public class ReadTx {
     }
 
     public List<DynamapRecordBean> exec() {
-        List<TransactGetItem> actions = gets.stream().map(g -> new TransactGetItem().withGet(readOpFactory.buildGet(g))).collect(Collectors.toList());
-        TransactGetItemsRequest tx = new TransactGetItemsRequest()
-                .withTransactItems(actions)
-                .withReturnConsumedCapacity(ReturnConsumedCapacity.TOTAL);
+        List<TransactGetItem> actions = gets.stream().map(g -> TransactGetItem.builder().get(readOpFactory.buildGet(g)).build()).collect(Collectors.toList());
+        TransactGetItemsRequest tx = TransactGetItemsRequest.builder()
+                .transactItems(actions)
+                .returnConsumedCapacity(ReturnConsumedCapacity.TOTAL).build();
         // Execute the transaction and process the result.
         try {
-            TransactGetItemsResult txResult = amazonDynamoDB.transactGetItems(tx);
-            List<ItemResponse> itemResponses = txResult.getResponses();
+            TransactGetItemsResponse txResult = amazonDynamoDB.transactGetItems(tx);
+            List<ItemResponse> itemResponses = txResult.responses();
             // From AWS docs: An ordered array of up to 25 ItemResponse objects, each of which corresponds to the TransactGetItem object
             // in the same position in the TransactItems array. Each ItemResponse object contains a Map of the name-value pairs that are
             // the projected attributes of the requested item.
@@ -80,7 +81,7 @@ public class ReadTx {
                     result.set(i, null);
                     continue;
                 }
-                result.add(dynamapBeanLoader.loadItem(ItemUtils.toItem(itemResponse.getItem()), getObjectParams.getGetObjectRequest().getResultClass()));
+                result.add(dynamapBeanLoader.loadItem(ItemUtils.toItem(itemResponse.item()), getObjectParams.getGetObjectRequest().getResultClass()));
             }
             return result;
         } catch (ResourceNotFoundException rnf) {

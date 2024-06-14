@@ -16,10 +16,9 @@
 
 package com.n3twork.dynamap;
 
-import com.amazonaws.services.dynamodbv2.document.KeyAttribute;
-import com.amazonaws.services.dynamodbv2.document.QueryFilter;
-import com.amazonaws.services.dynamodbv2.document.RangeKeyCondition;
-import com.amazonaws.services.dynamodbv2.model.Select;
+import software.amazon.awssdk.services.dynamodb.model.Select;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,14 +29,14 @@ public class QueryRequest<T> {
     private final Class<T> resultClass;
     private DynamapRecordBean.SecondaryIndexEnum index;
     private String hashKeyValue;
-    private RangeKeyCondition rangeKeyCondition;
-    private List<QueryFilter> queryFilters = new ArrayList<>();
+    private Expression rangeKeyCondition;
+    private List<Expression> queryFilters = new ArrayList<>();
     private String keyConditionExpression;
     private String filterExpression;
     private String projectionExpression;
     private Map<String, Object> values;
     private Map<String, String> names;
-    private KeyAttribute[] exclusiveStartKeys;
+    private Map<String, AttributeValue>[] exclusiveStartKeys;
     private DynamoRateLimiter readRateLimiter;
     private boolean consistentRead;
     private boolean scanIndexForward = true;
@@ -69,7 +68,7 @@ public class QueryRequest<T> {
         return this;
     }
 
-    public QueryRequest<T> withRangeKeyCondition(RangeKeyCondition rangeKeyCondition) {
+    public QueryRequest<T> withRangeKeyCondition(Expression rangeKeyCondition) {
         this.rangeKeyCondition = rangeKeyCondition;
         return this;
     }
@@ -79,7 +78,7 @@ public class QueryRequest<T> {
         return this;
     }
 
-    public QueryRequest<T> addQueryFilter(QueryFilter queryFilter) {
+    public QueryRequest<T> addQueryFilter(Expression queryFilter) {
         this.queryFilters.add(queryFilter);
         return this;
     }
@@ -114,7 +113,7 @@ public class QueryRequest<T> {
         return this;
     }
 
-    public QueryRequest<T> withExclusiveStartKeys(KeyAttribute... exclusiveStartKeys) {
+    public QueryRequest<T> withExclusiveStartKeys(Map<String, AttributeValue>... exclusiveStartKeys) {
         this.exclusiveStartKeys = exclusiveStartKeys;
         return this;
     }
@@ -171,12 +170,12 @@ public class QueryRequest<T> {
         return hashKeyValue;
     }
 
-    public RangeKeyCondition getRangeKeyCondition() {
+    public Expression getRangeKeyCondition() {
         return rangeKeyCondition;
     }
 
-    public QueryFilter[] getQueryFilters() {
-        return queryFilters.toArray(new QueryFilter[queryFilters.size()]);
+    public Expression[] getQueryFilters() {
+        return queryFilters.toArray(new Expression[queryFilters.size()]);
     }
 
     public String getKeyConditionExpression() {
@@ -203,7 +202,7 @@ public class QueryRequest<T> {
         return values;
     }
 
-    public KeyAttribute[] getExclusiveStartKeys() {
+    public Map<String, AttributeValue>[] getExclusiveStartKeys() {
         return exclusiveStartKeys;
     }
 

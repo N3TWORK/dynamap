@@ -16,16 +16,16 @@
 
 package com.n3twork.dynamap;
 
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.local.embedded.DynamoDBEmbedded;
-import com.amazonaws.services.dynamodbv2.model.*;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 public class DynamapTtlTest {
-    private AmazonDynamoDB ddb;
+    private DynamoDbClient ddb;
     private Dynamap dynamap;
     private SchemaRegistry schemaRegistry;
 
@@ -34,7 +34,7 @@ public class DynamapTtlTest {
     @BeforeTest
     public void init() {
         System.setProperty("sqlite4java.library.path", "native-libs");
-        ddb = DynamoDBEmbedded.create().amazonDynamoDB();
+        ddb = DynamoDBEmbedded.create().dynamoDbClient();
     }
 
     @Test

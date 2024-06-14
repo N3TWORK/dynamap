@@ -16,7 +16,7 @@
 
 package com.n3twork.dynamap;
 
-import com.amazonaws.services.dynamodbv2.model.ReturnValuesOnConditionCheckFailure;
+import software.amazon.awssdk.services.dynamodb.model.ReturnValuesOnConditionCheckFailure;
 
 public class UpdateParams<T extends DynamapPersisted<? extends RecordUpdates<T>>> {
 
@@ -72,5 +72,5 @@ public class UpdateParams<T extends DynamapPersisted<? extends RecordUpdates<T>>
         return dynamapReturnValue;
     }
 
-    public ReturnValuesOnConditionCheckFailure getReturnValuesOnConditionCheckFailure() { return returnValuesOnConditionCheckFailure; }
+    public String getReturnValuesOnConditionCheckFailure() { return returnValuesOnConditionCheckFailure; }
 }
